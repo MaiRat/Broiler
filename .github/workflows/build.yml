@@ -28,3 +28,6 @@ jobs:
 
     - name: Build
       run: dotnet build Broiler.slnx --no-restore --configuration Release
+
+    - name: Test
+      run: dotnet test Broiler.slnx --no-build --configuration Release --verbosity normal

@@ -1,31 +1,34 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net.Http;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using Broiler.App.Rendering;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.WPF;
-using YantraJS.Core;
 
 namespace Broiler.App
 {
     /// <summary>
     /// Main browser window with navigation bar and HTML rendering panel.
+    /// Delegates page loading, script extraction, and JavaScript execution
+    /// to the <see cref="RenderingPipeline"/>.
     /// </summary>
     public partial class MainWindow : Window
     {
         private readonly List<string> _history = new();
         private int _historyIndex = -1;
-        private readonly HttpClient _httpClient = new();
-        private JSContext _jsContext = new();
+        private readonly RenderingPipeline _pipeline;
 
         public MainWindow()
         {
             InitializeComponent();
-            Closed += (_, _) => _httpClient.Dispose();
+
+            _pipeline = new RenderingPipeline(
+                new PageLoader(),
+                new ScriptExtractor(),
+                new ScriptEngine());
+
+            Closed += (_, _) => _pipeline.Dispose();
             NavigateTo("about:blank");
         }
 
@@ -97,7 +100,7 @@ namespace Broiler.App
 
             if (url == "about:blank")
             {
-                RenderHtml(GetWelcomePage());
+                HtmlPanel.Text = GetWelcomePage();
                 StatusText.Text = "Ready";
                 return;
             }
@@ -105,71 +108,21 @@ namespace Broiler.App
             try
             {
                 StatusText.Text = $"Loading {url}...";
-                var html = await FetchHtmlAsync(url);
-                RenderHtml(html);
+
+                var (normalisedUrl, content) = await _pipeline.LoadPageAsync(url);
+                UrlTextBox.Text = normalisedUrl;
+
+                // Render the HTML, then execute any inline scripts
+                HtmlPanel.Text = content.Html;
+                _pipeline.ExecuteScripts(content);
+
                 StatusText.Text = "Done";
             }
             catch (Exception ex)
             {
-                RenderHtml($"<html><body><h1>Error</h1><p>{ex.Message}</p></body></html>");
+                HtmlPanel.Text = $"<html><body><h1>Error</h1><p>{ex.Message}</p></body></html>";
                 StatusText.Text = "Error loading page";
             }
-        }
-
-        private void RenderHtml(string html)
-        {
-            HtmlPanel.Text = html;
-            ExecuteJavaScript(html);
-        }
-
-        private void ExecuteJavaScript(string html)
-        {
-            try
-            {
-                var scripts = ExtractScripts(html);
-                if (scripts.Count == 0) return;
-
-                _jsContext = new JSContext();
-                foreach (var script in scripts)
-                {
-                    _jsContext.Eval(script);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"JavaScript execution error: {ex.Message}");
-            }
-        }
-
-        private static List<string> ExtractScripts(string html)
-        {
-            var scripts = new List<string>();
-            var pattern = new Regex(
-                @"<script[^>]*>(?<content>[\s\S]*?)</script>",
-                RegexOptions.IgnoreCase);
-
-            foreach (Match match in pattern.Matches(html))
-            {
-                var content = match.Groups["content"].Value.Trim();
-                if (!string.IsNullOrEmpty(content))
-                {
-                    scripts.Add(content);
-                }
-            }
-
-            return scripts;
-        }
-
-        private async Task<string> FetchHtmlAsync(string url)
-        {
-            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                url = "https://" + url;
-                UrlTextBox.Text = url;
-            }
-
-            return await _httpClient.GetStringAsync(new Uri(url));
         }
 
         private void UpdateNavigationButtons()
