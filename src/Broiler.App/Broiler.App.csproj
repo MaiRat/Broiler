@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Broiler.App</RootNamespace>
+    <AssemblyName>Broiler</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\HTML-Renderer-1.5.2\Source\HtmlRenderer.WPF\HtmlRenderer.WPF.csproj" />
+    <ProjectReference Include="..\..\yantra-1.2.295\YantraJS.Core\YantraJS.Core.csproj" />
+  </ItemGroup>
+
+</Project>

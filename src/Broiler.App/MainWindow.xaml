@@ -1,0 +1,43 @@
+<Window x:Class="Broiler.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:htmlRenderer="clr-namespace:TheArtOfDev.HtmlRenderer.WPF;assembly=HtmlRenderer.WPF"
+        Title="Broiler" Height="720" Width="1280"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Navigation Bar -->
+        <Border Grid.Row="0" Background="#F0F0F0" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1" Padding="4">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="0,0,4,0">
+                    <Button x:Name="BackButton" Content="◀" Width="32" Height="28" Margin="2"
+                            Click="BackButton_Click" ToolTip="Back"/>
+                    <Button x:Name="ForwardButton" Content="▶" Width="32" Height="28" Margin="2"
+                            Click="ForwardButton_Click" ToolTip="Forward"/>
+                    <Button x:Name="RefreshButton" Content="⟳" Width="32" Height="28" Margin="2"
+                            Click="RefreshButton_Click" ToolTip="Refresh"/>
+                </StackPanel>
+                <Button x:Name="GoButton" DockPanel.Dock="Right" Content="Go" Width="48" Height="28" Margin="4,0,0,0"
+                        Click="GoButton_Click"/>
+                <TextBox x:Name="UrlTextBox" Height="28" VerticalContentAlignment="Center" Padding="4,0"
+                         KeyDown="UrlTextBox_KeyDown"/>
+            </DockPanel>
+        </Border>
+
+        <!-- HTML Rendering Area -->
+        <htmlRenderer:HtmlPanel x:Name="HtmlPanel" Grid.Row="1"
+                                LinkClicked="HtmlPanel_LinkClicked"/>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" Text="Ready"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
