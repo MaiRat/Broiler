@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Input;
 using Broiler.App.Rendering;
@@ -24,7 +25,7 @@ namespace Broiler.App
             InitializeComponent();
 
             _pipeline = new RenderingPipeline(
-                new PageLoader(),
+                new PageLoader(new HttpClient()),
                 new ScriptExtractor(),
                 new ScriptEngine());
 

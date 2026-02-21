@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Broiler.App.Rendering;
 
 namespace Broiler.App.Tests;
@@ -8,7 +9,7 @@ public class RenderingPipelineTests
     public void ExecuteScripts_WithValidScripts_ReturnsTrue()
     {
         var pipeline = new RenderingPipeline(
-            new PageLoader(),
+            new PageLoader(new HttpClient()),
             new ScriptExtractor(),
             new ScriptEngine());
 
@@ -24,7 +25,7 @@ public class RenderingPipelineTests
     public void ExecuteScripts_WithNoScripts_ReturnsTrue()
     {
         var pipeline = new RenderingPipeline(
-            new PageLoader(),
+            new PageLoader(new HttpClient()),
             new ScriptExtractor(),
             new ScriptEngine());
 
@@ -38,7 +39,7 @@ public class RenderingPipelineTests
     public void ExecuteScripts_WithInvalidScript_ReturnsFalse()
     {
         var pipeline = new RenderingPipeline(
-            new PageLoader(),
+            new PageLoader(new HttpClient()),
             new ScriptExtractor(),
             new ScriptEngine());
 

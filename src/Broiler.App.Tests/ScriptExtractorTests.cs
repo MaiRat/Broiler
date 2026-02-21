@@ -54,4 +54,13 @@ public class ScriptExtractorTests
         Assert.Single(result);
         Assert.Equal("alert('hi');", result[0]);
     }
+
+    [Fact]
+    public void Extract_ExternalScriptTag_IsIgnored()
+    {
+        var html = "<html><body><script src=\"app.js\"></script><script>var x = 1;</script></body></html>";
+        var result = _extractor.Extract(html);
+        Assert.Single(result);
+        Assert.Equal("var x = 1;", result[0]);
+    }
 }

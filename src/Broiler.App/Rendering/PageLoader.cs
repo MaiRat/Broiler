@@ -9,7 +9,17 @@ namespace Broiler.App.Rendering
     /// </summary>
     public sealed class PageLoader : IPageLoader
     {
-        private readonly HttpClient _httpClient = new();
+        private readonly HttpClient _httpClient;
+
+        /// <summary>
+        /// Creates a new <see cref="PageLoader"/> using the provided
+        /// <paramref name="httpClient"/>.  Callers should reuse a single
+        /// <see cref="HttpClient"/> instance to avoid socket exhaustion.
+        /// </summary>
+        public PageLoader(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
 
         /// <inheritdoc />
         public async Task<(string NormalisedUrl, string Html)> FetchAsync(string url)

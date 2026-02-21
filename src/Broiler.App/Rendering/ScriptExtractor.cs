@@ -6,12 +6,13 @@ namespace Broiler.App.Rendering
     /// <summary>
     /// Extracts the contents of <c>&lt;script&gt;</c> tags from HTML using a
     /// regular expression.  Only non-empty inline scripts are returned;
-    /// external <c>src</c> references are ignored for now.
+    /// external <c>src</c> references are skipped.
     /// </summary>
     public sealed class ScriptExtractor : IScriptExtractor
     {
+        // Match <script> tags that do NOT have a src attribute (inline only)
         private static readonly Regex ScriptPattern = new(
-            @"<script[^>]*>(?<content>[\s\S]*?)</script>",
+            @"<script(?![^>]*\ssrc\s*=)[^>]*>(?<content>[\s\S]*?)</script>",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <inheritdoc />
