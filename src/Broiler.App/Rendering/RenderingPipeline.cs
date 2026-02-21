@@ -36,11 +36,13 @@ namespace Broiler.App.Rendering
         }
 
         /// <summary>
-        /// Execute the scripts contained in <paramref name="content"/>.
+        /// Execute the scripts contained in <paramref name="content"/> with DOM
+        /// interaction support.  A <c>document</c> object derived from the page
+        /// HTML is made available to the scripts via the <see cref="DomBridge"/>.
         /// </summary>
         public bool ExecuteScripts(PageContent content)
         {
-            return _scriptEngine.Execute(content.Scripts);
+            return _scriptEngine.Execute(content.Scripts, content.Html);
         }
 
         public void Dispose()
