@@ -1,0 +1,1 @@
+﻿assert.strictEqual(7, (function () { return 3 + 4; })());
