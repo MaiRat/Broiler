@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/HTML-Renderer-1.5.2/" />
+  <Folder Name="/HTML-Renderer-1.5.2/Source/">
+    <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.WPF/HtmlRenderer.WPF.csproj" />
+    <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer/HtmlRenderer.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Broiler.App/Broiler.App.csproj" />
+  </Folder>
+  <Folder Name="/yantra-1.2.295/">
+    <Project Path="yantra-1.2.295/YantraJS.Core/YantraJS.Core.csproj" />
+    <Project Path="yantra-1.2.295/YantraJS.ExpressionCompiler/YantraJS.ExpressionCompiler.csproj" />
+    <Project Path="yantra-1.2.295/YantraJS.JSClassGenerator/YantraJS.JSClassGenerator.csproj" />
+  </Folder>
+</Solution>
