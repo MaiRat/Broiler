@@ -86,9 +86,9 @@ See [Issue #1](https://github.com/MaiRat/Broiler/issues/1) for the full developm
 - [x] Document architectural decisions (ADR)
 - [x] Create initial WPF project skeleton
 - [x] Integrate html-renderer and yantra as project references
+- [x] Implement navigation history (back/forward/refresh)
 - [ ] Implement rendering pipeline
 - [ ] Enable DOM interaction via yantra
-- [ ] Implement navigation history (back/forward/refresh)
 - [ ] Support advanced HTML/CSS features
 
 ## License

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -18,10 +20,12 @@ namespace Broiler.App
         private readonly List<string> _history = new();
         private int _historyIndex = -1;
         private readonly HttpClient _httpClient = new();
+        private JSContext _jsContext = new();
 
         public MainWindow()
         {
             InitializeComponent();
+            Closed += (_, _) => _httpClient.Dispose();
             NavigateTo("about:blank");
         }
 
@@ -120,40 +124,37 @@ namespace Broiler.App
 
         private void ExecuteJavaScript(string html)
         {
-            // Extract and execute inline scripts using YantraJS
             try
             {
                 var scripts = ExtractScripts(html);
                 if (scripts.Count == 0) return;
 
-                var context = new JSContext();
+                _jsContext = new JSContext();
                 foreach (var script in scripts)
                 {
-                    context.Eval(script);
+                    _jsContext.Eval(script);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Script errors are silently handled for now
+                Debug.WriteLine($"JavaScript execution error: {ex.Message}");
             }
         }
 
         private static List<string> ExtractScripts(string html)
         {
             var scripts = new List<string>();
-            var searchFrom = 0;
+            var pattern = new Regex(
+                @"<script[^>]*>(?<content>[\s\S]*?)</script>",
+                RegexOptions.IgnoreCase);
 
-            while (true)
+            foreach (Match match in pattern.Matches(html))
             {
-                var start = html.IndexOf("<script>", searchFrom, StringComparison.OrdinalIgnoreCase);
-                if (start < 0) break;
-
-                start += "<script>".Length;
-                var end = html.IndexOf("</script>", start, StringComparison.OrdinalIgnoreCase);
-                if (end < 0) break;
-
-                scripts.Add(html.Substring(start, end - start).Trim());
-                searchFrom = end + "</script>".Length;
+                var content = match.Groups["content"].Value.Trim();
+                if (!string.IsNullOrEmpty(content))
+                {
+                    scripts.Add(content);
+                }
             }
 
             return scripts;
