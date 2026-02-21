@@ -38,6 +38,7 @@ Broiler is a lightweight, extensible web browser for Windows built entirely in m
 | Component | Description |
 |-----------|-------------|
 | `Broiler.App` | WPF application entry point and main window |
+| `Broiler.App.Rendering` | Modular rendering pipeline (page loading, script extraction, JS execution) |
 | `HtmlRenderer.WPF` | WPF adapter for the HTML rendering engine |
 | `HtmlRenderer.Core` | Cross-platform HTML/CSS parsing and rendering |
 | `YantraJS.Core` | JavaScript engine with ES2020+ support |
@@ -66,12 +67,14 @@ dotnet run --project src/Broiler.App
 ```
 Broiler/
 ├── src/
-│   └── Broiler.App/          # WPF browser application
+│   ├── Broiler.App/              # WPF browser application
+│   │   └── Rendering/            # Modular rendering pipeline
+│   └── Broiler.App.Tests/        # Unit tests
 ├── docs/
-│   └── adr/                  # Architecture Decision Records
-├── HTML-Renderer-1.5.2/      # HTML/CSS rendering engine
-├── yantra-1.2.295/            # JavaScript engine
-└── Broiler.slnx               # Solution file
+│   └── adr/                      # Architecture Decision Records
+├── HTML-Renderer-1.5.2/          # HTML/CSS rendering engine
+├── yantra-1.2.295/                # JavaScript engine
+└── Broiler.slnx                   # Solution file
 ```
 
 ## Roadmap
@@ -87,7 +90,7 @@ See [Issue #1](https://github.com/MaiRat/Broiler/issues/1) for the full developm
 - [x] Create initial WPF project skeleton
 - [x] Integrate html-renderer and yantra as project references
 - [x] Implement navigation history (back/forward/refresh)
-- [ ] Implement rendering pipeline
+- [x] Implement rendering pipeline
 - [ ] Enable DOM interaction via yantra
 - [ ] Support advanced HTML/CSS features
 

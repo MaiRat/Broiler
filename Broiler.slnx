@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Broiler.App/Broiler.App.csproj" />
+    <Project Path="src/Broiler.App.Tests/Broiler.App.Tests.csproj" />
   </Folder>
   <Folder Name="/yantra-1.2.295/">
     <Project Path="yantra-1.2.295/YantraJS.Core/YantraJS.Core.csproj" />
