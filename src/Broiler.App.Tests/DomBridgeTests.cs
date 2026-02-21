@@ -53,6 +53,24 @@ public class DomBridgeTests
     }
 
     [Fact]
+    public void Execute_WithHtml_CreateElementWithoutArgReturnsFalse()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[] { "document.createElement();" }, html);
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_VoidElementsAreParsed()
+    {
+        var html = "<html><body><input id=\"field\"><img id=\"logo\" /></body></html>";
+        var result = _engine.Execute(
+            new[] { "var el = document.getElementById('field'); if (el === null) throw new Error('expected input element');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
     public void Execute_WithHtml_ElementHasExpectedProperties()
     {
         var html = "<html><body><div id=\"test\" class=\"box\">Content</div></body></html>";

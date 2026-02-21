@@ -46,6 +46,10 @@ namespace Broiler.App.Rendering
             @"<(?<tag>[a-zA-Z][a-zA-Z0-9]*)\b(?<attrs>[^>]*)>(?<inner>[\s\S]*?)</\k<tag>>",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        private static readonly Regex VoidElementPattern = new(
+            @"<(?<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b(?<attrs>[^>]*)\/?>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private static readonly Regex IdPattern = new(
             @"\bid\s*=\s*[""'](?<id>[^""']+)[""']",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -62,7 +66,7 @@ namespace Broiler.App.Rendering
             var titleMatch = TitlePattern.Match(html);
             _title = titleMatch.Success ? titleMatch.Groups["content"].Value.Trim() : string.Empty;
 
-            // Extract elements with id or class attributes
+            // Extract elements with closing tags
             foreach (Match m in ElementPattern.Matches(html))
             {
                 var tag = m.Groups["tag"].Value.ToLowerInvariant();
@@ -77,6 +81,22 @@ namespace Broiler.App.Rendering
                     idMatch.Success ? idMatch.Groups["id"].Value : null,
                     classMatch.Success ? classMatch.Groups["cls"].Value : null,
                     inner));
+            }
+
+            // Extract void / self-closing elements (img, input, br, etc.)
+            foreach (Match m in VoidElementPattern.Matches(html))
+            {
+                var tag = m.Groups["tag"].Value.ToLowerInvariant();
+                var attrs = m.Groups["attrs"].Value;
+
+                var idMatch = IdPattern.Match(attrs);
+                var classMatch = ClassPattern.Match(attrs);
+
+                _elements.Add(new DomElement(
+                    tag,
+                    idMatch.Success ? idMatch.Groups["id"].Value : null,
+                    classMatch.Success ? classMatch.Groups["cls"].Value : null,
+                    string.Empty));
             }
         }
 
@@ -135,7 +155,9 @@ namespace Broiler.App.Rendering
                 (KeyString)"createElement",
                 new JSFunction((in Arguments a) =>
                 {
-                    var tag = a.Length > 0 ? a[0].ToString().ToLowerInvariant() : "div";
+                    if (a.Length == 0)
+                        throw new JSException("Failed to execute 'createElement': 1 argument required, but only 0 present.");
+                    var tag = a[0].ToString().ToLowerInvariant();
                     var el = new DomElement(tag, null, null, string.Empty);
                     _elements.Add(el);
                     return ToJSObject(el);
