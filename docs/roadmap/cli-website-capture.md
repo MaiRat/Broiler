@@ -46,14 +46,14 @@ verification after issue resolution.
 
 ## Phase 4 — Copilot Workflow Integration
 
-- [ ] Update `.github/copilot-instructions.md` to document:
+- [x] Update `.github/copilot-instructions.md` to document:
   - Post-issue-resolution capture step
   - Expected error handling behavior
   - Reference URL (`https://www.heise.de/`)
-- [ ] Add CI workflow step that runs after tests:
+- [x] Add CI workflow step that runs after tests:
   - `dotnet run --project src/Broiler.Cli -- --url https://www.heise.de/ --output capture.png`
   - Upload the screenshot as a build artifact
-- [ ] Document the workflow in the project README
+- [x] Document the workflow in the project README
 
 ## Phase 5 — Distribution & Packaging
 
