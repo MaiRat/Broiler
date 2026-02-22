@@ -35,14 +35,23 @@ All tests must pass. Fix any failures introduced by the change.
 
 ### 2. Website Capture Verification
 
-Capture content from the reference website to verify the rendering pipeline:
+Capture content from the reference website to verify the rendering pipeline.
+Both HTML and image outputs must be produced successfully.
+
+#### HTML Capture
 
 ```bash
 dotnet run --project src/Broiler.Cli -- --url https://www.heise.de/ --output capture.html
 ```
 
-- If the capture **succeeds**, attach or reference the output in the PR.
-- If the capture **fails**, investigate and resolve the error before completing
+#### Image Capture (PNG)
+
+```bash
+dotnet run --project src/Broiler.Cli -- --capture-image https://www.heise.de/ --output capture.png
+```
+
+- If the captures **succeed**, attach or reference the outputs in the PR.
+- If a capture **fails**, investigate and resolve the error before completing
   the issue. Common failure causes:
   - **Network timeout**: Increase timeout with `--timeout 60`.
   - **Missing .NET runtime**: Ensure .NET 8.0 SDK is installed.
