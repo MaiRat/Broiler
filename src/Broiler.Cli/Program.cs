@@ -23,9 +23,18 @@ public class Program
                 case "--output" when i + 1 < args.Length:
                     output = args[++i];
                     break;
+                case "--url":
+                case "--output":
+                    Console.Error.WriteLine($"Error: '{args[i]}' requires a value.");
+                    PrintUsage();
+                    return 1;
                 case "--help":
                     PrintUsage();
                     return 0;
+                default:
+                    Console.Error.WriteLine($"Error: Unrecognized argument '{args[i]}'.");
+                    PrintUsage();
+                    return 1;
             }
         }
 

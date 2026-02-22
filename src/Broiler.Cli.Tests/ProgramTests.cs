@@ -43,4 +43,11 @@ public class ProgramTests
         var result = await Program.Main(["--url", "ftp://example.com", "--output", "test.png"]);
         Assert.Equal(1, result);
     }
+
+    [Fact]
+    public async Task Main_WithUnrecognizedArg_ReturnsOne()
+    {
+        var result = await Program.Main(["--unknown"]);
+        Assert.Equal(1, result);
+    }
 }
