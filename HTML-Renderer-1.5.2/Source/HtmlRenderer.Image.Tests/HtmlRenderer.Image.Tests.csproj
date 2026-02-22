@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HtmlRenderer.Image\HtmlRenderer.Image.csproj" />
+    <ProjectReference Include="..\HtmlRenderer\HtmlRenderer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
