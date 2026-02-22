@@ -1223,6 +1223,11 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
         /// ActualBottom among them. Used by the <c>clear</c> property to push
         /// a box below all preceding floats.
         /// </summary>
+        /// <param name="box">
+        /// The box whose preceding siblings are inspected. The method walks the
+        /// parent's child list up to (but not including) <paramref name="box"/>
+        /// and returns the largest <see cref="ActualBottom"/> of any floated sibling.
+        /// </param>
         private static double GetMaxFloatBottom(CssBox box)
         {
             double maxBottom = 0;

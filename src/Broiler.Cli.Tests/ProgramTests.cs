@@ -113,7 +113,8 @@ public class ProgramTests
         // file:// URLs should be accepted by the argument parser (not rejected as invalid).
         // The actual capture may fail if the file doesn't exist, but the URL
         // validation should pass.
-        var result = await Program.Main(["--capture-image", "file:///nonexistent.html", "--output", "/tmp/test-file-url.png"]);
+        var outputPath = Path.Combine(Path.GetTempPath(), $"broiler-test-{Guid.NewGuid():N}.png");
+        var result = await Program.Main(["--capture-image", "file:///nonexistent.html", "--output", outputPath]);
         // Returns 1 because the file doesn't exist, but NOT because of URL validation
         Assert.Equal(1, result);
     }
