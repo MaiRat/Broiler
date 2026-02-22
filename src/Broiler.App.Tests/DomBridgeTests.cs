@@ -648,4 +648,529 @@ public class DomBridgeTests
         // script must still have executed (no unhandled exception).
         Assert.False(result);
     }
+
+    // ------------------------------------------------------------------
+    //  document.createTextNode
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_CreateTextNodeReturnsNode()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "var t = document.createTextNode('Hello'); if (t.textContent !== 'Hello') throw new Error('wrong text');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_CreateTextNodeHasTagName()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "var t = document.createTextNode('test'); if (t.tagName !== '#TEXT') throw new Error('wrong tagName: ' + t.tagName);" },
+            html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  appendChild / removeChild / replaceChild
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_AppendChild()
+    {
+        var html = "<html><body><div id=\"parent\">Parent</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var parent = document.getElementById('parent');
+              var child = document.createElement('span');
+              parent.appendChild(child);
+              if (parent.childNodes.length < 1) throw new Error('expected child');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_RemoveChild()
+    {
+        var html = "<html><body><div id=\"parent\">Parent</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var parent = document.getElementById('parent');
+              var child = document.createElement('span');
+              parent.appendChild(child);
+              parent.removeChild(child);
+              if (parent.childNodes.length !== 0) throw new Error('expected empty children');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_ReplaceChild()
+    {
+        var html = "<html><body><div id=\"parent\">Parent</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var parent = document.getElementById('parent');
+              var old = document.createElement('span');
+              parent.appendChild(old);
+              var replacement = document.createElement('div');
+              parent.replaceChild(replacement, old);
+              if (parent.childNodes.length !== 1) throw new Error('expected one child');
+              if (parent.firstChild.tagName !== 'DIV') throw new Error('expected DIV');"
+        }, html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  parentNode / childNodes / firstChild / lastChild / nextSibling
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_ParentNode()
+    {
+        var html = "<html><body><div id=\"parent\">Parent</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var parent = document.getElementById('parent');
+              var child = document.createElement('span');
+              parent.appendChild(child);
+              if (child.parentNode === null) throw new Error('parentNode should not be null');
+              if (child.parentNode.tagName !== 'DIV') throw new Error('parentNode tagName should be DIV');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_FirstChildAndLastChild()
+    {
+        var html = "<html><body><div id=\"parent\">Parent</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var parent = document.getElementById('parent');
+              var first = document.createElement('span');
+              var last = document.createElement('p');
+              parent.appendChild(first);
+              parent.appendChild(last);
+              if (parent.firstChild.tagName !== 'SPAN') throw new Error('firstChild should be SPAN');
+              if (parent.lastChild.tagName !== 'P') throw new Error('lastChild should be P');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_NextSibling()
+    {
+        var html = "<html><body><div id=\"parent\">Parent</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var parent = document.getElementById('parent');
+              var a = document.createElement('span');
+              var b = document.createElement('p');
+              parent.appendChild(a);
+              parent.appendChild(b);
+              if (a.nextSibling === null) throw new Error('nextSibling should not be null');
+              if (a.nextSibling.tagName !== 'P') throw new Error('nextSibling should be P');
+              if (b.nextSibling !== null) throw new Error('last child nextSibling should be null');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_ChildNodesEmpty()
+    {
+        var html = "<html><body><div id=\"el\">Text</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var el = document.getElementById('el');
+              if (el.childNodes.length !== 0) throw new Error('expected empty childNodes');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_ParentNodeNullForOrphan()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var el = document.createElement('span');
+              if (el.parentNode !== null) throw new Error('orphan parentNode should be null');"
+        }, html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  addEventListener / removeEventListener
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_AddEventListener()
+    {
+        var html = "<html><body><div id=\"el\">Text</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var el = document.getElementById('el');
+              var clicked = false;
+              el.addEventListener('click', function() { clicked = true; });
+              // Listener is registered (no error thrown)"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_RemoveEventListener()
+    {
+        var html = "<html><body><div id=\"el\">Text</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var el = document.getElementById('el');
+              var handler = function() {};
+              el.addEventListener('click', handler);
+              el.removeEventListener('click', handler);
+              // No error thrown"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void DomBridge_AddEventListenerStoresListeners()
+    {
+        var bridge = new DomBridge();
+        using var context = new YantraJS.Core.JSContext();
+        bridge.Attach(context, "<html><body><div id=\"btn\">Click me</div></body></html>");
+
+        context.Eval(@"
+            var el = document.getElementById('btn');
+            el.addEventListener('click', function() {});
+            el.addEventListener('submit', function() {});
+        ");
+
+        var el = bridge.Elements.First(e => e.Id == "btn");
+        Assert.True(el.EventListeners.ContainsKey("click"));
+        Assert.Single(el.EventListeners["click"]);
+        Assert.True(el.EventListeners.ContainsKey("submit"));
+    }
+
+    // ------------------------------------------------------------------
+    //  window.location
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_WindowLocationIsDefined()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (typeof window.location === 'undefined') throw new Error('location is undefined');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void DomBridge_LocationParsesUrl()
+    {
+        var bridge = new DomBridge();
+        using var context = new YantraJS.Core.JSContext();
+        bridge.Attach(context, "<html><body></body></html>", "https://www.example.com/path?q=1#hash");
+
+        var href = context.Eval("window.location.href");
+        Assert.Contains("example.com", href.ToString());
+
+        var protocol = context.Eval("window.location.protocol");
+        Assert.Equal("https:", protocol.ToString());
+
+        var host = context.Eval("window.location.host");
+        Assert.Equal("www.example.com", host.ToString());
+
+        var pathname = context.Eval("window.location.pathname");
+        Assert.Equal("/path", pathname.ToString());
+
+        var search = context.Eval("window.location.search");
+        Assert.Equal("?q=1", search.ToString());
+
+        var hash = context.Eval("window.location.hash");
+        Assert.Equal("#hash", hash.ToString());
+    }
+
+    // ------------------------------------------------------------------
+    //  window.setTimeout / window.setInterval
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_SetTimeoutCallsCallback()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var called = false;
+              window.setTimeout(function() { called = true; }, 0);
+              if (!called) throw new Error('setTimeout callback was not invoked');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_SetTimeoutReturnsId()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var id = window.setTimeout(function() {}, 100);
+              if (typeof id !== 'number') throw new Error('expected number id');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_SetIntervalCallsCallback()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var called = false;
+              window.setInterval(function() { called = true; }, 0);
+              if (!called) throw new Error('setInterval callback was not invoked');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_ClearTimeoutDoesNotThrow()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "window.clearTimeout(1);" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_ClearIntervalDoesNotThrow()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "window.clearInterval(1);" },
+            html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  window.alert / console.log
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_AlertDoesNotThrow()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "window.alert('test message');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_ConsoleLogDoesNotThrow()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "console.log('hello', 'world');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_WindowConsoleLogDoesNotThrow()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "window.console.log('test');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_ConsoleWarnAndErrorDoNotThrow()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            "console.warn('warning'); console.error('error'); console.info('info');"
+        }, html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  CSS specificity
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void CalculateSpecificity_TagSelector_Returns1()
+    {
+        Assert.Equal(1, DomBridge.CalculateSpecificity("p"));
+    }
+
+    [Fact]
+    public void CalculateSpecificity_ClassSelector_Returns10()
+    {
+        Assert.Equal(10, DomBridge.CalculateSpecificity(".box"));
+    }
+
+    [Fact]
+    public void CalculateSpecificity_IdSelector_Returns100()
+    {
+        Assert.Equal(100, DomBridge.CalculateSpecificity("#main"));
+    }
+
+    [Fact]
+    public void CalculateSpecificity_CompoundSelector()
+    {
+        // div.box#main = 1 (tag) + 10 (class) + 100 (id) = 111
+        Assert.Equal(111, DomBridge.CalculateSpecificity("div.box#main"));
+    }
+
+    [Fact]
+    public void CalculateSpecificity_MultipleClasses()
+    {
+        // .a.b = 10 + 10 = 20
+        Assert.Equal(20, DomBridge.CalculateSpecificity(".a.b"));
+    }
+
+    // ------------------------------------------------------------------
+    //  <style> tag extraction and cascading
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void DomBridge_ExtractsStyleBlocks()
+    {
+        var bridge = new DomBridge();
+        using var context = new YantraJS.Core.JSContext();
+        bridge.Attach(context, "<html><head><style>.red { color: red; }</style></head><body><div class=\"red\">Hello</div></body></html>");
+
+        Assert.True(bridge.CssRules.Count > 0);
+        Assert.Equal(".red", bridge.CssRules[0].Selector);
+    }
+
+    [Fact]
+    public void DomBridge_AppliesCascadedStylesToElement()
+    {
+        var bridge = new DomBridge();
+        using var context = new YantraJS.Core.JSContext();
+        bridge.Attach(context,
+            "<html><head><style>.box { background-color: blue; font-size: 16px; }</style></head>" +
+            "<body><div class=\"box\" id=\"el\">Hello</div></body></html>");
+
+        var el = bridge.Elements.First(e => e.Id == "el");
+        Assert.Equal("blue", el.Style["background-color"]);
+        Assert.Equal("16px", el.Style["font-size"]);
+    }
+
+    [Fact]
+    public void DomBridge_InlineStyleOverridesCascaded()
+    {
+        var bridge = new DomBridge();
+        using var context = new YantraJS.Core.JSContext();
+        bridge.Attach(context,
+            "<html><head><style>.box { color: blue; }</style></head>" +
+            "<body><div class=\"box\" id=\"el\" style=\"color: red\">Hello</div></body></html>");
+
+        var el = bridge.Elements.First(e => e.Id == "el");
+        // Inline style should win
+        Assert.Equal("red", el.Style["color"]);
+    }
+
+    [Fact]
+    public void DomBridge_MediaScreenRulesAreIncluded()
+    {
+        var bridge = new DomBridge();
+        using var context = new YantraJS.Core.JSContext();
+        bridge.Attach(context,
+            "<html><head><style>@media screen { .vis { display: block; } }</style></head>" +
+            "<body><div class=\"vis\" id=\"el\">Hello</div></body></html>");
+
+        var el = bridge.Elements.First(e => e.Id == "el");
+        Assert.Equal("block", el.Style["display"]);
+    }
+
+    // ------------------------------------------------------------------
+    //  textContent property
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_TextContentReadable()
+    {
+        var html = "<html><body><div id=\"el\">Some text</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var el = document.getElementById('el');
+              var tc = el.textContent;
+              if (tc !== 'Some text') throw new Error('expected Some text, got ' + tc);"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_TextContentWritable()
+    {
+        var html = "<html><body><div id=\"el\">Old</div></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var el = document.getElementById('el');
+              el.textContent = 'New';
+              if (el.textContent !== 'New') throw new Error('expected New');"
+        }, html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  fetch polyfill (basic structure test)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_FetchIsDefined()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (typeof fetch !== 'function') throw new Error('fetch is not defined');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_WindowFetchIsDefined()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (typeof window.fetch !== 'function') throw new Error('window.fetch is not defined');" },
+            html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  XMLHttpRequest polyfill
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_XMLHttpRequestIsDefined()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (typeof XMLHttpRequest !== 'function') throw new Error('XMLHttpRequest not defined');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_XMLHttpRequestCanBeCreated()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"var xhr = new XMLHttpRequest();
+              if (xhr.readyState !== 0) throw new Error('expected readyState 0');
+              xhr.open('GET', 'http://localhost');
+              if (xhr.readyState !== 1) throw new Error('expected readyState 1');"
+        }, html);
+        Assert.True(result);
+    }
 }

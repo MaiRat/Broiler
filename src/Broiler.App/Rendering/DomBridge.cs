@@ -265,7 +265,7 @@ namespace Broiler.App.Rendering
         /// b = class / attribute / pseudo-class selectors, c = type selectors.
         /// Inline styles use specificity 1000 (handled externally).
         /// </summary>
-        internal static int CalculateSpecificity(string selector)
+        public static int CalculateSpecificity(string selector)
         {
             int a = 0, b = 0, c = 0;
             var s = selector.Trim();
