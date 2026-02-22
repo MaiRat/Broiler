@@ -83,9 +83,16 @@ See [Issue #1](https://github.com/MaiRat/Broiler/issues/1) for the full developm
 
 ### CLI Website Capture Tool
 
-A cross-platform command-line tool for capturing website screenshots is planned.
+A cross-platform command-line tool for capturing website screenshots.
 See the [CLI Roadmap](docs/roadmap/cli-website-capture.md) and
 [ADR-004](docs/adr/004-os-independent-cli-capture-tool.md) for details.
+
+#### CI Website Capture
+
+The CI workflow (`.github/workflows/build.yml`) automatically captures a
+screenshot of `https://www.heise.de/` after every successful build and test run.
+The screenshot is uploaded as a build artifact named `website-capture`. This
+verifies the rendering pipeline remains functional on every change.
 
 ### Current Phase: Project Initialization
 
