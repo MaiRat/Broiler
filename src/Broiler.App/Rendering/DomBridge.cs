@@ -43,13 +43,20 @@ namespace Broiler.App.Rendering
             @"<title[^>]*>(?<content>[\s\S]*?)</title>",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        private static readonly Regex ElementPattern = new(
-            @"<(?<tag>[a-zA-Z][a-zA-Z0-9]*)\b(?<attrs>[^>]*)>(?<inner>[\s\S]*?)</\k<tag>>",
+        private static readonly Regex OpenTagPattern = new(
+            @"<(?<tag>[a-zA-Z][a-zA-Z0-9]*)\b(?<attrs>[^>]*)\/?>",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        private static readonly Regex VoidElementPattern = new(
-            @"<(?<tag>area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b(?<attrs>[^>]*)\/?>",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly System.Collections.Generic.HashSet<string> SkippedTags = new(System.StringComparer.OrdinalIgnoreCase)
+        {
+            "html", "head", "body", "title"
+        };
+
+        private static readonly System.Collections.Generic.HashSet<string> VoidTags = new(System.StringComparer.OrdinalIgnoreCase)
+        {
+            "area", "base", "br", "col", "embed", "hr", "img", "input",
+            "link", "meta", "param", "source", "track", "wbr"
+        };
 
         private static readonly Regex IdPattern = new(
             @"\bid\s*=\s*[""'](?<id>[^""']+)[""']",
@@ -71,12 +78,25 @@ namespace Broiler.App.Rendering
             var titleMatch = TitlePattern.Match(html);
             _title = titleMatch.Success ? titleMatch.Groups["content"].Value.Trim() : string.Empty;
 
-            // Extract elements with closing tags
-            foreach (Match m in ElementPattern.Matches(html))
+            // Scan all opening tags and collect elements
+            foreach (Match m in OpenTagPattern.Matches(html))
             {
                 var tag = m.Groups["tag"].Value.ToLowerInvariant();
+                if (SkippedTags.Contains(tag)) continue;
+
                 var attrs = m.Groups["attrs"].Value;
-                var inner = m.Groups["inner"].Value.Trim();
+                var isSelfClosing = m.Value.EndsWith("/>");
+
+                string inner = string.Empty;
+                if (!VoidTags.Contains(tag) && !isSelfClosing)
+                {
+                    var closeTag = $"</{tag}>";
+                    var closeIdx = html.IndexOf(closeTag, m.Index + m.Length, System.StringComparison.OrdinalIgnoreCase);
+                    if (closeIdx >= 0)
+                    {
+                        inner = html.Substring(m.Index + m.Length, closeIdx - (m.Index + m.Length)).Trim();
+                    }
+                }
 
                 var idMatch = IdPattern.Match(attrs);
                 var classMatch = ClassPattern.Match(attrs);
@@ -91,29 +111,6 @@ namespace Broiler.App.Rendering
                     idMatch.Success ? idMatch.Groups["id"].Value : null,
                     classMatch.Success ? classMatch.Groups["cls"].Value : null,
                     inner,
-                    style,
-                    attributes));
-            }
-
-            // Extract void / self-closing elements (img, input, br, etc.)
-            foreach (Match m in VoidElementPattern.Matches(html))
-            {
-                var tag = m.Groups["tag"].Value.ToLowerInvariant();
-                var attrs = m.Groups["attrs"].Value;
-
-                var idMatch = IdPattern.Match(attrs);
-                var classMatch = ClassPattern.Match(attrs);
-
-                var attributes = ParseAttributes(attrs);
-                var style = attributes.TryGetValue("style", out var styleVal)
-                    ? ParseStyle(styleVal)
-                    : new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
-
-                _elements.Add(new DomElement(
-                    tag,
-                    idMatch.Success ? idMatch.Groups["id"].Value : null,
-                    classMatch.Success ? classMatch.Groups["cls"].Value : null,
-                    string.Empty,
                     style,
                     attributes));
             }
