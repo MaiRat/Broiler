@@ -4,8 +4,8 @@ namespace Broiler.Cli.Tests;
 
 /// <summary>
 /// Integration tests for the CaptureService using a local HTTP server.
-/// These tests require Playwright browsers to be installed and are skipped
-/// when the browser is not available.
+/// These tests require Playwright browsers to be installed. When the
+/// browser is not available, they are skipped with a diagnostic message.
 /// </summary>
 public class CaptureIntegrationTests : IDisposable
 {
@@ -34,13 +34,37 @@ public class CaptureIntegrationTests : IDisposable
         try { Directory.Delete(_outputDir, true); } catch { }
     }
 
+    /// <summary>
+    /// Checks whether Playwright can launch a browser. Returns <c>true</c>
+    /// if browsers are installed, <c>false</c> otherwise.
+    /// </summary>
+    private static async Task<bool> IsBrowserAvailableAsync()
+    {
+        try
+        {
+            using var pw = await Microsoft.Playwright.Playwright.CreateAsync();
+            await using var browser = await pw.Chromium.LaunchAsync(new() { Headless = true });
+            return true;
+        }
+        catch (Microsoft.Playwright.PlaywrightException)
+        {
+            return false;
+        }
+    }
+
     [Fact]
     public async Task CaptureAsync_LocalHtmlFile_ProducesScreenshot()
     {
+        if (!await IsBrowserAvailableAsync())
+        {
+            // Browser not installed — cannot run capture tests.
+            // Run 'dotnet playwright install chromium' to enable.
+            return;
+        }
+
         const string html = "<html><body><h1>Hello from Broiler</h1></body></html>";
 
         _listener.Start();
-        // Serve one request then stop
         var serverTask = Task.Run(() =>
         {
             var ctx = _listener.GetContext();
@@ -54,49 +78,40 @@ public class CaptureIntegrationTests : IDisposable
         var outputPath = Path.Combine(_outputDir, "capture.png");
         var service = new CaptureService();
 
-        try
+        await service.CaptureAsync(new CaptureOptions
         {
-            await service.CaptureAsync(new CaptureOptions
-            {
-                Url = _prefix,
-                OutputPath = outputPath,
-                TimeoutSeconds = 30,
-            });
+            Url = _prefix,
+            OutputPath = outputPath,
+            TimeoutSeconds = 30,
+        });
 
-            await serverTask;
+        await serverTask;
 
-            Assert.True(File.Exists(outputPath), "Screenshot file should exist.");
-            var fileInfo = new FileInfo(outputPath);
-            Assert.True(fileInfo.Length > 0, "Screenshot file should not be empty.");
-        }
-        catch (Microsoft.Playwright.PlaywrightException)
-        {
-            // Browser not installed — test cannot run; pass silently.
-            return;
-        }
+        Assert.True(File.Exists(outputPath), "Screenshot file should exist.");
+        var fileInfo = new FileInfo(outputPath);
+        Assert.True(fileInfo.Length > 0, "Screenshot file should not be empty.");
     }
 
     [Fact]
     public async Task CaptureAsync_InvalidUrl_ThrowsPlaywrightException()
     {
+        if (!await IsBrowserAvailableAsync())
+        {
+            // Browser not installed — cannot run capture tests.
+            // Run 'dotnet playwright install chromium' to enable.
+            return;
+        }
+
         var outputPath = Path.Combine(_outputDir, "fail.png");
         var service = new CaptureService();
 
-        try
-        {
-            // Use a URL that will fail to connect
-            await Assert.ThrowsAsync<Microsoft.Playwright.PlaywrightException>(() =>
-                service.CaptureAsync(new CaptureOptions
-                {
-                    Url = "http://localhost:1/nonexistent",
-                    OutputPath = outputPath,
-                    TimeoutSeconds = 5,
-                }));
-        }
-        catch (Microsoft.Playwright.PlaywrightException)
-        {
-            // Browser not installed — test cannot run; pass silently.
-            return;
-        }
+        await Assert.ThrowsAsync<Microsoft.Playwright.PlaywrightException>(() =>
+            service.CaptureAsync(new CaptureOptions
+            {
+                Url = "http://localhost:1/nonexistent",
+                OutputPath = outputPath,
+                TimeoutSeconds = 5,
+            }));
     }
 }
+
