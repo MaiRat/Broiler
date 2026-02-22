@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Broiler.Cli\Broiler.Cli.csproj" />
+    <ProjectReference Include="..\..\HTML-Renderer-1.5.2\Source\HtmlRenderer.Image\HtmlRenderer.Image.csproj" />
   </ItemGroup>
 
   <ItemGroup>
