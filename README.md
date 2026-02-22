@@ -92,24 +92,49 @@ See [Issue #1](https://github.com/MaiRat/Broiler/issues/1) for the full developm
 - [x] Implement navigation history (back/forward/refresh)
 - [x] Implement rendering pipeline
 - [x] Enable DOM interaction via yantra
-- [ ] Support advanced HTML/CSS features
+- [x] Support advanced HTML/CSS features
 
 ## DOM Interaction
 
-Broiler exposes a minimal `document` object to JavaScript executed via YantraJS,
+Broiler exposes a `document` object to JavaScript executed via YantraJS,
 enabling scripts embedded in HTML pages to interact with the DOM.
 
 ### Available APIs
+
+#### Document methods
 
 | API | Description |
 |-----|-------------|
 | `document.title` | Read or write the page title |
 | `document.getElementById(id)` | Find an element by its `id` attribute |
 | `document.getElementsByTagName(tag)` | Find all elements with the given tag name |
+| `document.getElementsByClassName(name)` | Find all elements that carry the given class name |
+| `document.querySelector(selector)` | Return the first element matching a CSS selector |
+| `document.querySelectorAll(selector)` | Return all elements matching a CSS selector |
 | `document.createElement(tag)` | Create a new element |
 
-Each element object returned by these methods exposes `tagName`, `id`,
-`className`, and `innerHTML` properties.
+`querySelector` / `querySelectorAll` support tag type (`div`), `#id`, `.class`
+(multiple), `[attr]`, and `[attr=value]` tokens, including compound selectors
+such as `div.card#hero[data-active=true]`.
+
+#### Element properties and methods
+
+| API | Description |
+|-----|-------------|
+| `el.tagName` | Tag name in upper-case (read-only) |
+| `el.id` | Element `id` attribute (read-only) |
+| `el.className` | Space-separated class string (read/write) |
+| `el.innerHTML` | Inner HTML content (read/write) |
+| `el.style.setProperty(prop, value)` | Set a CSS property on the element |
+| `el.style.getPropertyValue(prop)` | Get the value of a CSS property |
+| `el.style.removeProperty(prop)` | Remove a CSS property; returns the old value |
+| `el.style.cssText` | Get or set the full inline style string (read/write) |
+| `el.classList.contains(cls)` | Returns `true` if the element has the class |
+| `el.classList.add(...cls)` | Add one or more class names |
+| `el.classList.remove(...cls)` | Remove one or more class names |
+| `el.classList.toggle(cls[, force])` | Toggle a class; returns `true` if added |
+| `el.setAttribute(name, value)` | Set an attribute value |
+| `el.getAttribute(name)` | Get an attribute value, or `null` if absent |
 
 ### Example
 
@@ -119,14 +144,31 @@ Given the following HTML page:
 <html>
 <head><title>Demo</title></head>
 <body>
-  <div id="greeting" class="box">Hello</div>
+  <div id="greeting" class="box" style="color: blue">Hello</div>
   <script>
     var el = document.getElementById('greeting');
-    // el.tagName  → "DIV"
-    // el.id       → "greeting"
+    // el.tagName   → "DIV"
+    // el.id        → "greeting"
     // el.className → "box"
     // el.innerHTML → "Hello"
     var t = document.title; // "Demo"
+
+    // Modern selector
+    var same = document.querySelector('#greeting');
+
+    // CSS style manipulation
+    el.style.setProperty('color', 'red');
+    el.style.cssText = 'font-size: 18px; font-weight: bold';
+
+    // Class manipulation
+    el.classList.add('highlight');
+    el.classList.remove('box');
+    el.classList.toggle('active');     // → true (added)
+    el.classList.contains('highlight'); // → true
+
+    // Attribute access
+    el.setAttribute('data-count', '3');
+    el.getAttribute('data-count');     // → "3"
   </script>
 </body>
 </html>
