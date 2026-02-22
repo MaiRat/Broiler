@@ -24,4 +24,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\acid\acid1\acid1.html" Link="TestData\acid1.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\acid1.png" Link="TestData\acid1.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
