@@ -59,7 +59,7 @@ public class Acid1CaptureTests : IDisposable
     /// accommodating known CSS1 shortcomings in the HTML-Renderer engine.
     /// Raising this value is a sign of rendering improvement.
     /// </summary>
-    private const double MinSimilarityThreshold = 0.30;
+    private const double MinSimilarityThreshold = 0.35;
 
     private static readonly string TestDataDir =
         Path.Combine(AppContext.BaseDirectory, "TestData");
@@ -573,5 +573,86 @@ public class Acid1CaptureTests : IDisposable
         Assert.True(redPixelsTopLeft > 100,
             $"Expected >100 red pixels in the top-left quadrant from the float:left dt element, " +
             $"but found {redPixelsTopLeft}. Float positioning may not be working correctly.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Em-height and width calculation regression tests
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that em-based dimensions produce correctly sized elements.
+    /// The acid1.html body has <c>width: 48em</c> at <c>font: 10px</c>, so
+    /// the body content width should be 480px.  If <c>GetEmHeight()</c>
+    /// returns the font-metric line height instead of the CSS font-size,
+    /// the body will be ~20 % too wide and the black border will extend
+    /// beyond the expected region.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_EmHeight_BodyWidthNotInflated()
+    {
+        // Render a minimal page with a known em-based width.
+        // font: 10px → 1em = 10px; width: 10em → 100px content width.
+        const string html = @"<html><head><style>
+            html { font: 10px sans-serif; background: white; }
+            body { margin: 0; padding: 0; border: 1px solid black; width: 10em; }
+        </style></head><body>&nbsp;</body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
+
+        // Count black pixels (border) in the right half of the image.
+        // If 1em is inflated, the border will appear further right than
+        // expected (beyond x ≈ 102).
+        int blackPixelsBeyond120 = 0;
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            for (int x = 120; x < bitmap.Width; x++)
+            {
+                var p = bitmap.GetPixel(x, y);
+                if (p.Red < 30 && p.Green < 30 && p.Blue < 30)
+                    blackPixelsBeyond120++;
+            }
+        }
+
+        Assert.True(blackPixelsBeyond120 == 0,
+            $"Found {blackPixelsBeyond120} black pixels beyond x=120. " +
+            "GetEmHeight() may be returning line-spacing instead of CSS font-size, " +
+            "inflating em-based widths.");
+    }
+
+    /// <summary>
+    /// Verifies that an element with an explicit CSS <c>width</c> plus
+    /// padding and borders renders at the correct total (border-box) width.
+    /// Before the fix, <c>Size.Width</c> equalled the CSS content-width
+    /// without adding padding/borders, making elements too narrow.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_ExplicitWidth_IncludesPaddingAndBorders()
+    {
+        // width:100px + padding 10px each side + border 5px each side = 130px border-box.
+        const string html = @"<html><head><style>
+            html { font: 10px sans-serif; background: white; }
+            body { margin: 0; padding: 0; }
+            div { width: 100px; padding: 10px; border: 5px solid black;
+                  background: red; height: 20px; }
+        </style></head><body><div></div></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
+
+        // The red + black region should span exactly 130px (0..129).
+        // Check that pixel at x=125 is coloured (red or black) and x=140 is white.
+        var pInside = bitmap.GetPixel(125, 15);
+        var pOutside = bitmap.GetPixel(145, 15);
+
+        bool insideColoured = pInside.Red > 100 || (pInside.Red < 30 && pInside.Green < 30 && pInside.Blue < 30);
+        bool outsideWhite = pOutside.Red > 240 && pOutside.Green > 240 && pOutside.Blue > 240;
+
+        Assert.True(insideColoured,
+            $"Pixel at x=125 should be inside the 130px border-box (red/black), " +
+            $"but was ({pInside.Red},{pInside.Green},{pInside.Blue}). " +
+            "Explicit CSS width may not include padding+border.");
+        Assert.True(outsideWhite,
+            $"Pixel at x=145 should be outside the 130px border-box (white), " +
+            $"but was ({pOutside.Red},{pOutside.Green},{pOutside.Blue}). " +
+            "Element may be too wide.");
     }
 }

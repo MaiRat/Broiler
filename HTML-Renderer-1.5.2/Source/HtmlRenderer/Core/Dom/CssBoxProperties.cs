@@ -1489,7 +1489,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
         /// <returns></returns>
         public double GetEmHeight()
         {
-            return ActualFont.Height;
+            return ActualFont.Size * (96.0 / 72.0);
         }
 
         /// <summary>
