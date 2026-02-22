@@ -80,6 +80,34 @@ public class ProgramTests
         var result = await Program.Main(["--url", "https://example.com", "--output", "test.png", "--timeout"]);
         Assert.Equal(1, result);
     }
+
+    [Fact]
+    public async Task Main_WithTestEngines_ReturnsZero()
+    {
+        var result = await Program.Main(["--test-engines"]);
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    public void RunEngineTests_ProducesOutput()
+    {
+        var writer = new StringWriter();
+        Console.SetOut(writer);
+        try
+        {
+            var exitCode = Program.RunEngineTests();
+            var output = writer.ToString();
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("[PASS] HTML-Renderer", output);
+            Assert.Contains("[PASS] YantraJS", output);
+            Assert.Contains("All engine tests passed.", output);
+        }
+        finally
+        {
+            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+        }
+    }
 }
 
 public class CaptureOptionsTests

@@ -34,12 +34,12 @@ verification after issue resolution.
 
 ## Phase 3 — Engine Testing Integration
 
-- [ ] Reference `Broiler.App` rendering assemblies from `Broiler.Cli`
-- [ ] Add a `--test-engines` command that:
+- [x] Reference `Broiler.App` rendering assemblies from `Broiler.Cli`
+- [x] Add a `--test-engines` command that:
   - Runs a basic HTML-Renderer parse/render cycle
   - Runs a basic YantraJS script execution cycle
   - Reports pass/fail for each engine
-- [ ] Create `src/Broiler.Cli.Tests/` with xUnit tests for:
+- [x] Create `src/Broiler.Cli.Tests/` with xUnit tests for:
   - Successful capture of a local HTML file
   - Error handling for invalid URLs
   - Engine test command output

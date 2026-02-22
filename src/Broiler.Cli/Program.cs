@@ -13,6 +13,7 @@ public class Program
         string? url = null;
         string? output = null;
         bool fullPage = false;
+        bool testEngines = false;
         int timeoutSeconds = 30;
 
         for (int i = 0; i < args.Length; i++)
@@ -35,6 +36,9 @@ public class Program
                 case "--full-page":
                     fullPage = true;
                     break;
+                case "--test-engines":
+                    testEngines = true;
+                    break;
                 case "--url":
                 case "--output":
                 case "--timeout":
@@ -49,6 +53,11 @@ public class Program
                     PrintUsage();
                     return 1;
             }
+        }
+
+        if (testEngines)
+        {
+            return RunEngineTests();
         }
 
         if (url is null || output is null)
@@ -102,12 +111,43 @@ public class Program
     private static void PrintUsage()
     {
         Console.WriteLine("Usage: Broiler.Cli --url <URL> --output <FILE> [OPTIONS]");
+        Console.WriteLine("       Broiler.Cli --test-engines");
         Console.WriteLine();
         Console.WriteLine("Options:");
         Console.WriteLine("  --url <URL>        The URL of the website to capture");
         Console.WriteLine("  --output <FILE>    The output file path for the screenshot (PNG or JPEG)");
         Console.WriteLine("  --full-page        Capture the full scrollable page instead of the viewport");
         Console.WriteLine("  --timeout <SECS>   Navigation timeout in seconds (default: 30)");
+        Console.WriteLine("  --test-engines     Run smoke tests for the embedded rendering engines");
         Console.WriteLine("  --help             Show this help message");
+    }
+
+    /// <summary>
+    /// Runs smoke tests for all embedded rendering engines and reports results.
+    /// Returns 0 if all engines pass, 1 if any engine fails.
+    /// </summary>
+    internal static int RunEngineTests()
+    {
+        var service = new EngineTestService();
+        var results = service.RunAll();
+        bool allPassed = true;
+
+        foreach (var result in results)
+        {
+            if (result.Passed)
+            {
+                Console.WriteLine($"[PASS] {result.EngineName}");
+            }
+            else
+            {
+                Console.WriteLine($"[FAIL] {result.EngineName}: {result.Error}");
+                allPassed = false;
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(allPassed ? "All engine tests passed." : "Some engine tests failed.");
+
+        return allPassed ? 0 : 1;
     }
 }
