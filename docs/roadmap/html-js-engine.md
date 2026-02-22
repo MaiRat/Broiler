@@ -91,13 +91,13 @@ Add modern layout modes and visual effects.
 
 Strengthen the JS engine and align with ECMAScript 2023+.
 
-- [ ] Module system (`import` / `export`, `<script type="module">`)
-- [ ] Promises, `async` / `await`, and micro-task queue
-- [ ] Error handling: `try` / `catch` / `finally` with stack traces
-- [ ] `Proxy`, `Reflect`, `WeakRef`, `FinalizationRegistry`
-- [ ] Strict mode enforcement
-- [ ] `eval()` sandboxing and Content Security Policy hooks
-- [ ] Performance profiling hooks (script-execution timing)
+- [x] Module system (`import` / `export`, `<script type="module">`)
+- [x] Promises, `async` / `await`, and micro-task queue
+- [x] Error handling: `try` / `catch` / `finally` with stack traces
+- [x] `Proxy`, `Reflect`, `WeakRef`, `FinalizationRegistry`
+- [x] Strict mode enforcement
+- [x] `eval()` sandboxing and Content Security Policy hooks
+- [x] Performance profiling hooks (script-execution timing)
 
 ### Milestone 5 — Extensibility & Plugin Architecture (Months 16–22)
 

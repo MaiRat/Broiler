@@ -11,5 +11,11 @@ namespace Broiler.App.Rendering
         /// Return the non-empty inline script contents found in <paramref name="html"/>.
         /// </summary>
         IReadOnlyList<string> Extract(string html);
+
+        /// <summary>
+        /// Return only inline module scripts (<c>&lt;script type="module"&gt;</c>)
+        /// found in <paramref name="html"/>.
+        /// </summary>
+        IReadOnlyList<string> ExtractModules(string html);
     }
 }
