@@ -66,6 +66,42 @@ If **any** errors or exceptions occur during the above steps:
 3. Re-run the failing step to confirm the fix.
 4. Document the error and fix in the PR description.
 
+## Test Workflow: Heise.de Capture & Exception Handling
+
+Every test run **must** include the `HeiseCaptureTests` suite, which captures
+`https://www.heise.de/` as HTML, PNG, and JPEG. These tests exercise the full
+rendering pipeline against a live website.
+
+### Retry Strategy
+
+All live-site capture tests use a built-in retry mechanism
+(`ExecuteWithRetryAsync`) to handle transient failures:
+
+- **Maximum retries**: 3 attempts per test.
+- **Back-off**: Linear delay (2 s × attempt number).
+- **Retried exception types**:
+  - `HttpRequestException` — network/DNS failures.
+  - `TaskCanceledException` — HTTP timeout.
+  - `TimeoutException` — general timeout.
+  - `IOException` — file-system or stream errors.
+- On the final attempt, exceptions propagate and fail the test.
+
+### Logging
+
+Each caught exception is recorded in an in-memory log. If the test ultimately
+fails, the log is included in the assertion message so the failure report
+contains the full history of transient errors.
+
+### Workflow for Test Developers
+
+1. Run the full test suite: `dotnet test Broiler.slnx`.
+2. If a `HeiseCaptureTests` test fails, check the assertion message for the
+   exception log—it documents every transient error and retry.
+3. For persistent failures, increase `TimeoutSeconds` (default 60) or
+   `MaxRetries` (default 3) in `HeiseCaptureTests.cs`.
+4. Document any new exception types encountered during testing and add them to
+   the retry filter in `ExecuteWithRetryAsync` if they are transient.
+
 ## Code Conventions
 
 - Follow existing C# code style (XML doc comments on public members).
