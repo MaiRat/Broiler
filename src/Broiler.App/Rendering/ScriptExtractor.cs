@@ -15,6 +15,16 @@ namespace Broiler.App.Rendering
             @"<script(?![^>]*\ssrc\s*=)[^>]*>(?<content>[\s\S]*?)</script>",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        // Match <script type="module"> tags (inline only, no src)
+        private static readonly Regex ModuleScriptPattern = new(
+            @"<script\s[^>]*type\s*=\s*[""']module[""'][^>]*>(?<content>[\s\S]*?)</script>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        // Match the type="module" attribute on a script tag
+        private static readonly Regex ModuleTypeAttribute = new(
+            @"\stype\s*=\s*[""']module[""']",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         /// <inheritdoc />
         public IReadOnlyList<string> Extract(string html)
         {
@@ -22,6 +32,11 @@ namespace Broiler.App.Rendering
 
             foreach (Match match in ScriptPattern.Matches(html))
             {
+                // Skip module scripts — they are extracted separately
+                var tag = match.Value;
+                if (ModuleTypeAttribute.IsMatch(tag))
+                    continue;
+
                 var content = match.Groups["content"].Value.Trim();
                 if (!string.IsNullOrEmpty(content))
                 {
@@ -30,6 +45,27 @@ namespace Broiler.App.Rendering
             }
 
             return scripts;
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyList<string> ExtractModules(string html)
+        {
+            var modules = new List<string>();
+
+            foreach (Match match in ModuleScriptPattern.Matches(html))
+            {
+                // Skip if it has a src attribute (external module)
+                if (Regex.IsMatch(match.Value, @"\ssrc\s*=", RegexOptions.IgnoreCase))
+                    continue;
+
+                var content = match.Groups["content"].Value.Trim();
+                if (!string.IsNullOrEmpty(content))
+                {
+                    modules.Add(content);
+                }
+            }
+
+            return modules;
         }
     }
 }
