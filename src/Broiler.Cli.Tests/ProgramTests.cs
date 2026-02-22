@@ -1,5 +1,3 @@
-using Microsoft.Playwright;
-
 namespace Broiler.Cli.Tests;
 
 public class ProgramTests
@@ -28,21 +26,21 @@ public class ProgramTests
     [Fact]
     public async Task Main_WithMissingUrl_ReturnsOne()
     {
-        var result = await Program.Main(["--output", "test.png"]);
+        var result = await Program.Main(["--output", "test.html"]);
         Assert.Equal(1, result);
     }
 
     [Fact]
     public async Task Main_WithInvalidUrl_ReturnsOne()
     {
-        var result = await Program.Main(["--url", "not-a-url", "--output", "test.png"]);
+        var result = await Program.Main(["--url", "not-a-url", "--output", "test.html"]);
         Assert.Equal(1, result);
     }
 
     [Fact]
     public async Task Main_WithNonHttpUrl_ReturnsOne()
     {
-        var result = await Program.Main(["--url", "ftp://example.com", "--output", "test.png"]);
+        var result = await Program.Main(["--url", "ftp://example.com", "--output", "test.html"]);
         Assert.Equal(1, result);
     }
 
@@ -56,28 +54,28 @@ public class ProgramTests
     [Fact]
     public async Task Main_WithInvalidTimeout_ReturnsOne()
     {
-        var result = await Program.Main(["--url", "https://example.com", "--output", "test.png", "--timeout", "abc"]);
+        var result = await Program.Main(["--url", "https://example.com", "--output", "test.html", "--timeout", "abc"]);
         Assert.Equal(1, result);
     }
 
     [Fact]
     public async Task Main_WithNegativeTimeout_ReturnsOne()
     {
-        var result = await Program.Main(["--url", "https://example.com", "--output", "test.png", "--timeout", "-5"]);
+        var result = await Program.Main(["--url", "https://example.com", "--output", "test.html", "--timeout", "-5"]);
         Assert.Equal(1, result);
     }
 
     [Fact]
     public async Task Main_WithZeroTimeout_ReturnsOne()
     {
-        var result = await Program.Main(["--url", "https://example.com", "--output", "test.png", "--timeout", "0"]);
+        var result = await Program.Main(["--url", "https://example.com", "--output", "test.html", "--timeout", "0"]);
         Assert.Equal(1, result);
     }
 
     [Fact]
     public async Task Main_WithTimeoutMissingValue_ReturnsOne()
     {
-        var result = await Program.Main(["--url", "https://example.com", "--output", "test.png", "--timeout"]);
+        var result = await Program.Main(["--url", "https://example.com", "--output", "test.html", "--timeout"]);
         Assert.Equal(1, result);
     }
 
@@ -113,51 +111,37 @@ public class ProgramTests
 public class CaptureOptionsTests
 {
     [Fact]
-    public void ScreenshotType_PngExtension_ReturnsPng()
+    public void OutputFormat_HtmlExtension_ReturnsHtml()
     {
-        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.png" };
-        Assert.Equal(ScreenshotType.Png, options.ScreenshotType);
+        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.html" };
+        Assert.Equal(OutputFormat.Html, options.OutputFormat);
     }
 
     [Fact]
-    public void ScreenshotType_JpgExtension_ReturnsJpeg()
+    public void OutputFormat_TxtExtension_ReturnsText()
     {
-        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.jpg" };
-        Assert.Equal(ScreenshotType.Jpeg, options.ScreenshotType);
+        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.txt" };
+        Assert.Equal(OutputFormat.Text, options.OutputFormat);
     }
 
     [Fact]
-    public void ScreenshotType_JpegExtension_ReturnsJpeg()
-    {
-        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.jpeg" };
-        Assert.Equal(ScreenshotType.Jpeg, options.ScreenshotType);
-    }
-
-    [Fact]
-    public void ScreenshotType_UpperCaseJpg_ReturnsJpeg()
-    {
-        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.JPG" };
-        Assert.Equal(ScreenshotType.Jpeg, options.ScreenshotType);
-    }
-
-    [Fact]
-    public void ScreenshotType_UnknownExtension_DefaultsToPng()
+    public void OutputFormat_UnknownExtension_DefaultsToHtml()
     {
         var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.bmp" };
-        Assert.Equal(ScreenshotType.Png, options.ScreenshotType);
+        Assert.Equal(OutputFormat.Html, options.OutputFormat);
     }
 
     [Fact]
     public void DefaultTimeout_IsThirtySeconds()
     {
-        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.png" };
+        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.html" };
         Assert.Equal(30, options.TimeoutSeconds);
     }
 
     [Fact]
     public void DefaultFullPage_IsFalse()
     {
-        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.png" };
+        var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.html" };
         Assert.False(options.FullPage);
     }
 }

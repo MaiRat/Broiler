@@ -32,16 +32,16 @@ jobs:
     - name: Test
       run: dotnet test Broiler.slnx --no-build --configuration Release --verbosity normal
 
-    - name: Install Playwright Browsers
-      run: pwsh src/Broiler.Cli/bin/Release/net8.0/playwright.ps1 install chromium
+    - name: Engine Smoke Test
+      run: dotnet run --project src/Broiler.Cli --no-build --configuration Release -- --test-engines
 
-    - name: Capture Website Screenshot
-      run: dotnet run --project src/Broiler.Cli --no-build --configuration Release -- --url https://www.heise.de/ --output capture.png --timeout 60
+    - name: Capture Website Content
+      run: dotnet run --project src/Broiler.Cli --no-build --configuration Release -- --url https://www.heise.de/ --output capture.html --timeout 60
 
-    - name: Upload Screenshot Artifact
+    - name: Upload Capture Artifact
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: website-capture
-        path: capture.png
+        path: capture.html
         if-no-files-found: warn

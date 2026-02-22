@@ -2,13 +2,13 @@
 
 ## Status
 
-Accepted
+Accepted (Updated)
 
 ## Context
 
 Broiler currently runs as a WPF desktop application, which limits it to Windows.
-There is a need for a cross-platform command-line utility that can capture a
-screenshot of any website given a URL. The tool must be usable by non-developers
+There is a need for a cross-platform command-line utility that can capture
+website content given a URL. The tool must be usable by non-developers
 on all major operating systems (Windows, macOS, Linux) and should also allow
 testing the embedded engines and libraries used by the Broiler backend.
 
@@ -20,34 +20,35 @@ pipeline is functional.
 ## Decision
 
 Implement the CLI tool as a .NET console application (`Broiler.Cli`) targeting
-`net8.0` (not `net8.0-windows`) and use **Microsoft Playwright for .NET** to
-perform headless browser-based website capture.
+`net8.0` (not `net8.0-windows`) and use the local rendering engines
+(**HTML-Renderer** for CSS processing and **YantraJS** for JavaScript execution)
+along with `HttpClient` for fetching web content.
 
 ## Rationale
 
-- **Cross-platform**: Playwright supports Windows, macOS, and Linux with a
-  single codebase. Using `net8.0` instead of `net8.0-windows` removes the WPF
-  dependency.
-- **Headless capture**: Playwright launches a real browser engine (Chromium,
-  Firefox, or WebKit) in headless mode, producing accurate screenshots that
-  include JavaScript-rendered content.
+- **Cross-platform**: Using `net8.0` instead of `net8.0-windows` removes
+  platform-specific dependencies. HTML-Renderer core and YantraJS are both
+  cross-platform.
+- **No external browser dependency**: Unlike Playwright/Chromium, the local
+  engines do not require downloading large browser binaries (~150–300 MB),
+  simplifying setup and CI pipelines.
+- **Content capture**: The CLI fetches HTML via `HttpClient`, processes CSS
+  with HTML-Renderer, and executes inline scripts with YantraJS — producing
+  processed HTML or text output.
 - **Simple CLI**: A `dotnet tool` or self-contained executable with a command
   like `broiler-capture --url <URL> --output <file>` is intuitive for
   non-technical users.
-- **Engine testing**: The CLI project can reference the existing rendering
-  and script engine assemblies, enabling integration tests of HTML-Renderer
-  and YantraJS alongside the Playwright-based capture.
-- **Mature ecosystem**: Playwright is actively maintained by Microsoft, has
-  excellent documentation, and supports automatic browser installation via
-  `playwright install`.
+- **Engine testing**: The CLI project references the same rendering and script
+  engine assemblies, enabling integration tests of HTML-Renderer and YantraJS.
+- **Consistent stack**: Using the same engines as the main Broiler.App ensures
+  consistent behaviour across the desktop and CLI tools.
 
 ## Consequences
 
-- Adds a runtime dependency on Playwright and a browser binary (~150–300 MB
-  one-time download via `playwright install`).
-- The CLI project will live alongside the WPF project in the solution but
-  targets `net8.0` so it can build and run on any OS.
-- CI will need a step to install the Playwright browser before running
-  capture-related tests.
-- Non-technical users will need .NET 8 runtime or a self-contained publish
-  to avoid SDK installation.
+- The capture output is HTML/text rather than visual screenshots, since the
+  local engines do not include a full layout engine for bitmap rendering.
+- The CLI project lives alongside the WPF project in the solution but targets
+  `net8.0` so it can build and run on any OS.
+- CI no longer needs a step to install browser binaries.
+- Non-technical users need only the .NET 8 runtime or a self-contained publish
+  to run the tool.
