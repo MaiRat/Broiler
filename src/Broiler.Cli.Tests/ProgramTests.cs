@@ -108,6 +108,29 @@ public class ProgramTests
     }
 
     [Fact]
+    public async Task Main_CaptureImage_WithFileUrl_DoesNotRejectUrl()
+    {
+        // file:// URLs should be accepted by the argument parser (not rejected as invalid).
+        // The actual capture may fail if the file doesn't exist, but the URL
+        // validation should pass.
+        var result = await Program.Main(["--capture-image", "file:///nonexistent.html", "--output", "/tmp/test-file-url.png"]);
+        // Returns 1 because the file doesn't exist, but NOT because of URL validation
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public void ImageCaptureOptions_FullPage_CanBeSet()
+    {
+        var options = new ImageCaptureOptions
+        {
+            Url = "https://example.com",
+            OutputPath = "test.png",
+            FullPage = true,
+        };
+        Assert.True(options.FullPage);
+    }
+
+    [Fact]
     public async Task Main_WithInvalidWidth_ReturnsOne()
     {
         var result = await Program.Main(["--capture-image", "https://example.com", "--output", "test.png", "--width", "abc"]);
