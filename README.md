@@ -91,8 +91,68 @@ See [Issue #1](https://github.com/MaiRat/Broiler/issues/1) for the full developm
 - [x] Integrate html-renderer and yantra as project references
 - [x] Implement navigation history (back/forward/refresh)
 - [x] Implement rendering pipeline
-- [ ] Enable DOM interaction via yantra
+- [x] Enable DOM interaction via yantra
 - [ ] Support advanced HTML/CSS features
+
+## DOM Interaction
+
+Broiler exposes a minimal `document` object to JavaScript executed via YantraJS,
+enabling scripts embedded in HTML pages to interact with the DOM.
+
+### Available APIs
+
+| API | Description |
+|-----|-------------|
+| `document.title` | Read or write the page title |
+| `document.getElementById(id)` | Find an element by its `id` attribute |
+| `document.getElementsByTagName(tag)` | Find all elements with the given tag name |
+| `document.createElement(tag)` | Create a new element |
+
+Each element object returned by these methods exposes `tagName`, `id`,
+`className`, and `innerHTML` properties.
+
+### Example
+
+Given the following HTML page:
+
+```html
+<html>
+<head><title>Demo</title></head>
+<body>
+  <div id="greeting" class="box">Hello</div>
+  <script>
+    var el = document.getElementById('greeting');
+    // el.tagName  → "DIV"
+    // el.id       → "greeting"
+    // el.className → "box"
+    // el.innerHTML → "Hello"
+    var t = document.title; // "Demo"
+  </script>
+</body>
+</html>
+```
+
+### Architecture
+
+The `DomBridge` class parses the page HTML and registers a `document` global on
+the YantraJS `JSContext` before scripts execute.  This enables bidirectional
+communication: JavaScript can query the DOM, and property changes (e.g. setting
+`document.title`) are reflected back to the bridge.
+
+```
+PageContent (HTML + Scripts)
+       │
+       ▼
+┌──────────────┐
+│ ScriptEngine │
+│  ┌─────────┐ │
+│  │DomBridge│──▶ Parses HTML → registers document object
+│  └─────────┘ │
+│  ┌─────────┐ │
+│  │JSContext │──▶ Executes scripts with document available
+│  └─────────┘ │
+└──────────────┘
+```
 
 ## License
 
