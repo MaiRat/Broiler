@@ -12,6 +12,8 @@ public class Program
     {
         string? url = null;
         string? output = null;
+        bool fullPage = false;
+        int timeoutSeconds = 30;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -23,8 +25,19 @@ public class Program
                 case "--output" when i + 1 < args.Length:
                     output = args[++i];
                     break;
+                case "--timeout" when i + 1 < args.Length:
+                    if (!int.TryParse(args[++i], out timeoutSeconds) || timeoutSeconds <= 0)
+                    {
+                        Console.Error.WriteLine("Error: '--timeout' must be a positive integer (seconds).");
+                        return 1;
+                    }
+                    break;
+                case "--full-page":
+                    fullPage = true;
+                    break;
                 case "--url":
                 case "--output":
+                case "--timeout":
                     Console.Error.WriteLine($"Error: '{args[i]}' requires a value.");
                     PrintUsage();
                     return 1;
@@ -52,26 +65,18 @@ public class Program
             return 1;
         }
 
+        var captureOptions = new CaptureOptions
+        {
+            Url = url,
+            OutputPath = output,
+            FullPage = fullPage,
+            TimeoutSeconds = timeoutSeconds,
+        };
+
         try
         {
-            using var playwright = await Playwright.CreateAsync();
-            await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
-            {
-                Headless = true,
-            });
-
-            var page = await browser.NewPageAsync();
-            await page.GotoAsync(url, new PageGotoOptions
-            {
-                WaitUntil = WaitUntilState.NetworkIdle,
-                Timeout = 30_000,
-            });
-
-            await page.ScreenshotAsync(new PageScreenshotOptions
-            {
-                Path = output,
-                FullPage = true,
-            });
+            var service = new CaptureService();
+            await service.CaptureAsync(captureOptions);
 
             Console.WriteLine($"Screenshot saved to {output}");
             return 0;
@@ -80,6 +85,11 @@ public class Program
         {
             Console.Error.WriteLine($"Capture failed: {ex.Message}");
             Console.Error.WriteLine("Hint: Run 'dotnet playwright install chromium' to install the required browser.");
+            return 1;
+        }
+        catch (IOException ex)
+        {
+            Console.Error.WriteLine($"File I/O error: {ex.Message}");
             return 1;
         }
         catch (Exception ex)
@@ -91,11 +101,13 @@ public class Program
 
     private static void PrintUsage()
     {
-        Console.WriteLine("Usage: Broiler.Cli --url <URL> --output <FILE>");
+        Console.WriteLine("Usage: Broiler.Cli --url <URL> --output <FILE> [OPTIONS]");
         Console.WriteLine();
         Console.WriteLine("Options:");
-        Console.WriteLine("  --url <URL>      The URL of the website to capture");
-        Console.WriteLine("  --output <FILE>  The output file path for the screenshot");
-        Console.WriteLine("  --help           Show this help message");
+        Console.WriteLine("  --url <URL>        The URL of the website to capture");
+        Console.WriteLine("  --output <FILE>    The output file path for the screenshot (PNG or JPEG)");
+        Console.WriteLine("  --full-page        Capture the full scrollable page instead of the viewport");
+        Console.WriteLine("  --timeout <SECS>   Navigation timeout in seconds (default: 30)");
+        Console.WriteLine("  --help             Show this help message");
     }
 }
