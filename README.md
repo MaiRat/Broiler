@@ -81,6 +81,12 @@ Broiler/
 
 See [Issue #1](https://github.com/MaiRat/Broiler/issues/1) for the full development roadmap.
 
+### HTML & JavaScript Engine
+
+A comprehensive plan covering milestones from Enhanced MVP through to a
+production-grade, standards-compliant HTML and JavaScript engine.
+See the [HTML & JS Engine Roadmap](docs/roadmap/html-js-engine.md) for details.
+
 ### CLI Website Capture Tool
 
 A cross-platform command-line tool for capturing website screenshots.
