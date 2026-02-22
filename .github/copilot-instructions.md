@@ -78,7 +78,7 @@ All live-site capture tests use a built-in retry mechanism
 (`ExecuteWithRetryAsync`) to handle transient failures:
 
 - **Maximum retries**: 3 attempts per test.
-- **Back-off**: Exponential delay (2 s × attempt number).
+- **Back-off**: Linear delay (2 s × attempt number).
 - **Retried exception types**:
   - `HttpRequestException` — network/DNS failures.
   - `TaskCanceledException` — HTTP timeout.

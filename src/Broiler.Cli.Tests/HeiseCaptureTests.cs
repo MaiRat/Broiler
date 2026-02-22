@@ -59,7 +59,7 @@ public class HeiseCaptureTests : IDisposable
                     or TimeoutException
                     or IOException))
             {
-                var delay = RetryDelayMs * attempt; // exponential back-off
+                var delay = RetryDelayMs * attempt; // linear back-off
                 exceptionLog.Add(
                     $"[Attempt {attempt}/{MaxRetries}] {ex.GetType().Name}: {ex.Message} — retrying in {delay}ms");
                 await Task.Delay(delay);
