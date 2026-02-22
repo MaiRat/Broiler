@@ -268,9 +268,14 @@ namespace Broiler.App.Rendering
         {
             _tag.Clear();
             while (_pos < _input.Length && _input[_pos] != '>' && !char.IsWhiteSpace(_input[_pos]))
-                { _tag.Append(char.ToLowerInvariant(_input[_pos])); _pos++; }
-            while (_pos < _input.Length && _input[_pos] != '>') _pos++;
-            if (_pos < _input.Length) _pos++;
+            {
+                _tag.Append(char.ToLowerInvariant(_input[_pos]));
+                _pos++;
+            }
+            while (_pos < _input.Length && _input[_pos] != '>')
+                _pos++;
+            if (_pos < _input.Length)
+                _pos++;
         }
     }
 }

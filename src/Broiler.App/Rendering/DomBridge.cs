@@ -1610,6 +1610,7 @@ namespace Broiler.App.Rendering
                         submitEvt.FastAddValue((KeyString)"preventDefault", new JSFunction((in Arguments _) =>
                         {
                             prevented = true;
+                            submitEvt[(KeyString)"defaultPrevented"] = JSBoolean.True;
                             return JSUndefined.Value;
                         }, "preventDefault", 0), JSPropertyAttributes.EnumerableConfigurableValue);
                         submitEvt.FastAddValue((KeyString)"stopPropagation", new JSFunction((in Arguments _) => JSUndefined.Value, "stopPropagation", 0), JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1624,6 +1625,12 @@ namespace Broiler.App.Rendering
                                     catch { /* swallow */ }
                                 }
                             }
+                        }
+
+                        // If preventDefault was called, do not proceed with default action
+                        if (prevented)
+                        {
+                            System.Diagnostics.Debug.WriteLine("[submit] Default action prevented");
                         }
                     }
                     return JSUndefined.Value;
@@ -1740,7 +1747,7 @@ namespace Broiler.App.Rendering
                 new JSFunction((in Arguments _) => { stopped = true; return JSUndefined.Value; }, "stopPropagation", 0),
                 JSPropertyAttributes.EnumerableConfigurableValue);
             evt.FastAddValue((KeyString)"preventDefault",
-                new JSFunction((in Arguments _) => { prevented = true; return JSUndefined.Value; }, "preventDefault", 0),
+                new JSFunction((in Arguments _) => { prevented = true; evt[(KeyString)"defaultPrevented"] = JSBoolean.True; return JSUndefined.Value; }, "preventDefault", 0),
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
             // Phase 1: Capture (root → parent of target)
