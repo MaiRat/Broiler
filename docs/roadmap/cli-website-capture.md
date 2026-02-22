@@ -10,11 +10,11 @@ verification after issue resolution.
 
 ## Phase 1 — Project Scaffolding
 
-- [ ] Create `src/Broiler.Cli/Broiler.Cli.csproj` targeting `net8.0`
-- [ ] Add the new project to `Broiler.slnx`
-- [ ] Add `Microsoft.Playwright` NuGet dependency
-- [ ] Implement a minimal `Program.cs` that accepts `--url` and `--output` arguments
-- [ ] Verify the project builds on Windows, macOS, and Linux
+- [x] Create `src/Broiler.Cli/Broiler.Cli.csproj` targeting `net8.0`
+- [x] Add the new project to `Broiler.slnx`
+- [x] Add `Microsoft.Playwright` NuGet dependency
+- [x] Implement a minimal `Program.cs` that accepts `--url` and `--output` arguments
+- [x] Verify the project builds on Windows, macOS, and Linux
 
 ## Phase 2 — Website Capture Implementation
 
