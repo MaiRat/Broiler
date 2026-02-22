@@ -42,8 +42,7 @@ namespace Broiler.App.Rendering
                     var source = PrepareSource(scripts[i]);
                     if (Profiler != null)
                     {
-                        var idx = i;
-                        Profiler.Measure($"inline-{idx}", () => context.Eval(source));
+                        Profiler.Measure($"inline-{i}", () => context.Eval(source));
                     }
                     else
                     {
@@ -79,8 +78,7 @@ namespace Broiler.App.Rendering
                     var source = PrepareSource(scripts[i]);
                     if (Profiler != null)
                     {
-                        var idx = i;
-                        Profiler.Measure($"inline-{idx}", () => context.Eval(source));
+                        Profiler.Measure($"inline-{i}", () => context.Eval(source));
                     }
                     else
                     {
