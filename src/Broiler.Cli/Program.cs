@@ -1,10 +1,8 @@
-using Microsoft.Playwright;
-
 namespace Broiler.Cli;
 
 /// <summary>
 /// Entry point for the Broiler CLI tool.
-/// Supports website capture via Playwright and engine smoke testing.
+/// Supports website capture via local rendering engines and engine smoke testing.
 /// </summary>
 public class Program
 {
@@ -87,13 +85,12 @@ public class Program
             var service = new CaptureService();
             await service.CaptureAsync(captureOptions);
 
-            Console.WriteLine($"Screenshot saved to {output}");
+            Console.WriteLine($"Capture saved to {output}");
             return 0;
         }
-        catch (PlaywrightException ex)
+        catch (HttpRequestException ex)
         {
             Console.Error.WriteLine($"Capture failed: {ex.Message}");
-            Console.Error.WriteLine("Hint: Run 'dotnet playwright install chromium' to install the required browser.");
             return 1;
         }
         catch (IOException ex)
@@ -115,8 +112,8 @@ public class Program
         Console.WriteLine();
         Console.WriteLine("Options:");
         Console.WriteLine("  --url <URL>        The URL of the website to capture");
-        Console.WriteLine("  --output <FILE>    The output file path for the screenshot (PNG or JPEG)");
-        Console.WriteLine("  --full-page        Capture the full scrollable page instead of the viewport");
+        Console.WriteLine("  --output <FILE>    The output file path for the captured content (HTML or TXT)");
+        Console.WriteLine("  --full-page        Capture the full page content");
         Console.WriteLine("  --timeout <SECS>   Navigation timeout in seconds (default: 30)");
         Console.WriteLine("  --test-engines     Run smoke tests for the embedded rendering engines");
         Console.WriteLine("  --help             Show this help message");

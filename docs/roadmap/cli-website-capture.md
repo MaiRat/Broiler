@@ -2,9 +2,10 @@
 
 ## Goal
 
-Deliver a cross-platform command-line utility that captures a website screenshot
-from any URL and integrates with the Copilot agent workflow for automated
-verification after issue resolution.
+Deliver a cross-platform command-line utility that captures website content
+from any URL using the local rendering engines (HTML-Renderer and YantraJS),
+and integrates with the Copilot agent workflow for automated verification
+after issue resolution.
 
 ---
 
@@ -12,29 +13,29 @@ verification after issue resolution.
 
 - [x] Create `src/Broiler.Cli/Broiler.Cli.csproj` targeting `net8.0`
 - [x] Add the new project to `Broiler.slnx`
-- [x] Add `Microsoft.Playwright` NuGet dependency
+- [x] Reference HTML-Renderer and YantraJS local engines
 - [x] Implement a minimal `Program.cs` that accepts `--url` and `--output` arguments
 - [x] Verify the project builds on Windows, macOS, and Linux
 
 ## Phase 2 — Website Capture Implementation
 
-- [x] Implement `CaptureService` that uses Playwright to:
-  - Launch a headless Chromium browser
-  - Navigate to the specified URL
-  - Wait for the page to fully load (network idle)
-  - Save a full-page screenshot to the output path
+- [x] Implement `CaptureService` that uses local engines to:
+  - Fetch HTML via HttpClient
+  - Process CSS using HTML-Renderer
+  - Execute inline scripts using YantraJS
+  - Save the captured content to the output path
 - [x] Add robust error handling:
   - Invalid URL validation
   - Navigation timeout with configurable duration
   - File I/O errors (permissions, disk space)
-  - Browser launch failures with helpful messages
-- [x] Support output formats: PNG (default), JPEG
-- [x] Add `--full-page` flag for full-page vs. viewport-only capture
+  - HTTP request failures with helpful messages
+- [x] Support output formats: HTML (default), TXT
+- [x] Add `--full-page` flag for full content capture
 - [x] Add `--timeout` option (default: 30 seconds)
 
 ## Phase 3 — Engine Testing Integration
 
-- [x] Reference `Broiler.App` rendering assemblies from `Broiler.Cli`
+- [x] Reference rendering assemblies from `Broiler.Cli`
 - [x] Add a `--test-engines` command that:
   - Runs a basic HTML-Renderer parse/render cycle
   - Runs a basic YantraJS script execution cycle
@@ -51,8 +52,8 @@ verification after issue resolution.
   - Expected error handling behavior
   - Reference URL (`https://www.heise.de/`)
 - [x] Add CI workflow step that runs after tests:
-  - `dotnet run --project src/Broiler.Cli -- --url https://www.heise.de/ --output capture.png`
-  - Upload the screenshot as a build artifact
+  - `dotnet run --project src/Broiler.Cli -- --url https://www.heise.de/ --output capture.html`
+  - Upload the capture as a build artifact
 - [x] Document the workflow in the project README
 
 ## Phase 5 — Distribution & Packaging
@@ -68,11 +69,11 @@ verification after issue resolution.
 ## Usage Examples (Target CLI)
 
 ```bash
-# Capture a website screenshot
-broiler-capture --url https://www.heise.de/ --output heise.png
+# Capture website content
+broiler-capture --url https://www.heise.de/ --output heise.html
 
-# Full-page capture with custom timeout
-broiler-capture --url https://example.com --output page.png --full-page --timeout 60
+# Full content capture with custom timeout
+broiler-capture --url https://example.com --output page.html --full-page --timeout 60
 
 # Test embedded engines
 broiler-capture --test-engines
@@ -86,8 +87,8 @@ broiler-capture --help
 ## Acceptance Criteria
 
 1. The CLI tool runs on Windows, macOS, and Linux without modification.
-2. Given a valid URL, the tool produces a PNG screenshot of the website.
-3. Errors (invalid URL, timeout, browser failure) are reported with clear,
+2. Given a valid URL, the tool produces captured HTML content of the website.
+3. Errors (invalid URL, timeout, HTTP failure) are reported with clear,
    actionable messages.
 4. The Copilot instruction file documents the post-issue capture workflow.
 5. CI automatically captures `https://www.heise.de/` after each successful

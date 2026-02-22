@@ -4,7 +4,7 @@
 
 Broiler is a WPF-based web browser built with HTML-Renderer and YantraJS. It
 also includes a cross-platform CLI tool (`Broiler.Cli`) for headless website
-capture using Playwright.
+capture using the local rendering engines (HTML-Renderer and YantraJS).
 
 ## Build & Test
 
@@ -35,16 +35,15 @@ All tests must pass. Fix any failures introduced by the change.
 
 ### 2. Website Capture Verification
 
-Capture a screenshot of the reference website to verify the rendering pipeline:
+Capture content from the reference website to verify the rendering pipeline:
 
 ```bash
-dotnet run --project src/Broiler.Cli -- --url https://www.heise.de/ --output capture.png
+dotnet run --project src/Broiler.Cli -- --url https://www.heise.de/ --output capture.html
 ```
 
-- If the capture **succeeds**, attach or reference the screenshot in the PR.
+- If the capture **succeeds**, attach or reference the output in the PR.
 - If the capture **fails**, investigate and resolve the error before completing
   the issue. Common failure causes:
-  - **Browser not installed**: Run `dotnet playwright install chromium` first.
   - **Network timeout**: Increase timeout with `--timeout 60`.
   - **Missing .NET runtime**: Ensure .NET 8.0 SDK is installed.
 
