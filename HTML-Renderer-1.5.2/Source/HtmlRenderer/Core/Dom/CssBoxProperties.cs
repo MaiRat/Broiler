@@ -68,6 +68,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
         private string _fontVariant = "normal";
         private string _fontWeight = "normal";
         private string _float = "none";
+        private string _clear = "none";
         private string _height = "auto";
         private string _marginBottom = "0";
         private string _marginLeft = "0";
@@ -534,6 +535,12 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
         {
             get { return _float; }
             set { _float = value; }
+        }
+
+        public string Clear
+        {
+            get { return _clear; }
+            set { _clear = value; }
         }
 
         public string Position

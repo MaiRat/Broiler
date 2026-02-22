@@ -57,6 +57,13 @@ public class ImageCaptureOptions
     public int Height { get; init; } = 768;
 
     /// <summary>
+    /// When <c>true</c>, the renderer automatically sizes the image to
+    /// fit the full HTML content instead of clipping to
+    /// <see cref="Width"/>×<see cref="Height"/>.
+    /// </summary>
+    public bool FullPage { get; init; }
+
+    /// <summary>
     /// Navigation timeout in seconds. Defaults to 30.
     /// </summary>
     public int TimeoutSeconds { get; init; } = 30;
@@ -242,18 +249,36 @@ public class CaptureService
             throw new IOException($"Cannot create output directory: {ex.Message}", ex);
         }
 
-        using var httpClient = new HttpClient
+        string html;
+        var uri = new Uri(options.Url);
+        if (uri.IsFile)
         {
-            Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
-        };
-
-        var html = await httpClient.GetStringAsync(new Uri(options.Url));
+            html = await File.ReadAllTextAsync(uri.LocalPath);
+        }
+        else
+        {
+            using var httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
+            };
+            html = await httpClient.GetStringAsync(uri);
+        }
 
         var format = options.ImageFormat == ImageFormat.Jpeg
             ? SKEncodedImageFormat.Jpeg
             : SKEncodedImageFormat.Png;
 
-        HtmlRender.RenderToFile(html, options.Width, options.Height, options.OutputPath, format);
+        if (options.FullPage)
+        {
+            using var bitmap = HtmlRender.RenderToImageAutoSized(html, maxWidth: options.Width);
+            using var data = bitmap.Encode(format, 90);
+            using var stream = File.OpenWrite(options.OutputPath);
+            data.SaveTo(stream);
+        }
+        else
+        {
+            HtmlRender.RenderToFile(html, options.Width, options.Height, options.OutputPath, format);
+        }
     }
 
     /// <summary>

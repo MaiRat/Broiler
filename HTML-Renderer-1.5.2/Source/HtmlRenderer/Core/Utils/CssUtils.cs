@@ -170,6 +170,8 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils
                     return cssBox.EmptyCells;
                 case "float":
                     return cssBox.Float;
+                case "clear":
+                    return cssBox.Clear;
                 case "position":
                     return cssBox.Position;
                 case "line-height":
@@ -377,6 +379,9 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils
                     break;
                 case "float":
                     cssBox.Float = value;
+                    break;
+                case "clear":
+                    cssBox.Clear = value;
                     break;
                 case "position":
                     cssBox.Position = value;
