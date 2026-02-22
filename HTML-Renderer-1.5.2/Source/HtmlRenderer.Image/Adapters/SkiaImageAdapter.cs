@@ -77,7 +77,7 @@ namespace TheArtOfDev.HtmlRenderer.Image.Adapters
                 Style = SKPaintStyle.Fill,
                 IsAntialias = true
             };
-            return new BrushAdapter(paint, true);
+            return new BrushAdapter(paint, false);
         }
 
         protected override RBrush CreateLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle)
