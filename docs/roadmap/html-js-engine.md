@@ -76,16 +76,16 @@ Focus on WHATWG HTML parsing and CSS layout correctness.
 
 Add modern layout modes and visual effects.
 
-- [ ] CSS Grid Layout (Level 1)
-- [ ] Full Flexbox support (multi-line, `align-items`, `justify-content`, `gap`)
-- [ ] CSS Transitions and basic Animations (`@keyframes`, `transition`)
-- [ ] Text rendering improvements
+- [x] CSS Grid Layout (Level 1)
+- [x] Full Flexbox support (multi-line, `align-items`, `justify-content`, `gap`)
+- [x] CSS Transitions and basic Animations (`@keyframes`, `transition`)
+- [x] Text rendering improvements
   - `text-overflow`, `word-break`, `white-space`
   - Web-font loading (`@font-face`)
-- [ ] Image decoding pipeline
+- [x] Image decoding pipeline
   - SVG rendering (inline and `<img>` source)
   - `<canvas>` 2-D context (basic drawing operations)
-- [ ] `<iframe>` support (sandboxed, same-origin)
+- [x] `<iframe>` support (sandboxed, same-origin)
 
 ### Milestone 4 — JavaScript Runtime Hardening (Months 12–18)
 
