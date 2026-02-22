@@ -1,6 +1,8 @@
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
+using TheArtOfDev.HtmlRenderer.Image;
 using YantraJS.Core;
 
 namespace Broiler.Cli;
@@ -15,6 +17,66 @@ public enum OutputFormat
 
     /// <summary>Plain-text output.</summary>
     Text,
+}
+
+/// <summary>
+/// Supported image formats for image capture.
+/// </summary>
+public enum ImageFormat
+{
+    /// <summary>PNG image format.</summary>
+    Png,
+
+    /// <summary>JPEG image format.</summary>
+    Jpeg,
+}
+
+/// <summary>
+/// Options for configuring a website image capture operation.
+/// </summary>
+public class ImageCaptureOptions
+{
+    /// <summary>
+    /// The URL of the website to capture as an image.
+    /// </summary>
+    public required string Url { get; init; }
+
+    /// <summary>
+    /// The output file path for the captured image.
+    /// </summary>
+    public required string OutputPath { get; init; }
+
+    /// <summary>
+    /// The width of the rendered image in pixels. Defaults to 1024.
+    /// </summary>
+    public int Width { get; init; } = 1024;
+
+    /// <summary>
+    /// The height of the rendered image in pixels. Defaults to 768.
+    /// </summary>
+    public int Height { get; init; } = 768;
+
+    /// <summary>
+    /// Navigation timeout in seconds. Defaults to 30.
+    /// </summary>
+    public int TimeoutSeconds { get; init; } = 30;
+
+    /// <summary>
+    /// Determines the image format from the output file extension.
+    /// Returns <see cref="ImageFormat.Jpeg"/> for .jpg/.jpeg files,
+    /// otherwise <see cref="ImageFormat.Png"/>.
+    /// </summary>
+    public ImageFormat ImageFormat
+    {
+        get
+        {
+            var ext = Path.GetExtension(OutputPath);
+            return ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+                   || ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+                ? ImageFormat.Jpeg
+                : ImageFormat.Png;
+        }
+    }
 }
 
 /// <summary>
@@ -155,6 +217,43 @@ public class CaptureService
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Captures website content from the specified URL, renders it as an image
+    /// using HtmlRenderer.Image, and saves the result to the output path.
+    /// </summary>
+    /// <param name="options">Image capture configuration options.</param>
+    /// <returns>A task that completes when the image capture is finished.</returns>
+    /// <exception cref="HttpRequestException">Thrown when the URL cannot be fetched.</exception>
+    /// <exception cref="IOException">Thrown when the output file cannot be written.</exception>
+    public async Task CaptureImageAsync(ImageCaptureOptions options)
+    {
+        try
+        {
+            var outputDir = Path.GetDirectoryName(Path.GetFullPath(options.OutputPath));
+            if (outputDir != null && !Directory.Exists(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
+            }
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or PathTooLongException)
+        {
+            throw new IOException($"Cannot create output directory: {ex.Message}", ex);
+        }
+
+        using var httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
+        };
+
+        var html = await httpClient.GetStringAsync(new Uri(options.Url));
+
+        var format = options.ImageFormat == ImageFormat.Jpeg
+            ? SKEncodedImageFormat.Jpeg
+            : SKEncodedImageFormat.Png;
+
+        HtmlRender.RenderToFile(html, options.Width, options.Height, options.OutputPath, format);
     }
 
     /// <summary>

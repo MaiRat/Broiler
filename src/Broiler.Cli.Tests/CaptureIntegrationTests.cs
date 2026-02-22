@@ -81,5 +81,96 @@ public class CaptureIntegrationTests : IDisposable
                 TimeoutSeconds = 5,
             }));
     }
+
+    [Fact]
+    public async Task CaptureImageAsync_LocalHtml_ProducesImageFile()
+    {
+        const string html = "<html><body><h1>Image Test</h1><p>Hello from Broiler</p></body></html>";
+
+        _listener.Start();
+        var serverTask = Task.Run(() =>
+        {
+            var ctx = _listener.GetContext();
+            var buffer = System.Text.Encoding.UTF8.GetBytes(html);
+            ctx.Response.ContentType = "text/html";
+            ctx.Response.ContentLength64 = buffer.Length;
+            ctx.Response.OutputStream.Write(buffer, 0, buffer.Length);
+            ctx.Response.Close();
+        });
+
+        var outputPath = Path.Combine(_outputDir, "capture.png");
+        var service = new CaptureService();
+
+        await service.CaptureImageAsync(new ImageCaptureOptions
+        {
+            Url = _prefix,
+            OutputPath = outputPath,
+            Width = 800,
+            Height = 600,
+            TimeoutSeconds = 10,
+        });
+
+        await serverTask;
+
+        Assert.True(File.Exists(outputPath), "Image capture file should exist.");
+        var bytes = await File.ReadAllBytesAsync(outputPath);
+        Assert.True(bytes.Length > 100, "Image file should have meaningful content.");
+        // Verify PNG magic bytes
+        Assert.Equal(0x89, bytes[0]);
+        Assert.Equal(0x50, bytes[1]);
+    }
+
+    [Fact]
+    public async Task CaptureImageAsync_JpegFormat_ProducesJpegFile()
+    {
+        const string html = "<html><body><h1>JPEG Test</h1></body></html>";
+
+        _listener.Start();
+        var serverTask = Task.Run(() =>
+        {
+            var ctx = _listener.GetContext();
+            var buffer = System.Text.Encoding.UTF8.GetBytes(html);
+            ctx.Response.ContentType = "text/html";
+            ctx.Response.ContentLength64 = buffer.Length;
+            ctx.Response.OutputStream.Write(buffer, 0, buffer.Length);
+            ctx.Response.Close();
+        });
+
+        var outputPath = Path.Combine(_outputDir, "capture.jpg");
+        var service = new CaptureService();
+
+        await service.CaptureImageAsync(new ImageCaptureOptions
+        {
+            Url = _prefix,
+            OutputPath = outputPath,
+            Width = 800,
+            Height = 600,
+            TimeoutSeconds = 10,
+        });
+
+        await serverTask;
+
+        Assert.True(File.Exists(outputPath), "JPEG capture file should exist.");
+        var bytes = await File.ReadAllBytesAsync(outputPath);
+        Assert.True(bytes.Length > 100, "JPEG file should have meaningful content.");
+        // Verify JPEG magic bytes
+        Assert.Equal(0xFF, bytes[0]);
+        Assert.Equal(0xD8, bytes[1]);
+    }
+
+    [Fact]
+    public async Task CaptureImageAsync_InvalidUrl_ThrowsHttpRequestException()
+    {
+        var outputPath = Path.Combine(_outputDir, "fail.png");
+        var service = new CaptureService();
+
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            service.CaptureImageAsync(new ImageCaptureOptions
+            {
+                Url = "http://localhost:1/nonexistent",
+                OutputPath = outputPath,
+                TimeoutSeconds = 5,
+            }));
+    }
 }
 
