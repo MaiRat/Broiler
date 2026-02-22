@@ -276,6 +276,8 @@ public class CaptureService
         if (scripts.Count > 0)
         {
             using var context = new JSContext();
+            RegisterWindowStub(context);
+
             foreach (var script in scripts)
             {
                 try
@@ -289,5 +291,151 @@ public class CaptureService
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Registers minimal <c>window</c> and <c>document</c> global stubs on the
+    /// given <see cref="JSContext"/> so that typical page scripts (e.g. those
+    /// accessing <c>window.localStorage</c> or <c>window.matchMedia</c>) do
+    /// not throw.
+    /// </summary>
+    internal static void RegisterWindowStub(JSContext context)
+    {
+        // document stub with documentElement.classList
+        var document = new JSObject();
+
+        var docElement = new JSObject();
+        var classList = new JSObject();
+        var classes = new List<string>();
+
+        classList.FastAddValue(
+            (KeyString)"add",
+            new JSFunction((in Arguments a) =>
+            {
+                for (var i = 0; i < a.Length; i++)
+                {
+                    var cls = a[i]?.ToString() ?? string.Empty;
+                    if (!classes.Contains(cls)) classes.Add(cls);
+                }
+                return JSUndefined.Value;
+            }, "add"),
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        classList.FastAddValue(
+            (KeyString)"remove",
+            new JSFunction((in Arguments a) =>
+            {
+                for (var i = 0; i < a.Length; i++)
+                    classes.Remove(a[i]?.ToString() ?? string.Empty);
+                return JSUndefined.Value;
+            }, "remove"),
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        classList.FastAddValue(
+            (KeyString)"contains",
+            new JSFunction((in Arguments a) =>
+            {
+                if (a.Length == 0) return JSBoolean.False;
+                return classes.Contains(a[0]?.ToString() ?? string.Empty) ? JSBoolean.True : JSBoolean.False;
+            }, "contains", 1),
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        docElement.FastAddValue(
+            (KeyString)"classList",
+            classList,
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        document.FastAddValue(
+            (KeyString)"documentElement",
+            docElement,
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        context["document"] = document;
+
+        // window stub with localStorage and matchMedia
+        var window = new JSObject();
+        window.FastAddValue(
+            (KeyString)"document",
+            document,
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        // window.localStorage — in-memory stub
+        var storage = new JSObject();
+        var store = new Dictionary<string, string>();
+
+        storage.FastAddValue(
+            (KeyString)"getItem",
+            new JSFunction((in Arguments a) =>
+            {
+                if (a.Length == 0) return JSNull.Value;
+                var key = a[0]?.ToString() ?? string.Empty;
+                return store.TryGetValue(key, out var val) ? (JSValue)new JSString(val) : JSNull.Value;
+            }, "getItem", 1),
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        storage.FastAddValue(
+            (KeyString)"setItem",
+            new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 2)
+                {
+                    var key = a[0]?.ToString() ?? string.Empty;
+                    var val = a[1]?.ToString() ?? string.Empty;
+                    store[key] = val;
+                    storage[(KeyString)key] = new JSString(val);
+                }
+                return JSUndefined.Value;
+            }, "setItem", 2),
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        storage.FastAddValue(
+            (KeyString)"removeItem",
+            new JSFunction((in Arguments a) =>
+            {
+                if (a.Length > 0)
+                {
+                    var key = a[0]?.ToString() ?? string.Empty;
+                    store.Remove(key);
+                    storage.Delete((KeyString)key);
+                }
+                return JSUndefined.Value;
+            }, "removeItem", 1),
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        storage.FastAddValue(
+            (KeyString)"clear",
+            new JSFunction((in Arguments a) =>
+            {
+                foreach (var key in store.Keys.ToList())
+                    storage.Delete((KeyString)key);
+                store.Clear();
+                return JSUndefined.Value;
+            }, "clear", 0),
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        window.FastAddValue(
+            (KeyString)"localStorage",
+            storage,
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        // window.matchMedia(query) — stub returning { matches: false }
+        window.FastAddValue(
+            (KeyString)"matchMedia",
+            new JSFunction((in Arguments a) =>
+            {
+                var result = new JSObject();
+                result.FastAddValue(
+                    (KeyString)"matches",
+                    JSBoolean.False,
+                    JSPropertyAttributes.EnumerableConfigurableValue);
+                result.FastAddValue(
+                    (KeyString)"media",
+                    a.Length > 0 ? (JSValue)new JSString(a[0]?.ToString() ?? string.Empty) : new JSString(string.Empty),
+                    JSPropertyAttributes.EnumerableConfigurableValue);
+                return result;
+            }, "matchMedia", 1),
+            JSPropertyAttributes.EnumerableConfigurableValue);
+
+        context["window"] = window;
     }
 }
