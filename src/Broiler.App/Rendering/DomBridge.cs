@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using YantraJS.Core;
 
 namespace Broiler.App.Rendering
@@ -14,6 +17,16 @@ namespace Broiler.App.Rendering
     {
         private string _title = string.Empty;
         private readonly List<DomElement> _elements = new();
+
+        // window.location fields
+        private string _pageUrl = string.Empty;
+        private string _pageProtocol = string.Empty;
+        private string _pageHost = string.Empty;
+        private string _pageHostName = string.Empty;
+        private string _pagePathName = "/";
+        private string _pageSearch = string.Empty;
+        private string _pageHash = string.Empty;
+        private string _pageOrigin = string.Empty;
 
         /// <summary>
         /// The current document title, kept in sync with JavaScript reads/writes.
@@ -31,6 +44,32 @@ namespace Broiler.App.Rendering
         /// </summary>
         public void Attach(JSContext context, string html)
         {
+            ParseHtml(html);
+            RegisterDocument(context);
+        }
+
+        /// <summary>
+        /// Parse the supplied <paramref name="html"/> and register a
+        /// <c>document</c> global on the given <paramref name="context"/>,
+        /// with the page URL available via <c>window.location</c>.
+        /// </summary>
+        public void Attach(JSContext context, string html, string url)
+        {
+            if (System.Uri.TryCreate(url, System.UriKind.Absolute, out var uri))
+            {
+                _pageUrl = uri.ToString();
+                _pageProtocol = uri.Scheme + ":";
+                _pageHost = uri.IsDefaultPort ? uri.Host : $"{uri.Host}:{uri.Port}";
+                _pageHostName = uri.Host;
+                _pagePathName = uri.AbsolutePath;
+                _pageSearch = uri.Query;
+                _pageHash = uri.Fragment;
+                _pageOrigin = $"{uri.Scheme}://{(uri.IsDefaultPort ? uri.Host : $"{uri.Host}:{uri.Port}")}";
+            }
+            else
+            {
+                _pageUrl = url;
+            }
             ParseHtml(html);
             RegisterDocument(context);
         }
@@ -73,6 +112,7 @@ namespace Broiler.App.Rendering
         private void ParseHtml(string html)
         {
             _elements.Clear();
+            _jsObjectCache.Clear();
 
             // Extract <title>
             var titleMatch = TitlePattern.Match(html);
@@ -114,6 +154,10 @@ namespace Broiler.App.Rendering
                     style,
                     attributes));
             }
+
+            // Extract <style> blocks and apply cascaded styles
+            ExtractStyleBlocks(html);
+            ApplyCascadedStyles();
         }
 
         /// <summary>
@@ -188,6 +232,157 @@ namespace Broiler.App.Rendering
                 }
             }
             return result;
+        }
+
+        // ------------------------------------------------------------------
+        //  CSS specificity (Level 3) and <style> / <link> cascading
+        // ------------------------------------------------------------------
+
+        private static readonly Regex StyleTagPattern = new(
+            @"<style[^>]*>(?<content>[\s\S]*?)</style>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex CssRulePattern = new(
+            @"(?<selector>[^{}@]+)\{(?<declarations>[^}]*)\}",
+            RegexOptions.Compiled);
+
+        private static readonly Regex MediaQueryPattern = new(
+            @"@media\s+(?<query>[^{]+)\{(?<content>(?:[^{}]|\{[^}]*\})*)\}",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// Parsed CSS rules extracted from <c>&lt;style&gt;</c> blocks, stored as
+        /// (selector, specificity, declarations) triples.
+        /// </summary>
+        private readonly List<(string Selector, int Specificity, Dictionary<string, string> Declarations)> _cssRules = new();
+
+        /// <summary>Parsed CSS rules from embedded style blocks.</summary>
+        public IReadOnlyList<(string Selector, int Specificity, Dictionary<string, string> Declarations)> CssRules => _cssRules;
+
+        /// <summary>
+        /// Calculates CSS Specificity (Level 3) for a simple selector.
+        /// Returns a single integer encoding (a, b, c) where a = ID selectors,
+        /// b = class / attribute / pseudo-class selectors, c = type selectors.
+        /// Inline styles use specificity 1000 (handled externally).
+        /// </summary>
+        internal static int CalculateSpecificity(string selector)
+        {
+            int a = 0, b = 0, c = 0;
+            var s = selector.Trim();
+
+            // Remove attribute selectors and count them
+            s = AttributeSelectorPattern.Replace(s, m => { b++; return string.Empty; });
+
+            foreach (var ch in s)
+            {
+                if (ch == '#') a++;
+                else if (ch == '.') b++;
+            }
+
+            // Count type selectors: letter-only tokens not preceded by # or .
+            var pos = 0;
+            while (pos < s.Length)
+            {
+                if (s[pos] == '#' || s[pos] == '.')
+                {
+                    pos++;
+                    while (pos < s.Length && s[pos] != '.' && s[pos] != '#' && !char.IsWhiteSpace(s[pos])) pos++;
+                }
+                else if (char.IsLetter(s[pos]))
+                {
+                    var start = pos;
+                    while (pos < s.Length && s[pos] != '.' && s[pos] != '#' && !char.IsWhiteSpace(s[pos])) pos++;
+                    var token = s[start..pos].ToLowerInvariant();
+                    if (token != "*") c++;
+                }
+                else
+                {
+                    pos++;
+                }
+            }
+
+            return a * 100 + b * 10 + c;
+        }
+
+        /// <summary>
+        /// Extracts CSS rules from all <c>&lt;style&gt;</c> blocks in the HTML source
+        /// and stores them in <see cref="_cssRules"/> ordered by specificity.
+        /// </summary>
+        private void ExtractStyleBlocks(string html)
+        {
+            _cssRules.Clear();
+
+            foreach (Match styleMatch in StyleTagPattern.Matches(html))
+            {
+                var cssText = styleMatch.Groups["content"].Value;
+                ParseCssText(cssText);
+            }
+
+            _cssRules.Sort((x, y) => x.Specificity.CompareTo(y.Specificity));
+        }
+
+        /// <summary>
+        /// Parses raw CSS text into rules, handling <c>@media</c> queries.
+        /// Rules inside <c>@media screen</c> are included; <c>@media print</c> rules are skipped.
+        /// </summary>
+        private void ParseCssText(string cssText)
+        {
+            var remaining = MediaQueryPattern.Replace(cssText, m =>
+            {
+                var query = m.Groups["query"].Value.Trim();
+                var content = m.Groups["content"].Value;
+
+                if (query.Contains("screen", System.StringComparison.OrdinalIgnoreCase) ||
+                    query.Equals("all", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    ExtractRulesFromCss(content);
+                }
+                return string.Empty;
+            });
+
+            ExtractRulesFromCss(remaining);
+        }
+
+        private void ExtractRulesFromCss(string css)
+        {
+            foreach (Match ruleMatch in CssRulePattern.Matches(css))
+            {
+                var selectorGroup = ruleMatch.Groups["selector"].Value.Trim();
+                var declarations = ParseStyle(ruleMatch.Groups["declarations"].Value);
+
+                foreach (var sel in selectorGroup.Split(','))
+                {
+                    var selector = sel.Trim();
+                    if (string.IsNullOrEmpty(selector)) continue;
+                    var specificity = CalculateSpecificity(selector);
+                    _cssRules.Add((selector, specificity, declarations));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Applies cascaded style rules to all parsed elements, following CSS specificity order.
+        /// Inline styles (specificity 1000) always win.
+        /// </summary>
+        private void ApplyCascadedStyles()
+        {
+            foreach (var el in _elements)
+            {
+                foreach (var (selector, _, declarations) in _cssRules)
+                {
+                    if (MatchesSelector(el, selector))
+                    {
+                        foreach (var kv in declarations)
+                        {
+                            if (!el.Attributes.TryGetValue("style", out var inlineStyle) ||
+                                !inlineStyle.Contains(kv.Key, System.StringComparison.OrdinalIgnoreCase))
+                            {
+                                el.Style[kv.Key] = kv.Value;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // ------------------------------------------------------------------
@@ -401,9 +596,22 @@ namespace Broiler.App.Rendering
                 }, "createElement", 1),
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
+            // document.createTextNode(text)
+            document.FastAddValue(
+                (KeyString)"createTextNode",
+                new JSFunction((in Arguments a) =>
+                {
+                    var text = a.Length > 0 ? a[0].ToString() : string.Empty;
+                    var el = new DomElement("#text", null, null, string.Empty, isTextNode: true);
+                    el.TextContent = text;
+                    _elements.Add(el);
+                    return ToJSObject(el);
+                }, "createTextNode", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
             context["document"] = document;
 
-            // window global — provides localStorage, matchMedia, and document reference
+            // window global
             var window = new JSObject();
             window.FastAddValue(
                 (KeyString)"document",
@@ -434,12 +642,298 @@ namespace Broiler.App.Rendering
                 }, "matchMedia", 1),
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
+            // window.location (read-only)
+            var location = new JSObject();
+            location.FastAddValue((KeyString)"href", new JSString(_pageUrl), JSPropertyAttributes.EnumerableConfigurableValue);
+            location.FastAddValue((KeyString)"protocol", new JSString(_pageProtocol), JSPropertyAttributes.EnumerableConfigurableValue);
+            location.FastAddValue((KeyString)"host", new JSString(_pageHost), JSPropertyAttributes.EnumerableConfigurableValue);
+            location.FastAddValue((KeyString)"hostname", new JSString(_pageHostName), JSPropertyAttributes.EnumerableConfigurableValue);
+            location.FastAddValue((KeyString)"pathname", new JSString(_pagePathName), JSPropertyAttributes.EnumerableConfigurableValue);
+            location.FastAddValue((KeyString)"search", new JSString(_pageSearch), JSPropertyAttributes.EnumerableConfigurableValue);
+            location.FastAddValue((KeyString)"hash", new JSString(_pageHash), JSPropertyAttributes.EnumerableConfigurableValue);
+            location.FastAddValue((KeyString)"origin", new JSString(_pageOrigin), JSPropertyAttributes.EnumerableConfigurableValue);
+            window.FastAddValue(
+                (KeyString)"location",
+                location,
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // window.setTimeout(fn, delay) — single-threaded; invokes callback immediately
+            var timerIdCounter = 0;
+            window.FastAddValue(
+                (KeyString)"setTimeout",
+                new JSFunction((in Arguments a) =>
+                {
+                    var id = ++timerIdCounter;
+                    if (a.Length > 0 && a[0] is JSFunction fn)
+                    {
+                        try { fn.InvokeFunction(new Arguments(JSUndefined.Value)); }
+                        catch { /* swallow timer callback errors */ }
+                    }
+                    return new JSNumber(id);
+                }, "setTimeout", 2),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // window.clearTimeout(id) — no-op (timers fire immediately)
+            window.FastAddValue(
+                (KeyString)"clearTimeout",
+                new JSFunction((in Arguments a) => JSUndefined.Value, "clearTimeout", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // window.setInterval(fn, delay) — returns id; single invocation
+            window.FastAddValue(
+                (KeyString)"setInterval",
+                new JSFunction((in Arguments a) =>
+                {
+                    var id = ++timerIdCounter;
+                    if (a.Length > 0 && a[0] is JSFunction fn)
+                    {
+                        try { fn.InvokeFunction(new Arguments(JSUndefined.Value)); }
+                        catch { /* swallow timer callback errors */ }
+                    }
+                    return new JSNumber(id);
+                }, "setInterval", 2),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // window.clearInterval(id) — no-op
+            window.FastAddValue(
+                (KeyString)"clearInterval",
+                new JSFunction((in Arguments a) => JSUndefined.Value, "clearInterval", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // window.alert(msg) — logs to debug output
+            window.FastAddValue(
+                (KeyString)"alert",
+                new JSFunction((in Arguments a) =>
+                {
+                    var msg = a.Length > 0 ? a[0].ToString() : string.Empty;
+                    System.Diagnostics.Debug.WriteLine($"[alert] {msg}");
+                    return JSUndefined.Value;
+                }, "alert", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // console object (shared between window.console and global console)
+            var console = BuildConsoleObject();
+            window.FastAddValue(
+                (KeyString)"console",
+                console,
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // fetch(url, options) — basic polyfill backed by HttpClient
+            var fetchFn = new JSFunction((in Arguments a) =>
+            {
+                if (a.Length == 0)
+                    throw new JSException("Failed to execute 'fetch': 1 argument required.");
+
+                var fetchUrl = a[0].ToString();
+                var responseObj = new JSObject();
+
+                try
+                {
+                    using var httpClient = new HttpClient();
+                    httpClient.Timeout = TimeSpan.FromSeconds(30);
+                    var response = httpClient.GetAsync(fetchUrl).GetAwaiter().GetResult();
+                    var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    var statusCode = (int)response.StatusCode;
+
+                    responseObj.FastAddValue((KeyString)"ok", response.IsSuccessStatusCode ? JSBoolean.True : JSBoolean.False, JSPropertyAttributes.EnumerableConfigurableValue);
+                    responseObj.FastAddValue((KeyString)"status", new JSNumber(statusCode), JSPropertyAttributes.EnumerableConfigurableValue);
+                    responseObj.FastAddValue((KeyString)"statusText", new JSString(response.ReasonPhrase ?? string.Empty), JSPropertyAttributes.EnumerableConfigurableValue);
+
+                    // response.text() — returns a thenable with the body text
+                    responseObj.FastAddValue((KeyString)"text", new JSFunction((in Arguments _) =>
+                    {
+                        var thenable = new JSObject();
+                        thenable.FastAddValue((KeyString)"then", new JSFunction((in Arguments thenArgs) =>
+                        {
+                            if (thenArgs.Length > 0 && thenArgs[0] is JSFunction cb)
+                            {
+                                try { cb.InvokeFunction(new Arguments(cb, new JSString(body))); }
+                                catch { /* swallow */ }
+                            }
+                            return thenable;
+                        }, "then", 1), JSPropertyAttributes.EnumerableConfigurableValue);
+                        return thenable;
+                    }, "text", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+
+                    // response.json() — returns a thenable with parsed JSON
+                    responseObj.FastAddValue((KeyString)"json", new JSFunction((in Arguments jsonArgs) =>
+                    {
+                        var thenable = new JSObject();
+                        thenable.FastAddValue((KeyString)"then", new JSFunction((in Arguments thenArgs) =>
+                        {
+                            if (thenArgs.Length > 0 && thenArgs[0] is JSFunction cb)
+                            {
+                                try
+                                {
+                                    var escaped = body.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+                                    var parsed = context.Eval($"JSON.parse(\"{escaped}\")");
+                                    cb.InvokeFunction(new Arguments(cb, parsed));
+                                }
+                                catch { /* swallow parse errors */ }
+                            }
+                            return thenable;
+                        }, "then", 1), JSPropertyAttributes.EnumerableConfigurableValue);
+                        return thenable;
+                    }, "json", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[fetch] Error: {ex.Message}");
+                    responseObj.FastAddValue((KeyString)"ok", JSBoolean.False, JSPropertyAttributes.EnumerableConfigurableValue);
+                    responseObj.FastAddValue((KeyString)"status", new JSNumber(0), JSPropertyAttributes.EnumerableConfigurableValue);
+                    responseObj.FastAddValue((KeyString)"statusText", new JSString(ex.Message), JSPropertyAttributes.EnumerableConfigurableValue);
+                }
+
+                // Return a thenable (Promise-like) that resolves immediately
+                var promise = new JSObject();
+                promise.FastAddValue((KeyString)"then", new JSFunction((in Arguments thenArgs) =>
+                {
+                    if (thenArgs.Length > 0 && thenArgs[0] is JSFunction cb)
+                    {
+                        try { cb.InvokeFunction(new Arguments(cb, responseObj)); }
+                        catch { /* swallow */ }
+                    }
+                    return promise;
+                }, "then", 1), JSPropertyAttributes.EnumerableConfigurableValue);
+                promise.FastAddValue((KeyString)"catch", new JSFunction((in Arguments _) => promise, "catch", 1), JSPropertyAttributes.EnumerableConfigurableValue);
+                return promise;
+            }, "fetch", 1);
+
+            window.FastAddValue((KeyString)"fetch", fetchFn, JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // XMLHttpRequest — basic polyfill backed by HttpClient
+            RegisterXMLHttpRequest(context);
+
             context["window"] = window;
+            context["console"] = console;
+            context["fetch"] = fetchFn;
         }
 
-        private static JSObject ToJSObject(DomElement element)
+        /// <summary>
+        /// Registers a basic <c>XMLHttpRequest</c> constructor on the context.
+        /// Supports <c>open</c>, <c>send</c>, <c>setRequestHeader</c>,
+        /// <c>onreadystatechange</c>, <c>readyState</c>, <c>status</c>, and <c>responseText</c>.
+        /// </summary>
+        private static void RegisterXMLHttpRequest(JSContext context)
         {
+            context.Eval(@"
+                function XMLHttpRequest() {
+                    this.readyState = 0;
+                    this.status = 0;
+                    this.statusText = '';
+                    this.responseText = '';
+                    this.onreadystatechange = null;
+                    this._method = 'GET';
+                    this._url = '';
+                    this._headers = {};
+                    this.UNSENT = 0;
+                    this.OPENED = 1;
+                    this.HEADERS_RECEIVED = 2;
+                    this.LOADING = 3;
+                    this.DONE = 4;
+                }
+                XMLHttpRequest.prototype.open = function(method, url) {
+                    this._method = method;
+                    this._url = url;
+                    this.readyState = 1;
+                };
+                XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
+                    this._headers[name] = value;
+                };
+                XMLHttpRequest.prototype.send = function(body) {
+                    var self = this;
+                    try {
+                        fetch(self._url).then(function(response) {
+                            self.status = response.status;
+                            self.statusText = response.statusText;
+                            self.readyState = 2;
+                            response.text().then(function(text) {
+                                self.responseText = text;
+                                self.readyState = 4;
+                                if (typeof self.onreadystatechange === 'function') {
+                                    self.onreadystatechange();
+                                }
+                            });
+                        });
+                    } catch(e) {
+                        self.readyState = 4;
+                        self.status = 0;
+                        if (typeof self.onreadystatechange === 'function') {
+                            self.onreadystatechange();
+                        }
+                    }
+                };
+            ");
+        }
+
+        /// <summary>
+        /// Builds a <c>console</c> object exposing <c>log</c>, <c>warn</c>,
+        /// <c>error</c>, and <c>info</c>.
+        /// </summary>
+        private static JSObject BuildConsoleObject()
+        {
+            var console = new JSObject();
+
+            console.FastAddValue(
+                (KeyString)"log",
+                new JSFunction((in Arguments a) =>
+                {
+                    var parts = new List<string>();
+                    for (var i = 0; i < a.Length; i++)
+                        parts.Add(a[i]?.ToString() ?? "undefined");
+                    System.Diagnostics.Debug.WriteLine($"[console.log] {string.Join(" ", parts)}");
+                    return JSUndefined.Value;
+                }, "log"),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            console.FastAddValue(
+                (KeyString)"warn",
+                new JSFunction((in Arguments a) =>
+                {
+                    var parts = new List<string>();
+                    for (var i = 0; i < a.Length; i++)
+                        parts.Add(a[i]?.ToString() ?? "undefined");
+                    System.Diagnostics.Debug.WriteLine($"[console.warn] {string.Join(" ", parts)}");
+                    return JSUndefined.Value;
+                }, "warn"),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            console.FastAddValue(
+                (KeyString)"error",
+                new JSFunction((in Arguments a) =>
+                {
+                    var parts = new List<string>();
+                    for (var i = 0; i < a.Length; i++)
+                        parts.Add(a[i]?.ToString() ?? "undefined");
+                    System.Diagnostics.Debug.WriteLine($"[console.error] {string.Join(" ", parts)}");
+                    return JSUndefined.Value;
+                }, "error"),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            console.FastAddValue(
+                (KeyString)"info",
+                new JSFunction((in Arguments a) =>
+                {
+                    var parts = new List<string>();
+                    for (var i = 0; i < a.Length; i++)
+                        parts.Add(a[i]?.ToString() ?? "undefined");
+                    System.Diagnostics.Debug.WriteLine($"[console.info] {string.Join(" ", parts)}");
+                    return JSUndefined.Value;
+                }, "info"),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            return console;
+        }
+
+        private readonly Dictionary<DomElement, JSObject> _jsObjectCache = new();
+
+        private JSObject ToJSObject(DomElement element)
+        {
+            if (_jsObjectCache.TryGetValue(element, out var cached))
+                return cached;
+
             var obj = new JSObject();
+            _jsObjectCache[element] = obj;
 
             obj.FastAddValue(
                 (KeyString)"tagName",
@@ -473,6 +967,19 @@ namespace Broiler.App.Rendering
                     element.InnerHtml = a.Length > 0 ? a[0].ToString() : string.Empty;
                     return JSUndefined.Value;
                 }, "set innerHTML"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // textContent (read/write)
+            obj.FastAddProperty(
+                (KeyString)"textContent",
+                new JSFunction((in Arguments a) =>
+                    element.TextContent != null ? (JSValue)new JSString(element.TextContent) : new JSString(element.InnerHtml),
+                    "get textContent"),
+                new JSFunction((in Arguments a) =>
+                {
+                    element.TextContent = a.Length > 0 ? a[0].ToString() : string.Empty;
+                    return JSUndefined.Value;
+                }, "set textContent"),
                 JSPropertyAttributes.EnumerableConfigurableProperty);
 
             // style object — CSS property access and manipulation
@@ -511,7 +1018,177 @@ namespace Broiler.App.Rendering
                 }, "getAttribute", 1),
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
+            // -- DOM tree navigation --
+
+            // parentNode (read-only, dynamic)
+            obj.FastAddProperty(
+                (KeyString)"parentNode",
+                new JSFunction((in Arguments a) =>
+                    element.Parent != null ? (JSValue)ToJSObject(element.Parent) : JSNull.Value,
+                    "get parentNode"),
+                null,
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // childNodes (read-only, dynamic)
+            obj.FastAddProperty(
+                (KeyString)"childNodes",
+                new JSFunction((in Arguments a) =>
+                {
+                    var children = new List<JSValue>();
+                    foreach (var child in element.Children)
+                        children.Add(ToJSObject(child));
+                    return new JSArray(children);
+                }, "get childNodes"),
+                null,
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // firstChild (read-only, dynamic)
+            obj.FastAddProperty(
+                (KeyString)"firstChild",
+                new JSFunction((in Arguments a) =>
+                    element.Children.Count > 0 ? (JSValue)ToJSObject(element.Children[0]) : JSNull.Value,
+                    "get firstChild"),
+                null,
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // lastChild (read-only, dynamic)
+            obj.FastAddProperty(
+                (KeyString)"lastChild",
+                new JSFunction((in Arguments a) =>
+                    element.Children.Count > 0 ? (JSValue)ToJSObject(element.Children[^1]) : JSNull.Value,
+                    "get lastChild"),
+                null,
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // nextSibling (read-only, dynamic)
+            obj.FastAddProperty(
+                (KeyString)"nextSibling",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (element.Parent == null) return JSNull.Value;
+                    var siblings = element.Parent.Children;
+                    var idx = siblings.IndexOf(element);
+                    return idx >= 0 && idx + 1 < siblings.Count
+                        ? (JSValue)ToJSObject(siblings[idx + 1])
+                        : JSNull.Value;
+                }, "get nextSibling"),
+                null,
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // -- DOM manipulation methods --
+
+            // appendChild(child)
+            obj.FastAddValue(
+                (KeyString)"appendChild",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length == 0) return JSUndefined.Value;
+                    var childObj = a[0] as JSObject;
+                    if (childObj == null) return JSUndefined.Value;
+
+                    // Find the DomElement for this child JSObject
+                    var childEl = FindDomElementByJSObject(childObj);
+                    if (childEl == null) return a[0];
+
+                    // Remove from old parent if any
+                    childEl.Parent?.Children.Remove(childEl);
+                    childEl.Parent = element;
+                    element.Children.Add(childEl);
+                    return a[0];
+                }, "appendChild", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // removeChild(child)
+            obj.FastAddValue(
+                (KeyString)"removeChild",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length == 0) return JSUndefined.Value;
+                    var childObj = a[0] as JSObject;
+                    if (childObj == null) return JSUndefined.Value;
+
+                    var childEl = FindDomElementByJSObject(childObj);
+                    if (childEl == null || !element.Children.Remove(childEl))
+                        return a[0];
+                    childEl.Parent = null;
+                    return a[0];
+                }, "removeChild", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // replaceChild(newChild, oldChild)
+            obj.FastAddValue(
+                (KeyString)"replaceChild",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length < 2) return JSUndefined.Value;
+                    var newChildObj = a[0] as JSObject;
+                    var oldChildObj = a[1] as JSObject;
+                    if (newChildObj == null || oldChildObj == null) return JSUndefined.Value;
+
+                    var newEl = FindDomElementByJSObject(newChildObj);
+                    var oldEl = FindDomElementByJSObject(oldChildObj);
+                    if (newEl == null || oldEl == null) return a[1];
+
+                    var idx = element.Children.IndexOf(oldEl);
+                    if (idx < 0) return a[1];
+
+                    oldEl.Parent = null;
+                    newEl.Parent?.Children.Remove(newEl);
+                    newEl.Parent = element;
+                    element.Children[idx] = newEl;
+                    return a[1]; // returns the old child
+                }, "replaceChild", 2),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // -- DOM events --
+
+            // addEventListener(type, listener)
+            obj.FastAddValue(
+                (KeyString)"addEventListener",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length < 2) return JSUndefined.Value;
+                    var type = a[0].ToString();
+                    var listener = a[1];
+                    if (!element.EventListeners.TryGetValue(type, out var listeners))
+                    {
+                        listeners = new List<JSValue>();
+                        element.EventListeners[type] = listeners;
+                    }
+                    listeners.Add(listener);
+                    return JSUndefined.Value;
+                }, "addEventListener", 2),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // removeEventListener(type, listener)
+            obj.FastAddValue(
+                (KeyString)"removeEventListener",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length < 2) return JSUndefined.Value;
+                    var type = a[0].ToString();
+                    var listener = a[1];
+                    if (element.EventListeners.TryGetValue(type, out var listeners))
+                        listeners.Remove(listener);
+                    return JSUndefined.Value;
+                }, "removeEventListener", 2),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
             return obj;
+        }
+
+        /// <summary>
+        /// Finds the <see cref="DomElement"/> corresponding to a given <see cref="JSObject"/>
+        /// by looking up the JS object cache.
+        /// </summary>
+        private DomElement? FindDomElementByJSObject(JSObject jsObj)
+        {
+            foreach (var kvp in _jsObjectCache)
+            {
+                if (ReferenceEquals(kvp.Value, jsObj))
+                    return kvp.Key;
+            }
+            return null;
         }
 
         /// <summary>
@@ -762,13 +1439,29 @@ namespace Broiler.App.Rendering
         /// <summary>All HTML attributes of the element, keyed case-insensitively by attribute name.</summary>
         public Dictionary<string, string> Attributes { get; }
 
+        /// <summary>Parent element in the DOM tree.</summary>
+        public DomElement? Parent { get; set; }
+
+        /// <summary>Ordered child elements in the DOM tree.</summary>
+        public List<DomElement> Children { get; } = new();
+
+        /// <summary>Whether this element represents a text node created via <c>document.createTextNode</c>.</summary>
+        public bool IsTextNode { get; }
+
+        /// <summary>Text content for text nodes.</summary>
+        public string? TextContent { get; set; }
+
+        /// <summary>Registered event listeners keyed by event type (e.g. "click", "input", "submit").</summary>
+        public Dictionary<string, List<JSValue>> EventListeners { get; } = new(System.StringComparer.OrdinalIgnoreCase);
+
         public DomElement(
             string tagName,
             string? id,
             string? className,
             string innerHtml,
             Dictionary<string, string>? style = null,
-            Dictionary<string, string>? attributes = null)
+            Dictionary<string, string>? attributes = null,
+            bool isTextNode = false)
         {
             TagName = tagName;
             Id = id;
@@ -776,6 +1469,7 @@ namespace Broiler.App.Rendering
             InnerHtml = innerHtml;
             Style = style ?? new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
             Attributes = attributes ?? new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+            IsTextNode = isTextNode;
         }
     }
 }

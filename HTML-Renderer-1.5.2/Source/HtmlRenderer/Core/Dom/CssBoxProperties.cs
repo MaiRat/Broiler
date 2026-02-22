@@ -98,6 +98,11 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
         private string _wordBreak = "normal";
         private string _whiteSpace = "normal";
         private string _visibility = "visible";
+        private string _opacity = "1";
+        private string _boxShadow = "none";
+        private string _flexDirection = "row";
+        private string _justifyContent = "flex-start";
+        private string _alignItems = "stretch";
 
         #endregion
 
@@ -589,6 +594,51 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
         {
             get { return _wordBreak; }
             set { _wordBreak = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the opacity of the element (CSS3).
+        /// </summary>
+        public string Opacity
+        {
+            get { return _opacity; }
+            set { _opacity = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the box-shadow of the element (CSS3).
+        /// </summary>
+        public string BoxShadow
+        {
+            get { return _boxShadow; }
+            set { _boxShadow = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the flex-direction for flexbox layout (CSS3).
+        /// </summary>
+        public string FlexDirection
+        {
+            get { return _flexDirection; }
+            set { _flexDirection = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the justify-content for flexbox layout (CSS3).
+        /// </summary>
+        public string JustifyContent
+        {
+            get { return _justifyContent; }
+            set { _justifyContent = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the align-items for flexbox layout (CSS3).
+        /// </summary>
+        public string AlignItems
+        {
+            get { return _alignItems; }
+            set { _alignItems = value; }
         }
 
         public string FontFamily
@@ -1560,6 +1610,11 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
                     _width = p._width;
                     _maxWidth = p._maxWidth;
                     _wordSpacing = p._wordSpacing;
+                    _opacity = p._opacity;
+                    _boxShadow = p._boxShadow;
+                    _flexDirection = p._flexDirection;
+                    _justifyContent = p._justifyContent;
+                    _alignItems = p._alignItems;
                 }
             }
         }

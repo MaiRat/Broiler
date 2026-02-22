@@ -501,6 +501,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Parse
             {
                 properties["font-family"] = ParseFontFamilyProperty(propValue);
             }
+            else if (propName == "border-radius")
+            {
+                properties["corner-radius"] = propValue;
+            }
             else
             {
                 properties[propName] = propValue;

@@ -98,6 +98,18 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils
                     return cssBox.BorderCollapse;
                 case "corner-radius":
                     return cssBox.CornerRadius;
+                case "border-radius":
+                    return cssBox.CornerRadius;
+                case "opacity":
+                    return cssBox.Opacity;
+                case "box-shadow":
+                    return cssBox.BoxShadow;
+                case "flex-direction":
+                    return cssBox.FlexDirection;
+                case "justify-content":
+                    return cssBox.JustifyContent;
+                case "align-items":
+                    return cssBox.AlignItems;
                 case "corner-nw-radius":
                     return cssBox.CornerNwRadius;
                 case "corner-ne-radius":
@@ -257,6 +269,24 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils
                     break;
                 case "corner-radius":
                     cssBox.CornerRadius = value;
+                    break;
+                case "border-radius":
+                    cssBox.CornerRadius = value;
+                    break;
+                case "opacity":
+                    cssBox.Opacity = value;
+                    break;
+                case "box-shadow":
+                    cssBox.BoxShadow = value;
+                    break;
+                case "flex-direction":
+                    cssBox.FlexDirection = value;
+                    break;
+                case "justify-content":
+                    cssBox.JustifyContent = value;
+                    break;
+                case "align-items":
+                    cssBox.AlignItems = value;
                     break;
                 case "corner-nw-radius":
                     cssBox.CornerNwRadius = value;
