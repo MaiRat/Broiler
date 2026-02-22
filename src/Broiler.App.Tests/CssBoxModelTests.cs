@@ -150,4 +150,126 @@ public class CssBoxModelTests
         Assert.Equal(232f, rect.Width);  // 200 + (5+5) + (1+1) + (10+10)
         Assert.Equal(132f, rect.Height); // 100 + (5+5) + (1+1) + (10+10)
     }
+
+    [Fact]
+    public void FloatLeft_DtAndFloatRight_Dd_PlacedSideBySide()
+    {
+        var dl = new DomElement("div", null, null, string.Empty);
+        var dt = new DomElement("div", null, null, string.Empty,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "float", "left" }, { "width", "100px" }
+            });
+        var dd = new DomElement("div", null, null, string.Empty,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "float", "right" }, { "width", "200px" }
+            });
+        dl.Children.Add(dt); dt.Parent = dl;
+        dl.Children.Add(dd); dd.Parent = dl;
+
+        var model = new CssBoxModel();
+        var box = model.BuildLayoutTree(dl, 800f);
+
+        // dt (float:left) and dd (float:right) should share the same Y position
+        Assert.Equal(box.Children[0].Dimensions.Y, box.Children[1].Dimensions.Y);
+        // dt should be at the left edge, dd at the right edge
+        Assert.True(box.Children[1].Dimensions.X > box.Children[0].Dimensions.X,
+            "Float-right child should be positioned to the right of float-left child");
+    }
+
+    [Fact]
+    public void ExplicitWidth_AppliedToFloatedElement()
+    {
+        var parent = new DomElement("div", null, null, string.Empty);
+        var child = new DomElement("div", null, null, string.Empty,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "float", "left" }, { "width", "100px" }
+            });
+        parent.Children.Add(child); child.Parent = parent;
+
+        var model = new CssBoxModel();
+        var box = model.BuildLayoutTree(parent, 800f);
+
+        Assert.Equal(100f, box.Children[0].Dimensions.Width);
+    }
+
+    [Fact]
+    public void PercentageWidth_ResolvedCorrectly()
+    {
+        var parent = new DomElement("div", null, null, string.Empty);
+        var child = new DomElement("div", null, null, string.Empty,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "float", "left" }, { "width", "10.638%" }
+            });
+        parent.Children.Add(child); child.Parent = parent;
+
+        var model = new CssBoxModel();
+        var box = model.BuildLayoutTree(parent, 800f);
+
+        // 10.638% of 800 = 85.104
+        Assert.InRange(box.Children[0].Dimensions.Width, 85f, 86f);
+    }
+
+    [Fact]
+    public void ExplicitHeight_AppliedToElement()
+    {
+        var el = new DomElement("div", null, null, string.Empty,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "height", "200px" }
+            });
+
+        var model = new CssBoxModel();
+        var box = model.BuildLayoutTree(el, 800f);
+
+        Assert.Equal(200f, box.Dimensions.Height);
+    }
+
+    [Fact]
+    public void FloatLeft_MultipleElements_StackHorizontally()
+    {
+        var parent = new DomElement("div", null, null, string.Empty);
+        for (int i = 0; i < 3; i++)
+        {
+            var li = new DomElement("div", null, null, string.Empty,
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    { "float", "left" }, { "width", "100px" }
+                });
+            parent.Children.Add(li); li.Parent = parent;
+        }
+
+        var model = new CssBoxModel();
+        var box = model.BuildLayoutTree(parent, 800f);
+
+        // All three should be on the same Y, with increasing X
+        Assert.Equal(box.Children[0].Dimensions.Y, box.Children[1].Dimensions.Y);
+        Assert.Equal(box.Children[1].Dimensions.Y, box.Children[2].Dimensions.Y);
+        Assert.True(box.Children[1].Dimensions.X > box.Children[0].Dimensions.X);
+        Assert.True(box.Children[2].Dimensions.X > box.Children[1].Dimensions.X);
+    }
+
+    [Fact]
+    public void FloatLeft_BlockquoteWithBorders_PositionedCorrectly()
+    {
+        var parent = new DomElement("div", null, null, string.Empty);
+        var bq = new DomElement("blockquote", null, null, string.Empty,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "float", "left" }, { "width", "80px" },
+                { "border-left-width", "5px" }, { "border-right-width", "15px" }
+            });
+        parent.Children.Add(bq); bq.Parent = parent;
+
+        var model = new CssBoxModel();
+        var box = model.BuildLayoutTree(parent, 800f);
+
+        // The child should have the explicit width and borders applied
+        Assert.Equal(80f, box.Children[0].Dimensions.Width);
+        Assert.Equal(5f, box.Children[0].Dimensions.Border.Left);
+        Assert.Equal(15f, box.Children[0].Dimensions.Border.Right);
+    }
 }

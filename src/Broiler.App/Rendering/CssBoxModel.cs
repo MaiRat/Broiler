@@ -251,10 +251,21 @@ namespace Broiler.App.Rendering
         private void LayoutBlock(LayoutBox box, float containerWidth)
         {
             ResolveEdges(box, containerWidth);
-            box.Dimensions.Width = containerWidth
-                - box.Dimensions.Margin.Left - box.Dimensions.Margin.Right
-                - box.Dimensions.Border.Left - box.Dimensions.Border.Right
-                - box.Dimensions.Padding.Left - box.Dimensions.Padding.Right;
+
+            float edgeH = box.Dimensions.Margin.Left + box.Dimensions.Margin.Right
+                + box.Dimensions.Border.Left + box.Dimensions.Border.Right
+                + box.Dimensions.Padding.Left + box.Dimensions.Padding.Right;
+
+            string explicitWidth = GetStyle(box.Element, "width");
+            if (!string.IsNullOrWhiteSpace(explicitWidth) &&
+                !explicitWidth.Equals("auto", StringComparison.OrdinalIgnoreCase))
+            {
+                box.Dimensions.Width = ParseCssValue(explicitWidth, containerWidth, containerWidth - edgeH);
+            }
+            else
+            {
+                box.Dimensions.Width = containerWidth - edgeH;
+            }
 
             float contentWidth = box.Dimensions.Width;
             float cursorY = 0f;
@@ -285,7 +296,8 @@ namespace Broiler.App.Rendering
 
                 if (child.Float != CssFloat.None)
                 {
-                    LayoutBlock(child, contentWidth);
+                    float floatAvail = floatRightX - floatLeftX;
+                    LayoutBlock(child, floatAvail);
                     var mb = child.Dimensions.MarginBox();
                     if (child.Float == CssFloat.Left)
                     {
@@ -353,7 +365,21 @@ namespace Broiler.App.Rendering
             }
 
             cursorY += lineHeight;
-            box.Dimensions.Height = cursorY;
+
+            string explicitHeight = GetStyle(box.Element, "height");
+            if (!string.IsNullOrWhiteSpace(explicitHeight) &&
+                !explicitHeight.Equals("auto", StringComparison.OrdinalIgnoreCase))
+            {
+                // containerHeight is 0 because CSS1 percentage heights only resolve
+                // when the containing block has an explicit height; when absent the
+                // default (cursorY = content height) is used.
+                box.Dimensions.Height = ParseCssValue(explicitHeight, 0f, cursorY);
+            }
+            else
+            {
+                box.Dimensions.Height = cursorY;
+            }
+
             ApplyPositionOffset(box);
         }
 
