@@ -172,5 +172,52 @@ public class CaptureIntegrationTests : IDisposable
                 TimeoutSeconds = 5,
             }));
     }
+
+    /// <summary>
+    /// Regression test: scripts accessing window.localStorage and
+    /// window.matchMedia (like the heise.de color-scheme script) must
+    /// not crash the capture pipeline.
+    /// </summary>
+    [Fact]
+    public async Task CaptureAsync_HeiseColorSchemeScript_DoesNotThrow()
+    {
+        const string html = @"<html><head></head><body>
+            <script>
+                var config = JSON.parse(window.localStorage['akwaConfig-v2'] || '{}')
+                var scheme = config.colorScheme ? config.colorScheme.scheme : 'auto'
+                if (scheme === 'dark' || (scheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.classList.add('dark')
+                }
+            </script>
+            <h1>Hello</h1>
+        </body></html>";
+
+        _listener.Start();
+        var serverTask = Task.Run(() =>
+        {
+            var ctx = _listener.GetContext();
+            var buffer = System.Text.Encoding.UTF8.GetBytes(html);
+            ctx.Response.ContentType = "text/html";
+            ctx.Response.ContentLength64 = buffer.Length;
+            ctx.Response.OutputStream.Write(buffer, 0, buffer.Length);
+            ctx.Response.Close();
+        });
+
+        var outputPath = Path.Combine(_outputDir, "heise-script.html");
+        var service = new CaptureService();
+
+        await service.CaptureAsync(new CaptureOptions
+        {
+            Url = _prefix,
+            OutputPath = outputPath,
+            TimeoutSeconds = 30,
+        });
+
+        await serverTask;
+
+        Assert.True(File.Exists(outputPath), "Captured file should exist.");
+        var content = await File.ReadAllTextAsync(outputPath);
+        Assert.Contains("Hello", content);
+    }
 }
 

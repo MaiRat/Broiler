@@ -459,4 +459,162 @@ public class DomBridgeTests
         Assert.True(el.Attributes.ContainsKey("type"));
         Assert.Equal("checkbox", el.Attributes["type"]);
     }
+
+    // ------------------------------------------------------------------
+    //  window global
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_WindowIsDefined()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (typeof window === 'undefined') throw new Error('window is undefined');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_WindowDocumentReferenceWorks()
+    {
+        var html = "<html><head><title>Hello</title></head><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (window.document.title !== 'Hello') throw new Error('expected Hello');" },
+            html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  window.localStorage
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_WindowLocalStorageIsDefined()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (typeof window.localStorage === 'undefined') throw new Error('localStorage is undefined');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_LocalStorageGetItemReturnsNull()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (window.localStorage.getItem('missing') !== null) throw new Error('expected null');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_LocalStorageSetAndGetItem()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"window.localStorage.setItem('key', 'value');
+              var v = window.localStorage.getItem('key');
+              if (v !== 'value') throw new Error('expected value, got ' + v);"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_LocalStorageBracketAccessReturnsUndefined()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "var v = window.localStorage['nonexistent']; if (v !== undefined) throw new Error('expected undefined, got ' + v);" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_LocalStorageRemoveItem()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"window.localStorage.setItem('k', 'v');
+              window.localStorage.removeItem('k');
+              if (window.localStorage.getItem('k') !== null) throw new Error('expected null after remove');"
+        }, html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_LocalStorageClear()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"window.localStorage.setItem('a', '1');
+              window.localStorage.setItem('b', '2');
+              window.localStorage.clear();
+              if (window.localStorage.getItem('a') !== null) throw new Error('expected null after clear');
+              if (window.localStorage.getItem('b') !== null) throw new Error('expected null after clear');"
+        }, html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  window.matchMedia
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_WindowMatchMediaReturnsFalseMatches()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "var mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.matches !== false) throw new Error('expected false');" },
+            html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  document.documentElement
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_DocumentElementIsDefined()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(
+            new[] { "if (!document.documentElement) throw new Error('documentElement is undefined');" },
+            html);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Execute_WithHtml_DocumentElementClassListAdd()
+    {
+        var html = "<html><body></body></html>";
+        var result = _engine.Execute(new[]
+        {
+            @"document.documentElement.classList.add('dark');
+              if (!document.documentElement.classList.contains('dark')) throw new Error('expected dark class');"
+        }, html);
+        Assert.True(result);
+    }
+
+    // ------------------------------------------------------------------
+    //  Heise.de script regression test
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Execute_WithHtml_HeiseColorSchemeScriptDoesNotThrow()
+    {
+        var html = "<html><head></head><body></body></html>";
+        var script = @"
+            var config = JSON.parse(window.localStorage['akwaConfig-v2'] || '{}')
+            var scheme = config.colorScheme ? config.colorScheme.scheme : 'auto'
+            if (scheme === 'dark' || (scheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              document.documentElement.classList.add('dark')
+            }
+        ";
+        var result = _engine.Execute(new[] { script }, html);
+        Assert.True(result);
+    }
 }

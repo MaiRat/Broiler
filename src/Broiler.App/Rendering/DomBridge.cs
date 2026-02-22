@@ -278,9 +278,22 @@ namespace Broiler.App.Rendering
         //  JavaScript bridge
         // ------------------------------------------------------------------
 
+        private readonly DomElement _documentElement = new("html", null, null, string.Empty);
+
+        /// <summary>
+        /// The element backing <c>document.documentElement</c> (the &lt;html&gt; element).
+        /// </summary>
+        public DomElement DocumentElement => _documentElement;
+
         private void RegisterDocument(JSContext context)
         {
             var document = new JSObject();
+
+            // document.documentElement (the <html> element)
+            document.FastAddValue(
+                (KeyString)"documentElement",
+                ToJSObject(_documentElement),
+                JSPropertyAttributes.EnumerableConfigurableValue);
 
             // document.title (getter / setter)
             document.FastAddProperty(
@@ -389,6 +402,39 @@ namespace Broiler.App.Rendering
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
             context["document"] = document;
+
+            // window global — provides localStorage, matchMedia, and document reference
+            var window = new JSObject();
+            window.FastAddValue(
+                (KeyString)"document",
+                document,
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // window.localStorage — in-memory stub backed by a plain JSObject
+            window.FastAddValue(
+                (KeyString)"localStorage",
+                BuildLocalStorageObject(),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // window.matchMedia(query) — stub that always returns { matches: false }
+            window.FastAddValue(
+                (KeyString)"matchMedia",
+                new JSFunction((in Arguments a) =>
+                {
+                    var result = new JSObject();
+                    result.FastAddValue(
+                        (KeyString)"matches",
+                        JSBoolean.False,
+                        JSPropertyAttributes.EnumerableConfigurableValue);
+                    result.FastAddValue(
+                        (KeyString)"media",
+                        a.Length > 0 ? (JSValue)new JSString(a[0].ToString()) : new JSString(string.Empty),
+                        JSPropertyAttributes.EnumerableConfigurableValue);
+                    return result;
+                }, "matchMedia", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            context["window"] = window;
         }
 
         private static JSObject ToJSObject(DomElement element)
@@ -625,6 +671,74 @@ namespace Broiler.App.Rendering
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
             return classList;
+        }
+
+        /// <summary>
+        /// Builds an in-memory <c>localStorage</c> stub exposing <c>getItem</c>,
+        /// <c>setItem</c>, <c>removeItem</c>, and <c>clear</c>.
+        /// Bracket-notation access (e.g. <c>localStorage["key"]</c>) naturally
+        /// falls through to JSObject property lookup.
+        /// </summary>
+        private static JSObject BuildLocalStorageObject()
+        {
+            var storage = new JSObject();
+            var store = new Dictionary<string, string>();
+
+            // localStorage.getItem(key)
+            storage.FastAddValue(
+                (KeyString)"getItem",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length == 0) return JSNull.Value;
+                    var key = a[0].ToString();
+                    return store.TryGetValue(key, out var val) ? (JSValue)new JSString(val) : JSNull.Value;
+                }, "getItem", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // localStorage.setItem(key, value)
+            storage.FastAddValue(
+                (KeyString)"setItem",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length >= 2)
+                    {
+                        var key = a[0].ToString();
+                        var val = a[1].ToString();
+                        store[key] = val;
+                        storage[(KeyString)key] = new JSString(val);
+                    }
+                    return JSUndefined.Value;
+                }, "setItem", 2),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // localStorage.removeItem(key)
+            storage.FastAddValue(
+                (KeyString)"removeItem",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length > 0)
+                    {
+                        var key = a[0].ToString();
+                        store.Remove(key);
+                        storage.Delete((KeyString)key);
+                    }
+                    return JSUndefined.Value;
+                }, "removeItem", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // localStorage.clear()
+            storage.FastAddValue(
+                (KeyString)"clear",
+                new JSFunction((in Arguments a) =>
+                {
+                    foreach (var key in store.Keys.ToList())
+                        storage.Delete((KeyString)key);
+                    store.Clear();
+                    return JSUndefined.Value;
+                }, "clear", 0),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            return storage;
         }
     }
 
