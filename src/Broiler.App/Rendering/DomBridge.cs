@@ -15,6 +15,9 @@ namespace Broiler.App.Rendering
     /// </summary>
     public sealed class DomBridge
     {
+        private const int FetchTimeoutSeconds = 30;
+        private static readonly HttpClient SharedHttpClient = new() { Timeout = TimeSpan.FromSeconds(FetchTimeoutSeconds) };
+
         private string _title = string.Empty;
         private readonly List<DomElement> _elements = new();
 
@@ -667,7 +670,7 @@ namespace Broiler.App.Rendering
                     if (a.Length > 0 && a[0] is JSFunction fn)
                     {
                         try { fn.InvokeFunction(new Arguments(JSUndefined.Value)); }
-                        catch { /* swallow timer callback errors */ }
+                        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[setTimeout] Callback error: {ex.Message}"); }
                     }
                     return new JSNumber(id);
                 }, "setTimeout", 2),
@@ -688,7 +691,7 @@ namespace Broiler.App.Rendering
                     if (a.Length > 0 && a[0] is JSFunction fn)
                     {
                         try { fn.InvokeFunction(new Arguments(JSUndefined.Value)); }
-                        catch { /* swallow timer callback errors */ }
+                        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[setInterval] Callback error: {ex.Message}"); }
                     }
                     return new JSNumber(id);
                 }, "setInterval", 2),
@@ -729,9 +732,7 @@ namespace Broiler.App.Rendering
 
                 try
                 {
-                    using var httpClient = new HttpClient();
-                    httpClient.Timeout = TimeSpan.FromSeconds(30);
-                    var response = httpClient.GetAsync(fetchUrl).GetAwaiter().GetResult();
+                    var response = SharedHttpClient.GetAsync(fetchUrl).GetAwaiter().GetResult();
                     var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                     var statusCode = (int)response.StatusCode;
 
@@ -765,7 +766,14 @@ namespace Broiler.App.Rendering
                             {
                                 try
                                 {
-                                    var escaped = body.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+                                    var escaped = body
+                                        .Replace("\\", "\\\\")
+                                        .Replace("\"", "\\\"")
+                                        .Replace("\n", "\\n")
+                                        .Replace("\r", "\\r")
+                                        .Replace("\t", "\\t")
+                                        .Replace("\b", "\\b")
+                                        .Replace("\f", "\\f");
                                     var parsed = context.Eval($"JSON.parse(\"{escaped}\")");
                                     cb.InvokeFunction(new Arguments(cb, parsed));
                                 }
