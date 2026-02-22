@@ -201,7 +201,7 @@ Polish, optimise, and prepare for public consumption.
 
 ### Compliance Test Strategy
 
-1. Import a curated subset of [Web Platform Tests (WPT)](https://github.com/nicedoc/nicedoc.io)
+1. Import a curated subset of [Web Platform Tests (WPT)](https://github.com/web-platform-tests/wpt)
    relevant to supported features.
 2. Run Acid2 and Acid3 as visual regression baselines.
 3. Track pass-rates per milestone and publish results in CI.
