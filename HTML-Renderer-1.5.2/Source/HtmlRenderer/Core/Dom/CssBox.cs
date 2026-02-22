@@ -653,6 +653,41 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
                     {
                         left = ContainingBlock.Location.X + ContainingBlock.ActualPaddingLeft + ActualMarginLeft + ContainingBlock.ActualBorderLeftWidth;
                         top = (prevSibling == null && ParentBox != null ? ParentBox.ClientTop : ParentBox == null ? Location.Y : 0) + MarginTopCollapse(prevSibling) + (prevSibling != null ? prevSibling.ActualBottom + prevSibling.ActualBorderBottomWidth : 0);
+
+                        // --- Float positioning ---
+                        if (Float != CssConstants.None && prevSibling != null && prevSibling.Float != CssConstants.None)
+                        {
+                            // A floated element following another float: stay at the same vertical level
+                            top = prevSibling.Location.Y;
+                        }
+
+                        if (Float == CssConstants.Left && prevSibling != null && prevSibling.Float == CssConstants.Left)
+                        {
+                            // Place to the right of the previous float:left sibling
+                            left = prevSibling.Location.X + prevSibling.Size.Width + prevSibling.ActualBorderRightWidth + ActualMarginLeft;
+
+                            // Wrap to next row if exceeding container width
+                            double containerRight = ContainingBlock.ClientLeft + ContainingBlock.AvailableWidth;
+                            if (left + Size.Width > containerRight)
+                            {
+                                left = ContainingBlock.Location.X + ContainingBlock.ActualPaddingLeft + ActualMarginLeft + ContainingBlock.ActualBorderLeftWidth;
+                                top = prevSibling.ActualBottom + prevSibling.ActualBorderBottomWidth;
+                            }
+                        }
+                        else if (Float == CssConstants.Right)
+                        {
+                            // Position at the right edge of the containing block
+                            left = ContainingBlock.ClientLeft + ContainingBlock.AvailableWidth - Size.Width - ActualBorderLeftWidth - ActualBorderRightWidth;
+                        }
+
+                        // Handle clear property
+                        if (Clear != CssConstants.None && prevSibling != null)
+                        {
+                            double maxFloatBottom = GetMaxFloatBottom(this);
+                            if (maxFloatBottom > top)
+                                top = maxFloatBottom;
+                        }
+
                         Location = new RPoint(left, top);
                         ActualBottom = top;
                     }
@@ -1171,7 +1206,40 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
                 var lastChildBottomMargin = _boxes[_boxes.Count - 1].ActualMarginBottom;
                 margin = Height == "auto" ? Math.Max(ActualMarginBottom, lastChildBottomMargin) : lastChildBottomMargin;
             }
-            return Math.Max(ActualBottom, _boxes[_boxes.Count - 1].ActualBottom + margin + ActualPaddingBottom + ActualBorderBottomWidth);
+
+            // Use the maximum ActualBottom across all children to handle
+            // floated children that may not be the last in source order.
+            double maxChildBottom = 0;
+            foreach (var child in _boxes)
+            {
+                maxChildBottom = Math.Max(maxChildBottom, child.ActualBottom + child.ActualBorderBottomWidth);
+            }
+
+            return Math.Max(ActualBottom, maxChildBottom + margin + ActualPaddingBottom + ActualBorderBottomWidth);
+        }
+
+        /// <summary>
+        /// Scans preceding siblings for floated boxes and returns the maximum
+        /// ActualBottom among them. Used by the <c>clear</c> property to push
+        /// a box below all preceding floats.
+        /// </summary>
+        /// <param name="box">
+        /// The box whose preceding siblings are inspected. The method walks the
+        /// parent's child list up to (but not including) <paramref name="box"/>
+        /// and returns the largest <see cref="ActualBottom"/> of any floated sibling.
+        /// </param>
+        private static double GetMaxFloatBottom(CssBox box)
+        {
+            double maxBottom = 0;
+            if (box.ParentBox == null)
+                return maxBottom;
+            foreach (var sibling in box.ParentBox.Boxes)
+            {
+                if (sibling == box) break;
+                if (sibling.Float != CssConstants.None)
+                    maxBottom = Math.Max(maxBottom, sibling.ActualBottom + sibling.ActualBorderBottomWidth);
+            }
+            return maxBottom;
         }
 
         /// <summary>
@@ -1204,6 +1272,38 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
                 _listItemBox.OffsetTop(amount);
 
             Location = new RPoint(Location.X, Location.Y + amount);
+        }
+
+        /// <summary>
+        /// Deeply offsets the left of the box and its contents
+        /// </summary>
+        /// <param name="amount"></param>
+        internal void OffsetLeft(double amount)
+        {
+            List<CssLineBox> lines = new List<CssLineBox>();
+            foreach (CssLineBox line in Rectangles.Keys)
+                lines.Add(line);
+
+            foreach (CssLineBox line in lines)
+            {
+                RRect r = Rectangles[line];
+                Rectangles[line] = new RRect(r.X + amount, r.Y, r.Width, r.Height);
+            }
+
+            foreach (CssRect word in Words)
+            {
+                word.Left += amount;
+            }
+
+            foreach (CssBox b in Boxes)
+            {
+                b.OffsetLeft(amount);
+            }
+
+            if (_listItemBox != null)
+                _listItemBox.OffsetLeft(amount);
+
+            Location = new RPoint(Location.X + amount, Location.Y);
         }
 
         /// <summary>

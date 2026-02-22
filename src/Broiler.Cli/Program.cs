@@ -91,9 +91,9 @@ public class Program
             }
 
             if (!Uri.TryCreate(captureImageUrl, UriKind.Absolute, out var imgUri)
-                || (imgUri.Scheme != "http" && imgUri.Scheme != "https"))
+                || (imgUri.Scheme != "http" && imgUri.Scheme != "https" && imgUri.Scheme != "file"))
             {
-                Console.Error.WriteLine($"Error: '{captureImageUrl}' is not a valid HTTP or HTTPS URL.");
+                Console.Error.WriteLine($"Error: '{captureImageUrl}' is not a valid HTTP, HTTPS, or file URL.");
                 return 1;
             }
 
@@ -103,6 +103,7 @@ public class Program
                 OutputPath = output,
                 Width = width,
                 Height = height,
+                FullPage = fullPage,
                 TimeoutSeconds = timeoutSeconds,
             };
 

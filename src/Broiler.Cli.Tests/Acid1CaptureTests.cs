@@ -54,11 +54,12 @@ public class Acid1CaptureTests : IDisposable
     /// <summary>
     /// Minimum visual-similarity threshold below which the renderer is
     /// considered to have regressed <em>away</em> from the reference. The
-    /// threshold is intentionally permissive because CSS1 float-layout
-    /// shortcomings produce a known visual mismatch; raising it is a sign
-    /// of improvement.
+    /// threshold is set to catch major rendering defects (such as missing
+    /// float layout, blank output, or completely wrong colours) while
+    /// accommodating known CSS1 shortcomings in the HTML-Renderer engine.
+    /// Raising this value is a sign of rendering improvement.
     /// </summary>
-    private const double MinSimilarityThreshold = 0.10;
+    private const double MinSimilarityThreshold = 0.30;
 
     private static readonly string TestDataDir =
         Path.Combine(AppContext.BaseDirectory, "TestData");
@@ -432,5 +433,145 @@ public class Acid1CaptureTests : IDisposable
 
         Assert.True(ImageComparer.AreIdentical(bitmap1, bitmap2),
             "Rendering acid1.html twice should produce identical pixel output.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Full-page capture and CLI tests
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that the CLI <c>CaptureImageAsync</c> with <c>FullPage</c>
+    /// produces an image that is at least as tall as the reference, ensuring
+    /// content is not cropped.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_FullPageCapture_IsNotCropped()
+    {
+        var html = ReadAcid1Html();
+
+        using var referenceData = SKData.Create(Acid1PngPath);
+        using var referenceCodec = SKCodec.Create(referenceData);
+        var refInfo = referenceCodec.Info;
+
+        using var autoSized = HtmlRender.RenderToImageAutoSized(html, maxWidth: refInfo.Width);
+
+        Assert.True(autoSized.Width > 0 && autoSized.Height > 0,
+            "Auto-sized rendering should produce a non-empty image.");
+        Assert.True(autoSized.Width == refInfo.Width,
+            $"Auto-sized width ({autoSized.Width}) should match the reference width ({refInfo.Width}).");
+        Assert.True(autoSized.Height >= refInfo.Height,
+            $"Auto-sized height ({autoSized.Height}) should be at least the reference height ({refInfo.Height}). " +
+            "If the image is shorter, content may be cropped.");
+    }
+
+    /// <summary>
+    /// Verifies that <c>ImageCaptureOptions.FullPage</c> defaults to
+    /// <c>false</c>.
+    /// </summary>
+    [Fact]
+    public void ImageCaptureOptions_DefaultFullPage_IsFalse()
+    {
+        var options = new ImageCaptureOptions
+        {
+            Url = "https://example.com",
+            OutputPath = "test.png",
+        };
+        Assert.False(options.FullPage);
+    }
+
+    /// <summary>
+    /// Verifies that <c>CaptureImageAsync</c> can read a local HTML file
+    /// using a <c>file://</c> URI and render it to an image.
+    /// </summary>
+    [Fact]
+    public async Task Acid1Html_FileUri_ProducesValidImage()
+    {
+        var fileUri = new Uri(Acid1HtmlPath).AbsoluteUri;
+        var outputPath = Path.Combine(_outputDir, "acid1-file-uri.png");
+
+        var service = new CaptureService();
+        await service.CaptureImageAsync(new ImageCaptureOptions
+        {
+            Url = fileUri,
+            OutputPath = outputPath,
+            Width = RenderWidth,
+            Height = RenderHeight,
+        });
+
+        Assert.True(File.Exists(outputPath), "Image from file:// URI should be created.");
+        var bytes = File.ReadAllBytes(outputPath);
+        Assert.True(bytes.Length > 500, "Image from file:// URI should have meaningful content.");
+        // Verify PNG magic bytes
+        Assert.Equal(0x89, bytes[0]);
+        Assert.Equal(0x50, bytes[1]);
+    }
+
+    /// <summary>
+    /// Verifies that <c>CaptureImageAsync</c> with <c>FullPage = true</c>
+    /// produces an image whose height matches the full content height
+    /// (not clipped to the default 768).
+    /// </summary>
+    [Fact]
+    public async Task Acid1Html_FullPageFileUri_ProducesFullImage()
+    {
+        var fileUri = new Uri(Acid1HtmlPath).AbsoluteUri;
+        var outputPath = Path.Combine(_outputDir, "acid1-fullpage.png");
+
+        var service = new CaptureService();
+        await service.CaptureImageAsync(new ImageCaptureOptions
+        {
+            Url = fileUri,
+            OutputPath = outputPath,
+            Width = 509,
+            Height = 768,
+            FullPage = true,
+        });
+
+        Assert.True(File.Exists(outputPath), "Full-page capture should be created.");
+        var bytes = File.ReadAllBytes(outputPath);
+        Assert.True(bytes.Length > 500, "Full-page capture should have meaningful content.");
+
+        // The full-page image should NOT be exactly 768 pixels tall
+        // (the default height), proving that --full-page auto-sizes.
+        using var bitmap = SKBitmap.Decode(outputPath);
+        Assert.True(bitmap.Height != 768,
+            "Full-page capture should auto-size the height, not use the default 768.");
+        Assert.Equal(509, bitmap.Width);
+    }
+
+    /// <summary>
+    /// Verifies that the rendered acid1.html at the reference dimensions
+    /// contains the <c>dt</c> red background in the top-left area,
+    /// confirming that float:left positioning places it correctly.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_FloatLeft_DtPositionedAtTopLeft()
+    {
+        var html = ReadAcid1Html();
+
+        using var referenceData = SKData.Create(Acid1PngPath);
+        using var referenceCodec = SKCodec.Create(referenceData);
+        var refInfo = referenceCodec.Info;
+
+        using var bitmap = HtmlRender.RenderToImage(html, refInfo.Width, refInfo.Height);
+
+        // The dt element (float:left) should have red pixels in the upper-left
+        // quadrant of the image (roughly x=20-80, y=20-200).
+        int redPixelsTopLeft = 0;
+        int halfWidth = bitmap.Width / 2;
+        int halfHeight = bitmap.Height / 2;
+        for (int y = 0; y < halfHeight; y++)
+        {
+            for (int x = 0; x < halfWidth; x++)
+            {
+                var p = bitmap.GetPixel(x, y);
+                if (p.Red > 150 && p.Green < 50 && p.Blue < 50)
+                    redPixelsTopLeft++;
+            }
+        }
+
+        Assert.True(redPixelsTopLeft > 100,
+            $"Expected >100 red pixels in the top-left quadrant from the float:left dt element, " +
+            $"but found {redPixelsTopLeft}. Float positioning may not be working correctly.");
     }
 }
