@@ -370,6 +370,9 @@ namespace Broiler.App.Rendering
             if (!string.IsNullOrWhiteSpace(explicitHeight) &&
                 !explicitHeight.Equals("auto", StringComparison.OrdinalIgnoreCase))
             {
+                // containerHeight is 0 because CSS1 percentage heights only resolve
+                // when the containing block has an explicit height; when absent the
+                // default (cursorY = content height) is used.
                 box.Dimensions.Height = ParseCssValue(explicitHeight, 0f, cursorY);
             }
             else

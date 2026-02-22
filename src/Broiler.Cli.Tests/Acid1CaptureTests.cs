@@ -320,7 +320,7 @@ public class Acid1CaptureTests : IDisposable
         // threshold should be raised to 1.0.
         Assert.True(similarity >= MinSimilarityThreshold,
             $"Acid1 rendering similarity ({similarity:P1}) fell below the regression floor " +
-            $"({MinSimilarityThreshold:P0}).  Remaining differences are expected to shrink " +
+            $"({MinSimilarityThreshold:P0}). Remaining differences are expected to shrink " +
             $"as the rendering engine improves.");
     }
 
