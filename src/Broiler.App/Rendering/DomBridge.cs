@@ -20,6 +20,7 @@ namespace Broiler.App.Rendering
 
         private string _title = string.Empty;
         private readonly List<DomElement> _elements = new();
+        private readonly List<(JSFunction Callback, DomElement Target, MutationObserverOptions Options)> _mutationObservers = new();
 
         // window.location fields
         private string _pageUrl = string.Empty;
@@ -862,6 +863,17 @@ namespace Broiler.App.Rendering
                 }, "createTextNode", 1),
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
+            // document.createDocumentFragment() — basic iframe/fragment support
+            document.FastAddValue(
+                (KeyString)"createDocumentFragment",
+                new JSFunction((in Arguments a) =>
+                {
+                    var fragment = new DomElement("#document-fragment", null, null, string.Empty);
+                    _elements.Add(fragment);
+                    return ToJSObject(fragment);
+                }, "createDocumentFragment", 0),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
             // document.createEvent(type) — DOM Events Level 3
             document.FastAddValue(
                 (KeyString)"createEvent",
@@ -899,6 +911,47 @@ namespace Broiler.App.Rendering
                     return evt;
                 }, "createEvent", 1),
                 JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // CustomEvent constructor — DOM Level 4
+            context.Eval(@"
+                function CustomEvent(type, options) {
+                    options = options || {};
+                    this.type = type;
+                    this.detail = options.detail !== undefined ? options.detail : null;
+                    this.bubbles = options.bubbles === true;
+                    this.cancelable = options.cancelable === true;
+                    this.defaultPrevented = false;
+                    this.target = null;
+                    this.currentTarget = null;
+                    this.eventPhase = 0;
+                    this.stopPropagation = function() {};
+                    this.preventDefault = function() { this.defaultPrevented = true; };
+                    this.initCustomEvent = function(type, bubbles, cancelable, detail) {
+                        this.type = type;
+                        this.bubbles = bubbles === true;
+                        this.cancelable = cancelable === true;
+                        this.detail = detail !== undefined ? detail : null;
+                    };
+                }
+            ");
+
+            // MutationObserver — DOM Level 4
+            var mutationObservers = _mutationObservers;
+            context.Eval(@"
+                function MutationObserver(callback) {
+                    this._callback = callback;
+                    this._targets = [];
+                }
+                MutationObserver.prototype.observe = function(target, options) {
+                    this._targets.push({ target: target, options: options || {} });
+                };
+                MutationObserver.prototype.disconnect = function() {
+                    this._targets = [];
+                };
+                MutationObserver.prototype.takeRecords = function() {
+                    return [];
+                };
+            ");
 
             context["document"] = document;
 
@@ -1657,6 +1710,66 @@ namespace Broiler.App.Rendering
                 }, "querySelectorAll", 1),
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
+            // getContext(contextType) — for <canvas> elements
+            obj.FastAddValue(
+                (KeyString)"getContext",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length == 0) return JSNull.Value;
+                    var contextType = a[0].ToString();
+                    if (!string.Equals(contextType, "2d", System.StringComparison.OrdinalIgnoreCase))
+                        return JSNull.Value;
+                    if (!string.Equals(element.TagName, "canvas", System.StringComparison.OrdinalIgnoreCase))
+                        return JSNull.Value;
+                    return BuildCanvas2DContext(element);
+                }, "getContext", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // contentWindow — for <iframe> elements (sandboxed, same-origin stub)
+            if (string.Equals(element.TagName, "iframe", System.StringComparison.OrdinalIgnoreCase))
+            {
+                obj.FastAddProperty(
+                    (KeyString)"contentWindow",
+                    new JSFunction((in Arguments _) =>
+                    {
+                        var iframeWindow = new JSObject();
+                        iframeWindow.FastAddValue((KeyString)"document", new JSObject(), JSPropertyAttributes.EnumerableConfigurableValue);
+                        var iframeLocation = new JSObject();
+                        if (element.Attributes.TryGetValue("src", out var iframeSrc))
+                            iframeLocation.FastAddValue((KeyString)"href", new JSString(iframeSrc), JSPropertyAttributes.EnumerableConfigurableValue);
+                        else
+                            iframeLocation.FastAddValue((KeyString)"href", new JSString("about:blank"), JSPropertyAttributes.EnumerableConfigurableValue);
+                        iframeWindow.FastAddValue((KeyString)"location", iframeLocation, JSPropertyAttributes.EnumerableConfigurableValue);
+                        return iframeWindow;
+                    }, "get contentWindow"),
+                    null,
+                    JSPropertyAttributes.EnumerableConfigurableProperty);
+
+                obj.FastAddProperty(
+                    (KeyString)"contentDocument",
+                    new JSFunction((in Arguments _) =>
+                    {
+                        // Return a minimal document for sandboxed same-origin iframes
+                        var iframeDoc = new JSObject();
+                        iframeDoc.FastAddValue((KeyString)"body", new JSObject(), JSPropertyAttributes.EnumerableConfigurableValue);
+                        return iframeDoc;
+                    }, "get contentDocument"),
+                    null,
+                    JSPropertyAttributes.EnumerableConfigurableProperty);
+
+                // sandbox attribute access
+                obj.FastAddProperty(
+                    (KeyString)"sandbox",
+                    new JSFunction((in Arguments _) =>
+                    {
+                        return element.Attributes.TryGetValue("sandbox", out var sandbox)
+                            ? (JSValue)new JSString(sandbox)
+                            : new JSString(string.Empty);
+                    }, "get sandbox"),
+                    null,
+                    JSPropertyAttributes.EnumerableConfigurableProperty);
+            }
+
             return obj;
         }
 
@@ -2039,6 +2152,141 @@ namespace Broiler.App.Rendering
 
             return storage;
         }
+
+        /// <summary>
+        /// Builds a minimal Canvas 2D rendering context exposing basic drawing
+        /// operations as defined in the HTML Canvas 2D Context specification.
+        /// Drawing commands are recorded but not rasterised in the current implementation.
+        /// </summary>
+        private static JSObject BuildCanvas2DContext(DomElement canvas)
+        {
+            var ctx = new JSObject();
+            int width = 300, height = 150;
+            if (canvas.Attributes.TryGetValue("width", out var w) && int.TryParse(w, out var pw)) width = pw;
+            if (canvas.Attributes.TryGetValue("height", out var h) && int.TryParse(h, out var ph)) height = ph;
+
+            var context2d = new CanvasRenderingContext2D(width, height);
+
+            // fillStyle (get/set)
+            ctx.FastAddProperty(
+                (KeyString)"fillStyle",
+                new JSFunction((in Arguments _) => new JSString(context2d.FillStyle), "get fillStyle"),
+                new JSFunction((in Arguments a) => { if (a.Length > 0) context2d.FillStyle = a[0].ToString(); return JSUndefined.Value; }, "set fillStyle"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // strokeStyle (get/set)
+            ctx.FastAddProperty(
+                (KeyString)"strokeStyle",
+                new JSFunction((in Arguments _) => new JSString(context2d.StrokeStyle), "get strokeStyle"),
+                new JSFunction((in Arguments a) => { if (a.Length > 0) context2d.StrokeStyle = a[0].ToString(); return JSUndefined.Value; }, "set strokeStyle"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // lineWidth (get/set)
+            ctx.FastAddProperty(
+                (KeyString)"lineWidth",
+                new JSFunction((in Arguments _) => new JSNumber(context2d.LineWidth), "get lineWidth"),
+                new JSFunction((in Arguments a) => { if (a.Length > 0 && a[0] is JSNumber n) context2d.LineWidth = (float)n.DoubleValue; return JSUndefined.Value; }, "set lineWidth"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // font (get/set)
+            ctx.FastAddProperty(
+                (KeyString)"font",
+                new JSFunction((in Arguments _) => new JSString(context2d.Font), "get font"),
+                new JSFunction((in Arguments a) => { if (a.Length > 0) context2d.Font = a[0].ToString(); return JSUndefined.Value; }, "set font"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // globalAlpha (get/set)
+            ctx.FastAddProperty(
+                (KeyString)"globalAlpha",
+                new JSFunction((in Arguments _) => new JSNumber(context2d.GlobalAlpha), "get globalAlpha"),
+                new JSFunction((in Arguments a) => { if (a.Length > 0 && a[0] is JSNumber n) context2d.GlobalAlpha = (float)n.DoubleValue; return JSUndefined.Value; }, "set globalAlpha"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // canvas property
+            ctx.FastAddProperty(
+                (KeyString)"canvas",
+                new JSFunction((in Arguments _) => new JSObject(), "get canvas"),
+                null,
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // Drawing methods
+            ctx.FastAddValue((KeyString)"fillRect", new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 4) context2d.FillRect((float)a[0].DoubleValue, (float)a[1].DoubleValue, (float)a[2].DoubleValue, (float)a[3].DoubleValue);
+                return JSUndefined.Value;
+            }, "fillRect", 4), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"strokeRect", new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 4) context2d.StrokeRect((float)a[0].DoubleValue, (float)a[1].DoubleValue, (float)a[2].DoubleValue, (float)a[3].DoubleValue);
+                return JSUndefined.Value;
+            }, "strokeRect", 4), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"clearRect", new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 4) context2d.ClearRect((float)a[0].DoubleValue, (float)a[1].DoubleValue, (float)a[2].DoubleValue, (float)a[3].DoubleValue);
+                return JSUndefined.Value;
+            }, "clearRect", 4), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"beginPath", new JSFunction((in Arguments _) =>
+            { context2d.BeginPath(); return JSUndefined.Value; }, "beginPath", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"moveTo", new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 2) context2d.MoveTo((float)a[0].DoubleValue, (float)a[1].DoubleValue);
+                return JSUndefined.Value;
+            }, "moveTo", 2), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"lineTo", new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 2) context2d.LineTo((float)a[0].DoubleValue, (float)a[1].DoubleValue);
+                return JSUndefined.Value;
+            }, "lineTo", 2), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"arc", new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 5) context2d.Arc((float)a[0].DoubleValue, (float)a[1].DoubleValue, (float)a[2].DoubleValue, (float)a[3].DoubleValue, (float)a[4].DoubleValue);
+                return JSUndefined.Value;
+            }, "arc", 5), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"closePath", new JSFunction((in Arguments _) =>
+            { context2d.ClosePath(); return JSUndefined.Value; }, "closePath", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"fill", new JSFunction((in Arguments _) =>
+            { context2d.Fill(); return JSUndefined.Value; }, "fill", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"stroke", new JSFunction((in Arguments _) =>
+            { context2d.Stroke(); return JSUndefined.Value; }, "stroke", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"fillText", new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 3) context2d.FillText(a[0].ToString(), (float)a[1].DoubleValue, (float)a[2].DoubleValue);
+                return JSUndefined.Value;
+            }, "fillText", 3), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"strokeText", new JSFunction((in Arguments a) =>
+            {
+                if (a.Length >= 3) context2d.StrokeText(a[0].ToString(), (float)a[1].DoubleValue, (float)a[2].DoubleValue);
+                return JSUndefined.Value;
+            }, "strokeText", 3), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"save", new JSFunction((in Arguments _) =>
+            { context2d.Save(); return JSUndefined.Value; }, "save", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            ctx.FastAddValue((KeyString)"restore", new JSFunction((in Arguments _) =>
+            { context2d.Restore(); return JSUndefined.Value; }, "restore", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // measureText(text) — returns { width: ... }
+            ctx.FastAddValue((KeyString)"measureText", new JSFunction((in Arguments a) =>
+            {
+                var text = a.Length > 0 ? a[0].ToString() : string.Empty;
+                var result = new JSObject();
+                result.FastAddValue((KeyString)"width", new JSNumber(text.Length * 8.0), JSPropertyAttributes.EnumerableConfigurableValue);
+                return result;
+            }, "measureText", 1), JSPropertyAttributes.EnumerableConfigurableValue);
+
+            return ctx;
+        }
     }
 
     /// <summary>
@@ -2093,5 +2341,18 @@ namespace Broiler.App.Rendering
             Attributes = attributes ?? new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
             IsTextNode = isTextNode;
         }
+    }
+
+    /// <summary>Options for MutationObserver.observe().</summary>
+    public sealed class MutationObserverOptions
+    {
+        /// <summary>Whether to observe child list changes.</summary>
+        public bool ChildList { get; set; }
+        /// <summary>Whether to observe attribute changes.</summary>
+        public bool Attributes { get; set; }
+        /// <summary>Whether to observe character data changes.</summary>
+        public bool CharacterData { get; set; }
+        /// <summary>Whether to observe the subtree.</summary>
+        public bool Subtree { get; set; }
     }
 }
