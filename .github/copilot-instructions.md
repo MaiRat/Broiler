@@ -44,7 +44,7 @@ dotnet run --project src/Broiler.Cli -- --url https://www.heise.de/ --output cap
 - If the capture **succeeds**, attach or reference the screenshot in the PR.
 - If the capture **fails**, investigate and resolve the error before completing
   the issue. Common failure causes:
-  - **Browser not installed**: Run `playwright install chromium` first.
+  - **Browser not installed**: Run `dotnet playwright install chromium` first.
   - **Network timeout**: Increase timeout with `--timeout 60`.
   - **Missing .NET runtime**: Ensure .NET 8.0 SDK is installed.
 
@@ -69,8 +69,7 @@ If **any** errors or exceptions occur during the above steps:
 
 ## Code Conventions
 
-- Follow existing C# code style (no `var` type aliases, XML doc comments on
-  public members).
+- Follow existing C# code style (XML doc comments on public members).
 - Place new rendering logic in `src/Broiler.App/Rendering/`.
 - Place CLI logic in `src/Broiler.Cli/`.
 - Write xUnit tests for all new functionality.
