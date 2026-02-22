@@ -81,9 +81,9 @@ namespace TheArtOfDev.HtmlRenderer.Core.Handlers
         private static string LoadStylesheet(HtmlContainerInt htmlContainer, string src)
         {
             var uri = CommonUtils.TryGetUri(src);
-            if (uri == null || uri.Scheme == "file")
+            if (uri == null || !uri.IsAbsoluteUri || uri.Scheme == "file")
             {
-                return LoadStylesheetFromFile(htmlContainer, uri != null ? uri.AbsolutePath : src);
+                return LoadStylesheetFromFile(htmlContainer, (uri != null && uri.IsAbsoluteUri) ? uri.AbsolutePath : src);
             }
             else
             {

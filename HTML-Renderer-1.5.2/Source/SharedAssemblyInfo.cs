@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
@@ -27,3 +28,5 @@ using System.Runtime.InteropServices;
 // Version information for an assembly consists of the following four values:
 
 [assembly: AssemblyVersion("1.5.2.0")]
+
+[assembly: InternalsVisibleTo("HtmlRenderer.Image.Tests")]

@@ -138,6 +138,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils
 
         /// <summary>
         /// Get Uri object for the given path if it is valid uri path.
+        /// Supports absolute URIs, root-relative URIs (e.g. "/style.css"), and relative URIs.
         /// </summary>
         /// <param name="path">the path to get uri for</param>
         /// <returns>uri or null if not valid</returns>
@@ -147,7 +148,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils
             {
                 if (Uri.IsWellFormedUriString(path, UriKind.RelativeOrAbsolute))
                 {
-                    return new Uri(path);
+                    return new Uri(path, UriKind.RelativeOrAbsolute);
                 }
             }
             catch

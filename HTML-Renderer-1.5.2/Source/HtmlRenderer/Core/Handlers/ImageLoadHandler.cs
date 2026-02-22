@@ -254,13 +254,13 @@ namespace TheArtOfDev.HtmlRenderer.Core.Handlers
         private void SetImageFromPath(string path)
         {
             var uri = CommonUtils.TryGetUri(path);
-            if (uri != null && uri.Scheme != "file")
+            if (uri != null && uri.IsAbsoluteUri && uri.Scheme != "file")
             {
                 SetImageFromUrl(uri);
             }
             else
             {
-                var fileInfo = CommonUtils.TryGetFileInfo(uri != null ? uri.AbsolutePath : path);
+                var fileInfo = CommonUtils.TryGetFileInfo((uri != null && uri.IsAbsoluteUri) ? uri.AbsolutePath : path);
                 if (fileInfo != null)
                 {
                     SetImageFromFile(fileInfo);
