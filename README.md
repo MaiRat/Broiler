@@ -81,6 +81,12 @@ Broiler/
 
 See [Issue #1](https://github.com/MaiRat/Broiler/issues/1) for the full development roadmap.
 
+### CLI Website Capture Tool
+
+A cross-platform command-line tool for capturing website screenshots is planned.
+See the [CLI Roadmap](docs/roadmap/cli-website-capture.md) and
+[ADR-004](docs/adr/004-os-independent-cli-capture-tool.md) for details.
+
 ### Current Phase: Project Initialization
 
 - [x] Define project goals and design requirements
