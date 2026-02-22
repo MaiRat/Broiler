@@ -90,6 +90,12 @@ public class Program
                 return 1;
             }
 
+            // Support bare file paths by converting to file:// URIs.
+            if (File.Exists(captureImageUrl))
+            {
+                captureImageUrl = new Uri(Path.GetFullPath(captureImageUrl)).AbsoluteUri;
+            }
+
             if (!Uri.TryCreate(captureImageUrl, UriKind.Absolute, out var imgUri)
                 || (imgUri.Scheme != "http" && imgUri.Scheme != "https" && imgUri.Scheme != "file"))
             {
@@ -139,10 +145,16 @@ public class Program
             return 1;
         }
 
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
-            || (uri.Scheme != "http" && uri.Scheme != "https"))
+        // Support bare file paths by converting to file:// URIs.
+        if (File.Exists(url))
         {
-            Console.Error.WriteLine($"Error: '{url}' is not a valid HTTP or HTTPS URL.");
+            url = new Uri(Path.GetFullPath(url)).AbsoluteUri;
+        }
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || (uri.Scheme != "http" && uri.Scheme != "https" && uri.Scheme != "file"))
+        {
+            Console.Error.WriteLine($"Error: '{url}' is not a valid HTTP, HTTPS, or file URL.");
             return 1;
         }
 
