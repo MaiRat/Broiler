@@ -125,6 +125,8 @@ public class CaptureService
 
     /// <summary>
     /// Parses CSS blocks from the HTML using HTML-Renderer's core library.
+    /// This exercises the HTML-Renderer engine as part of the rendering pipeline;
+    /// parsed CSS data can be extended in future to influence output formatting.
     /// </summary>
     private static void ProcessCss(string html)
     {
@@ -157,6 +159,8 @@ public class CaptureService
 
     /// <summary>
     /// Extracts and executes inline scripts using YantraJS.
+    /// This exercises the YantraJS engine as part of the rendering pipeline;
+    /// script results can be extended in future to influence output content.
     /// </summary>
     private static void ExecuteScripts(string html)
     {
@@ -179,9 +183,10 @@ public class CaptureService
                 {
                     context.Eval(script);
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Script execution errors are non-fatal for capture
+                    System.Diagnostics.Debug.WriteLine($"Script execution error: {ex.Message}");
                 }
             }
         }
