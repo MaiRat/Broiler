@@ -117,46 +117,17 @@ namespace Broiler.App.Rendering
             _elements.Clear();
             _jsObjectCache.Clear();
 
-            // Extract <title>
-            var titleMatch = TitlePattern.Match(html);
-            _title = titleMatch.Success ? titleMatch.Groups["content"].Value.Trim() : string.Empty;
-
-            // Scan all opening tags and collect elements
-            foreach (Match m in OpenTagPattern.Matches(html))
+            // Use WHATWG-aligned tokeniser & tree builder
+            var builder = new HtmlTreeBuilder();
+            var (docElement, allElements, title) = builder.Build(html);
+            _title = title;
+            _documentElement.Children.Clear();
+            foreach (var child in docElement.Children)
             {
-                var tag = m.Groups["tag"].Value.ToLowerInvariant();
-                if (SkippedTags.Contains(tag)) continue;
-
-                var attrs = m.Groups["attrs"].Value;
-                var isSelfClosing = m.Value.EndsWith("/>");
-
-                string inner = string.Empty;
-                if (!VoidTags.Contains(tag) && !isSelfClosing)
-                {
-                    var closeTag = $"</{tag}>";
-                    var closeIdx = html.IndexOf(closeTag, m.Index + m.Length, System.StringComparison.OrdinalIgnoreCase);
-                    if (closeIdx >= 0)
-                    {
-                        inner = html.Substring(m.Index + m.Length, closeIdx - (m.Index + m.Length)).Trim();
-                    }
-                }
-
-                var idMatch = IdPattern.Match(attrs);
-                var classMatch = ClassPattern.Match(attrs);
-
-                var attributes = ParseAttributes(attrs);
-                var style = attributes.TryGetValue("style", out var styleVal)
-                    ? ParseStyle(styleVal)
-                    : new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
-
-                _elements.Add(new DomElement(
-                    tag,
-                    idMatch.Success ? idMatch.Groups["id"].Value : null,
-                    classMatch.Success ? classMatch.Groups["cls"].Value : null,
-                    inner,
-                    style,
-                    attributes));
+                child.Parent = _documentElement;
+                _documentElement.Children.Add(child);
             }
+            _elements.AddRange(allElements);
 
             // Extract <style> blocks and apply cascaded styles
             ExtractStyleBlocks(html);
@@ -393,19 +364,161 @@ namespace Broiler.App.Rendering
         // ------------------------------------------------------------------
 
         /// <summary>
-        /// Returns <c>true</c> when <paramref name="el"/> matches the given simple
-        /// compound CSS selector.  Supported tokens: tag type, <c>#id</c>,
-        /// <c>.class</c> (multiple), <c>[attr]</c>, and <c>[attr=value]</c>.
-        /// Descendant/sibling combinators are not supported.
+        /// Returns <c>true</c> when <paramref name="el"/> matches the given CSS
+        /// selector.  Supports compound selectors, combinators (<c>&gt;</c>,
+        /// <c>+</c>, <c>~</c>, descendant), pseudo-classes (<c>:nth-child</c>,
+        /// <c>:not</c>, <c>:first-of-type</c>, <c>:first-child</c>,
+        /// <c>:last-child</c>), pseudo-elements (<c>::before</c>,
+        /// <c>::after</c>), <c>[attr]</c>, and <c>[attr=value]</c>.
         /// </summary>
         private static bool MatchesSelector(DomElement el, string selector)
         {
             selector = selector.Trim();
             if (string.IsNullOrEmpty(selector)) return false;
 
+            // Split the selector into parts with combinators
+            var parts = SplitSelectorParts(selector);
+            if (parts.Count == 0) return false;
+
+            // Match from right to left
+            var current = el;
+            for (int i = parts.Count - 1; i >= 0; i--)
+            {
+                var (combinator, compound) = parts[i];
+                if (current == null) return false;
+
+                if (i == parts.Count - 1)
+                {
+                    // Rightmost part: must match the target element
+                    if (!MatchesCompound(current, compound)) return false;
+                }
+                else
+                {
+                    switch (combinator)
+                    {
+                        case ' ': // descendant
+                            var ancestor = current.Parent;
+                            while (ancestor != null)
+                            {
+                                if (MatchesCompound(ancestor, compound)) { current = ancestor; goto matched; }
+                                ancestor = ancestor.Parent;
+                            }
+                            return false;
+                        case '>': // child
+                            if (current.Parent == null || !MatchesCompound(current.Parent, compound)) return false;
+                            current = current.Parent;
+                            break;
+                        case '+': // adjacent sibling
+                            var prev = PreviousSibling(current);
+                            if (prev == null || !MatchesCompound(prev, compound)) return false;
+                            current = prev;
+                            break;
+                        case '~': // general sibling
+                            var sib = PreviousSibling(current);
+                            while (sib != null)
+                            {
+                                if (MatchesCompound(sib, compound)) { current = sib; goto matched; }
+                                sib = PreviousSibling(sib);
+                            }
+                            return false;
+                        default:
+                            return false;
+                    }
+                }
+                matched:;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Splits a selector string into combinator-compound pairs, preserving order.
+        /// The first entry's combinator is <c>'\0'</c>.
+        /// </summary>
+        private static List<(char Combinator, string Compound)> SplitSelectorParts(string selector)
+        {
+            var parts = new List<(char, string)>();
+            var current = new System.Text.StringBuilder();
+            char pendingCombinator = '\0';
+            int depth = 0;
+
+            for (int i = 0; i < selector.Length; i++)
+            {
+                var c = selector[i];
+                if (c == '(') { depth++; current.Append(c); continue; }
+                if (c == ')') { depth--; current.Append(c); continue; }
+                if (depth > 0) { current.Append(c); continue; }
+
+                if (c == '>' || c == '+' || c == '~')
+                {
+                    var part = current.ToString().Trim();
+                    if (part.Length > 0)
+                        parts.Add((pendingCombinator, part));
+                    pendingCombinator = c;
+                    current.Clear();
+                }
+                else if (char.IsWhiteSpace(c))
+                {
+                    // Only set descendant combinator if no explicit combinator follows
+                    var part = current.ToString().Trim();
+                    if (part.Length > 0)
+                    {
+                        // Look ahead for an explicit combinator
+                        var j = i + 1;
+                        while (j < selector.Length && char.IsWhiteSpace(selector[j])) j++;
+                        if (j < selector.Length && (selector[j] == '>' || selector[j] == '+' || selector[j] == '~'))
+                        {
+                            parts.Add((pendingCombinator, part));
+                            pendingCombinator = selector[j];
+                            current.Clear();
+                            i = j; // skip to the combinator
+                        }
+                        else
+                        {
+                            parts.Add((pendingCombinator, part));
+                            pendingCombinator = ' ';
+                            current.Clear();
+                        }
+                    }
+                }
+                else
+                {
+                    current.Append(c);
+                }
+            }
+            var last = current.ToString().Trim();
+            if (last.Length > 0)
+                parts.Add((pendingCombinator, last));
+
+            return parts;
+        }
+
+        /// <summary>
+        /// Returns the previous element sibling of the given element, or <c>null</c>.
+        /// </summary>
+        private static DomElement PreviousSibling(DomElement el)
+        {
+            if (el.Parent == null) return null;
+            var siblings = el.Parent.Children;
+            var idx = siblings.IndexOf(el);
+            for (int i = idx - 1; i >= 0; i--)
+                if (!siblings[i].IsTextNode) return siblings[i];
+            return null;
+        }
+
+        /// <summary>
+        /// Matches a compound selector (no combinators) against an element.
+        /// Handles tag, #id, .class, [attr], :pseudo-class, and ::pseudo-element.
+        /// </summary>
+        private static bool MatchesCompound(DomElement el, string compound)
+        {
+            if (string.IsNullOrEmpty(compound)) return false;
+
+            // Strip ::before / ::after pseudo-elements (they match the element itself)
+            compound = StripPseudoElements(compound);
+
             // Extract and remove [attr] / [attr=value] tokens
-            var attrFilters = new List<(string Name, string? Value)>();
-            selector = AttributeSelectorPattern.Replace(selector, m =>
+            var attrFilters = new List<(string Name, string Value)>();
+            compound = AttributeSelectorPattern.Replace(compound, m =>
             {
                 var name = m.Groups["name"].Value.Trim();
                 var value = m.Groups["value"].Success
@@ -415,33 +528,36 @@ namespace Broiler.App.Rendering
                 return string.Empty;
             });
 
-            string? tagFilter = null;
-            string? idFilter = null;
+            // Extract and process pseudo-classes
+            if (!ProcessPseudoClasses(el, ref compound)) return false;
+
+            string tagFilter = null;
+            string idFilter = null;
             var classFilters = new List<string>();
 
             var pos = 0;
-            while (pos < selector.Length)
+            while (pos < compound.Length)
             {
-                char c = selector[pos];
+                char c = compound[pos];
                 if (c == '#')
                 {
                     pos++;
                     var start = pos;
-                    while (pos < selector.Length && selector[pos] != '.' && selector[pos] != '#') pos++;
-                    idFilter = selector[start..pos];
+                    while (pos < compound.Length && compound[pos] != '.' && compound[pos] != '#' && compound[pos] != ':' && compound[pos] != '[') pos++;
+                    idFilter = compound[start..pos];
                 }
                 else if (c == '.')
                 {
                     pos++;
                     var start = pos;
-                    while (pos < selector.Length && selector[pos] != '.' && selector[pos] != '#') pos++;
-                    classFilters.Add(selector[start..pos]);
+                    while (pos < compound.Length && compound[pos] != '.' && compound[pos] != '#' && compound[pos] != ':' && compound[pos] != '[') pos++;
+                    classFilters.Add(compound[start..pos]);
                 }
                 else if (char.IsLetter(c) || c == '*')
                 {
                     var start = pos;
-                    while (pos < selector.Length && selector[pos] != '.' && selector[pos] != '#') pos++;
-                    var tag = selector[start..pos].ToLowerInvariant();
+                    while (pos < compound.Length && compound[pos] != '.' && compound[pos] != '#' && compound[pos] != ':' && compound[pos] != '[') pos++;
+                    var tag = compound[start..pos].ToLowerInvariant();
                     if (tag != "*")
                         tagFilter = tag;
                 }
@@ -470,6 +586,140 @@ namespace Broiler.App.Rendering
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Strips <c>::before</c> and <c>::after</c> pseudo-elements from the compound
+        /// selector, returning the remaining selector text.
+        /// </summary>
+        private static string StripPseudoElements(string compound)
+        {
+            var idx = compound.IndexOf("::", System.StringComparison.Ordinal);
+            if (idx >= 0)
+                return compound[..idx];
+            return compound;
+        }
+
+        private static readonly Regex PseudoClassPattern = new(
+            @":(?<name>[a-zA-Z-]+)(?:\((?<arg>[^)]*)\))?",
+            RegexOptions.Compiled);
+
+        /// <summary>
+        /// Processes pseudo-class selectors (<c>:nth-child</c>, <c>:not</c>,
+        /// <c>:first-of-type</c>, <c>:first-child</c>, <c>:last-child</c>)
+        /// from the compound selector and validates them against <paramref name="el"/>.
+        /// Updates <paramref name="compound"/> in place (pseudo-classes removed).
+        /// Returns <c>false</c> if a pseudo-class does not match.
+        /// </summary>
+        private static bool ProcessPseudoClasses(DomElement el, ref string compound)
+        {
+            var matches = PseudoClassPattern.Matches(compound);
+            if (matches.Count == 0) return true;
+
+            foreach (Match m in matches)
+            {
+                var pseudoName = m.Groups["name"].Value.ToLowerInvariant();
+                var arg = m.Groups["arg"].Success ? m.Groups["arg"].Value.Trim() : null;
+
+                switch (pseudoName)
+                {
+                    case "first-child":
+                        if (!IsNthChild(el, 1)) return false;
+                        break;
+                    case "last-child":
+                        if (!IsLastChild(el)) return false;
+                        break;
+                    case "first-of-type":
+                        if (!IsFirstOfType(el)) return false;
+                        break;
+                    case "nth-child":
+                        if (arg == null || !MatchesNthChild(el, arg)) return false;
+                        break;
+                    case "not":
+                        if (arg != null && MatchesCompound(el, arg)) return false;
+                        break;
+                    default:
+                        break; // Unknown pseudo-classes are ignored
+                }
+            }
+
+            compound = PseudoClassPattern.Replace(compound, string.Empty);
+            return true;
+        }
+
+        private static bool IsNthChild(DomElement el, int n)
+        {
+            if (el.Parent == null) return n == 1;
+            int index = 1;
+            foreach (var child in el.Parent.Children)
+            {
+                if (child.IsTextNode) continue;
+                if (ReferenceEquals(child, el)) return index == n;
+                index++;
+            }
+            return false;
+        }
+
+        private static bool IsLastChild(DomElement el)
+        {
+            if (el.Parent == null) return true;
+            for (int i = el.Parent.Children.Count - 1; i >= 0; i--)
+            {
+                var child = el.Parent.Children[i];
+                if (child.IsTextNode) continue;
+                return ReferenceEquals(child, el);
+            }
+            return false;
+        }
+
+        private static bool IsFirstOfType(DomElement el)
+        {
+            if (el.Parent == null) return true;
+            foreach (var child in el.Parent.Children)
+            {
+                if (child.IsTextNode) continue;
+                if (string.Equals(child.TagName, el.TagName, System.StringComparison.OrdinalIgnoreCase))
+                    return ReferenceEquals(child, el);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Evaluates the <c>:nth-child()</c> argument expression against an element.
+        /// Supports <c>odd</c>, <c>even</c>, integer values, and <c>An+B</c> notation.
+        /// </summary>
+        private static bool MatchesNthChild(DomElement el, string expr)
+        {
+            if (el.Parent == null) return false;
+            int index = 0;
+            foreach (var child in el.Parent.Children)
+            {
+                if (child.IsTextNode) continue;
+                index++;
+                if (ReferenceEquals(child, el)) break;
+            }
+
+            expr = expr.Trim().ToLowerInvariant();
+            if (expr == "odd") return index % 2 == 1;
+            if (expr == "even") return index % 2 == 0;
+            if (int.TryParse(expr, out var exact)) return index == exact;
+
+            // Parse An+B notation
+            var nIdx = expr.IndexOf('n');
+            if (nIdx >= 0)
+            {
+                var aPart = expr[..nIdx].Trim();
+                int a = string.IsNullOrEmpty(aPart) || aPart == "+" ? 1 : aPart == "-" ? -1 : int.TryParse(aPart, out var av) ? av : 1;
+                int b = 0;
+                var bPart = expr[(nIdx + 1)..].Trim();
+                if (!string.IsNullOrEmpty(bPart))
+                    int.TryParse(bPart.Replace(" ", ""), out b);
+
+                if (a == 0) return index == b;
+                return (index - b) % a == 0 && (index - b) / a >= 0;
+            }
+
+            return false;
         }
 
         // ------------------------------------------------------------------
@@ -610,6 +860,44 @@ namespace Broiler.App.Rendering
                     _elements.Add(el);
                     return ToJSObject(el);
                 }, "createTextNode", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // document.createEvent(type) — DOM Events Level 3
+            document.FastAddValue(
+                (KeyString)"createEvent",
+                new JSFunction((in Arguments a) =>
+                {
+                    var evt = new JSObject();
+                    var eventType = string.Empty;
+                    var bubbles = false;
+                    var cancelable = false;
+                    evt.FastAddValue((KeyString)"type", new JSString(string.Empty), JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"bubbles", JSBoolean.False, JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"cancelable", JSBoolean.False, JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"defaultPrevented", JSBoolean.False, JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"target", JSNull.Value, JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"currentTarget", JSNull.Value, JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"eventPhase", new JSNumber(0), JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"stopPropagation",
+                        new JSFunction((in Arguments _) => JSUndefined.Value, "stopPropagation", 0),
+                        JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"preventDefault",
+                        new JSFunction((in Arguments _) => JSUndefined.Value, "preventDefault", 0),
+                        JSPropertyAttributes.EnumerableConfigurableValue);
+                    evt.FastAddValue((KeyString)"initEvent",
+                        new JSFunction((in Arguments initArgs) =>
+                        {
+                            if (initArgs.Length > 0)
+                                evt[(KeyString)"type"] = new JSString(initArgs[0].ToString());
+                            if (initArgs.Length > 1)
+                                evt[(KeyString)"bubbles"] = initArgs[1].BooleanValue ? JSBoolean.True : JSBoolean.False;
+                            if (initArgs.Length > 2)
+                                evt[(KeyString)"cancelable"] = initArgs[2].BooleanValue ? JSBoolean.True : JSBoolean.False;
+                            return JSUndefined.Value;
+                        }, "initEvent", 3),
+                        JSPropertyAttributes.EnumerableConfigurableValue);
+                    return evt;
+                }, "createEvent", 1),
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
             context["document"] = document;
@@ -1182,7 +1470,333 @@ namespace Broiler.App.Rendering
                 }, "removeEventListener", 2),
                 JSPropertyAttributes.EnumerableConfigurableValue);
 
+            // dispatchEvent(event) — DOM Events Level 3 with capture/target/bubble phases
+            var bridge = this;
+            obj.FastAddValue(
+                (KeyString)"dispatchEvent",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length == 0) return JSBoolean.True;
+                    var evt = a[0] as JSObject;
+                    if (evt == null) return JSBoolean.True;
+
+                    return bridge.DispatchEventOnElement(element, evt);
+                }, "dispatchEvent", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // -- Form element support --
+
+            // value (read/write) — for input, textarea, select elements
+            obj.FastAddProperty(
+                (KeyString)"value",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (element.Attributes.TryGetValue("value", out var val))
+                        return new JSString(val);
+                    return new JSString(string.Empty);
+                }, "get value"),
+                new JSFunction((in Arguments a) =>
+                {
+                    element.Attributes["value"] = a.Length > 0 ? a[0].ToString() : string.Empty;
+                    return JSUndefined.Value;
+                }, "set value"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // checked (read/write) — for checkbox and radio inputs
+            obj.FastAddProperty(
+                (KeyString)"checked",
+                new JSFunction((in Arguments a) =>
+                    element.Attributes.ContainsKey("checked") ? JSBoolean.True : JSBoolean.False,
+                    "get checked"),
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length > 0 && a[0].BooleanValue)
+                        element.Attributes["checked"] = "checked";
+                    else
+                        element.Attributes.Remove("checked");
+                    return JSUndefined.Value;
+                }, "set checked"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // type (read-only) — for input elements
+            obj.FastAddProperty(
+                (KeyString)"type",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (element.Attributes.TryGetValue("type", out var t))
+                        return new JSString(t);
+                    return new JSString(string.Empty);
+                }, "get type"),
+                null,
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // name (read-only) — for form elements
+            obj.FastAddProperty(
+                (KeyString)"name",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (element.Attributes.TryGetValue("name", out var n))
+                        return new JSString(n);
+                    return new JSString(string.Empty);
+                }, "get name"),
+                null,
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // disabled (read/write) — for form controls
+            obj.FastAddProperty(
+                (KeyString)"disabled",
+                new JSFunction((in Arguments a) =>
+                    element.Attributes.ContainsKey("disabled") ? JSBoolean.True : JSBoolean.False,
+                    "get disabled"),
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length > 0 && a[0].BooleanValue)
+                        element.Attributes["disabled"] = "disabled";
+                    else
+                        element.Attributes.Remove("disabled");
+                    return JSUndefined.Value;
+                }, "set disabled"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // required (read/write) — form validation
+            obj.FastAddProperty(
+                (KeyString)"required",
+                new JSFunction((in Arguments a) =>
+                    element.Attributes.ContainsKey("required") ? JSBoolean.True : JSBoolean.False,
+                    "get required"),
+                new JSFunction((in Arguments a) =>
+                {
+                    if (a.Length > 0 && a[0].BooleanValue)
+                        element.Attributes["required"] = "required";
+                    else
+                        element.Attributes.Remove("required");
+                    return JSUndefined.Value;
+                }, "set required"),
+                JSPropertyAttributes.EnumerableConfigurableProperty);
+
+            // checkValidity() — form validation
+            obj.FastAddValue(
+                (KeyString)"checkValidity",
+                new JSFunction((in Arguments a) =>
+                {
+                    return CheckElementValidity(element) ? JSBoolean.True : JSBoolean.False;
+                }, "checkValidity", 0),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // reportValidity() — form validation
+            obj.FastAddValue(
+                (KeyString)"reportValidity",
+                new JSFunction((in Arguments a) =>
+                {
+                    return CheckElementValidity(element) ? JSBoolean.True : JSBoolean.False;
+                }, "reportValidity", 0),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // submit() — for form elements
+            obj.FastAddValue(
+                (KeyString)"submit",
+                new JSFunction((in Arguments a) =>
+                {
+                    if (string.Equals(element.TagName, "form", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Fire submit event
+                        var submitEvt = new JSObject();
+                        submitEvt.FastAddValue((KeyString)"type", new JSString("submit"), JSPropertyAttributes.EnumerableConfigurableValue);
+                        submitEvt.FastAddValue((KeyString)"target", obj, JSPropertyAttributes.EnumerableConfigurableValue);
+                        submitEvt.FastAddValue((KeyString)"bubbles", JSBoolean.True, JSPropertyAttributes.EnumerableConfigurableValue);
+                        submitEvt.FastAddValue((KeyString)"cancelable", JSBoolean.True, JSPropertyAttributes.EnumerableConfigurableValue);
+                        var prevented = false;
+                        submitEvt.FastAddValue((KeyString)"defaultPrevented", JSBoolean.False, JSPropertyAttributes.EnumerableConfigurableValue);
+                        submitEvt.FastAddValue((KeyString)"preventDefault", new JSFunction((in Arguments _) =>
+                        {
+                            prevented = true;
+                            submitEvt[(KeyString)"defaultPrevented"] = JSBoolean.True;
+                            return JSUndefined.Value;
+                        }, "preventDefault", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+                        submitEvt.FastAddValue((KeyString)"stopPropagation", new JSFunction((in Arguments _) => JSUndefined.Value, "stopPropagation", 0), JSPropertyAttributes.EnumerableConfigurableValue);
+
+                        if (element.EventListeners.TryGetValue("submit", out var submitListeners))
+                        {
+                            foreach (var listener in submitListeners.ToList())
+                            {
+                                if (listener is JSFunction fn)
+                                {
+                                    try { fn.InvokeFunction(new Arguments(fn, submitEvt)); }
+                                    catch { /* swallow */ }
+                                }
+                            }
+                        }
+
+                        // If preventDefault was called, do not proceed with default action
+                        if (prevented)
+                        {
+                            System.Diagnostics.Debug.WriteLine("[submit] Default action prevented");
+                        }
+                    }
+                    return JSUndefined.Value;
+                }, "submit", 0),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // querySelector on elements
+            obj.FastAddValue(
+                (KeyString)"querySelector",
+                new JSFunction((in Arguments a) =>
+                {
+                    var sel = a.Length > 0 ? a[0].ToString() : string.Empty;
+                    return FindInDescendants(element, sel, false, bridge);
+                }, "querySelector", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // querySelectorAll on elements
+            obj.FastAddValue(
+                (KeyString)"querySelectorAll",
+                new JSFunction((in Arguments a) =>
+                {
+                    var sel = a.Length > 0 ? a[0].ToString() : string.Empty;
+                    return FindInDescendants(element, sel, true, bridge);
+                }, "querySelectorAll", 1),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
             return obj;
+        }
+
+        /// <summary>
+        /// Searches descendants of an element using a CSS selector.
+        /// </summary>
+        private static JSValue FindInDescendants(DomElement root, string selector, bool all, DomBridge bridge)
+        {
+            var results = new List<JSValue>();
+            SearchDescendants(root, selector, results, bridge, all);
+            if (all) return new JSArray(results);
+            return results.Count > 0 ? results[0] : JSNull.Value;
+        }
+
+        private static void SearchDescendants(DomElement parent, string selector, List<JSValue> results, DomBridge bridge, bool all)
+        {
+            foreach (var child in parent.Children)
+            {
+                if (!child.IsTextNode && MatchesSelector(child, selector))
+                {
+                    results.Add(bridge.ToJSObject(child));
+                    if (!all) return;
+                }
+                SearchDescendants(child, selector, results, bridge, all);
+                if (!all && results.Count > 0) return;
+            }
+        }
+
+        /// <summary>
+        /// Validates a form element or individual input element.
+        /// For forms, validates all child input elements.
+        /// For individual inputs, checks the <c>required</c> constraint.
+        /// </summary>
+        private static bool CheckElementValidity(DomElement element)
+        {
+            if (string.Equals(element.TagName, "form", System.StringComparison.OrdinalIgnoreCase))
+            {
+                return ValidateFormChildren(element);
+            }
+
+            // Individual element validation
+            if (!element.Attributes.ContainsKey("required")) return true;
+
+            var tag = element.TagName;
+            if (string.Equals(tag, "input", System.StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(tag, "textarea", System.StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(tag, "select", System.StringComparison.OrdinalIgnoreCase))
+            {
+                element.Attributes.TryGetValue("value", out var val);
+                return !string.IsNullOrEmpty(val);
+            }
+            return true;
+        }
+
+        private static bool ValidateFormChildren(DomElement form)
+        {
+            foreach (var child in form.Children)
+            {
+                if (!child.IsTextNode && !CheckElementValidity(child)) return false;
+                if (!ValidateFormChildren(child)) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Dispatches a DOM event on the given element with full capture → target → bubble
+        /// propagation (DOM Events Level 3).
+        /// </summary>
+        private JSValue DispatchEventOnElement(DomElement target, JSObject evt)
+        {
+            var typeVal = evt[(KeyString)"type"];
+            var eventType = typeVal != null && typeVal is JSString ? typeVal.ToString() : "unknown";
+
+            // Build the path from the root to the target
+            var path = new List<DomElement>();
+            var node = target.Parent;
+            while (node != null) { path.Add(node); node = node.Parent; }
+            path.Reverse();
+
+            var stopped = false;
+            var prevented = false;
+
+            // Set up event object properties
+            evt.FastAddValue((KeyString)"target", ToJSObject(target), JSPropertyAttributes.EnumerableConfigurableValue);
+            evt.FastAddValue((KeyString)"eventPhase", new JSNumber(0), JSPropertyAttributes.EnumerableConfigurableValue);
+            evt.FastAddValue((KeyString)"defaultPrevented", JSBoolean.False, JSPropertyAttributes.EnumerableConfigurableValue);
+            evt.FastAddValue((KeyString)"stopPropagation",
+                new JSFunction((in Arguments _) => { stopped = true; return JSUndefined.Value; }, "stopPropagation", 0),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+            evt.FastAddValue((KeyString)"preventDefault",
+                new JSFunction((in Arguments _) => { prevented = true; evt[(KeyString)"defaultPrevented"] = JSBoolean.True; return JSUndefined.Value; }, "preventDefault", 0),
+                JSPropertyAttributes.EnumerableConfigurableValue);
+
+            // Phase 1: Capture (root → parent of target)
+            evt[(KeyString)"eventPhase"] = new JSNumber(1);
+            foreach (var ancestor in path)
+            {
+                if (stopped) break;
+                evt[(KeyString)"currentTarget"] = ToJSObject(ancestor);
+                FireListeners(ancestor, eventType, evt, ref stopped);
+            }
+
+            // Phase 2: Target
+            if (!stopped)
+            {
+                evt[(KeyString)"eventPhase"] = new JSNumber(2);
+                evt[(KeyString)"currentTarget"] = ToJSObject(target);
+                FireListeners(target, eventType, evt, ref stopped);
+            }
+
+            // Phase 3: Bubble (parent of target → root)
+            if (!stopped)
+            {
+                evt[(KeyString)"eventPhase"] = new JSNumber(3);
+                for (int i = path.Count - 1; i >= 0; i--)
+                {
+                    if (stopped) break;
+                    evt[(KeyString)"currentTarget"] = ToJSObject(path[i]);
+                    FireListeners(path[i], eventType, evt, ref stopped);
+                }
+            }
+
+            return prevented ? JSBoolean.False : JSBoolean.True;
+        }
+
+        /// <summary>
+        /// Fires all registered listeners for the given event type on a single element.
+        /// </summary>
+        private static void FireListeners(DomElement el, string eventType, JSObject evt, ref bool stopped)
+        {
+            if (!el.EventListeners.TryGetValue(eventType, out var listeners)) return;
+            foreach (var listener in listeners.ToList())
+            {
+                if (stopped) break;
+                if (listener is JSFunction fn)
+                {
+                    try { fn.InvokeFunction(new Arguments(fn, evt)); }
+                    catch { /* swallow */ }
+                }
+            }
         }
 
         /// <summary>

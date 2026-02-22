@@ -54,20 +54,20 @@ impactful gaps.
 
 Focus on WHATWG HTML parsing and CSS layout correctness.
 
-- [ ] Replace ad-hoc HTML parsing with a WHATWG-compliant HTML tokeniser & tree
+- [x] Replace ad-hoc HTML parsing with a WHATWG-compliant HTML tokeniser & tree
       builder (ref: [HTML Standard §13](https://html.spec.whatwg.org/multipage/parsing.html))
-- [ ] Implement CSS Box Model (Level 3)
+- [x] Implement CSS Box Model (Level 3)
   - Block, inline, and inline-block formatting contexts
   - Float and clear
   - Positioning: static, relative, absolute, fixed
-- [ ] CSS Selectors Level 4 support in `querySelector` / `querySelectorAll`
+- [x] CSS Selectors Level 4 support in `querySelector` / `querySelectorAll`
   - Combinators (`>`, `+`, `~`)
   - Pseudo-classes (`:nth-child`, `:not`, `:first-of-type`)
   - Pseudo-elements (`::before`, `::after`)
-- [ ] Implement `<form>` elements
+- [x] Implement `<form>` elements
   - Input types: text, checkbox, radio, select, textarea
   - Form validation and `submit` event
-- [ ] DOM Events Level 3
+- [x] DOM Events Level 3
   - Event propagation (capture, target, bubble phases)
   - `stopPropagation`, `preventDefault`
   - Keyboard and mouse events
