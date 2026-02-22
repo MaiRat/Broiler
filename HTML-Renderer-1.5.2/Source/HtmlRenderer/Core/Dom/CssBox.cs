@@ -630,6 +630,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
                     if (Width != CssConstants.Auto && !string.IsNullOrEmpty(Width))
                     {
                         width = CssValueParser.ParseLength(Width, width, this);
+                        width += ActualPaddingLeft + ActualPaddingRight + ActualBorderLeftWidth + ActualBorderRightWidth;
                     }
 
                     Size = new RSize(width, Size.Height);
