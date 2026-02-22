@@ -9,10 +9,13 @@ public class Program
     public static async Task<int> Main(string[] args)
     {
         string? url = null;
+        string? captureImageUrl = null;
         string? output = null;
         bool fullPage = false;
         bool testEngines = false;
         int timeoutSeconds = 30;
+        int width = 1024;
+        int height = 768;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -20,6 +23,9 @@ public class Program
             {
                 case "--url" when i + 1 < args.Length:
                     url = args[++i];
+                    break;
+                case "--capture-image" when i + 1 < args.Length:
+                    captureImageUrl = args[++i];
                     break;
                 case "--output" when i + 1 < args.Length:
                     output = args[++i];
@@ -31,6 +37,20 @@ public class Program
                         return 1;
                     }
                     break;
+                case "--width" when i + 1 < args.Length:
+                    if (!int.TryParse(args[++i], out width) || width <= 0)
+                    {
+                        Console.Error.WriteLine("Error: '--width' must be a positive integer.");
+                        return 1;
+                    }
+                    break;
+                case "--height" when i + 1 < args.Length:
+                    if (!int.TryParse(args[++i], out height) || height <= 0)
+                    {
+                        Console.Error.WriteLine("Error: '--height' must be a positive integer.");
+                        return 1;
+                    }
+                    break;
                 case "--full-page":
                     fullPage = true;
                     break;
@@ -38,8 +58,11 @@ public class Program
                     testEngines = true;
                     break;
                 case "--url":
+                case "--capture-image":
                 case "--output":
                 case "--timeout":
+                case "--width":
+                case "--height":
                     Console.Error.WriteLine($"Error: '{args[i]}' requires a value.");
                     PrintUsage();
                     return 1;
@@ -56,6 +79,56 @@ public class Program
         if (testEngines)
         {
             return RunEngineTests();
+        }
+
+        if (captureImageUrl is not null)
+        {
+            if (output is null)
+            {
+                Console.Error.WriteLine("Error: '--output' is required when using '--capture-image'.");
+                PrintUsage();
+                return 1;
+            }
+
+            if (!Uri.TryCreate(captureImageUrl, UriKind.Absolute, out var imgUri)
+                || (imgUri.Scheme != "http" && imgUri.Scheme != "https"))
+            {
+                Console.Error.WriteLine($"Error: '{captureImageUrl}' is not a valid HTTP or HTTPS URL.");
+                return 1;
+            }
+
+            var imageOptions = new ImageCaptureOptions
+            {
+                Url = captureImageUrl,
+                OutputPath = output,
+                Width = width,
+                Height = height,
+                TimeoutSeconds = timeoutSeconds,
+            };
+
+            try
+            {
+                var service = new CaptureService();
+                await service.CaptureImageAsync(imageOptions);
+
+                Console.WriteLine($"Image capture saved to {output}");
+                return 0;
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.Error.WriteLine($"Capture failed: {ex.Message}");
+                return 1;
+            }
+            catch (IOException ex)
+            {
+                Console.Error.WriteLine($"File I/O error: {ex.Message}");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Unexpected error: {ex.Message}");
+                return 1;
+            }
         }
 
         if (url is null || output is null)
@@ -108,15 +181,19 @@ public class Program
     private static void PrintUsage()
     {
         Console.WriteLine("Usage: Broiler.Cli --url <URL> --output <FILE> [OPTIONS]");
+        Console.WriteLine("       Broiler.Cli --capture-image <URL> --output <FILE> [OPTIONS]");
         Console.WriteLine("       Broiler.Cli --test-engines");
         Console.WriteLine();
         Console.WriteLine("Options:");
-        Console.WriteLine("  --url <URL>        The URL of the website to capture");
-        Console.WriteLine("  --output <FILE>    The output file path for the captured content (HTML or TXT)");
-        Console.WriteLine("  --full-page        Capture the full page content");
-        Console.WriteLine("  --timeout <SECS>   Navigation timeout in seconds (default: 30)");
-        Console.WriteLine("  --test-engines     Run smoke tests for the embedded rendering engines");
-        Console.WriteLine("  --help             Show this help message");
+        Console.WriteLine("  --url <URL>            The URL of the website to capture");
+        Console.WriteLine("  --capture-image <URL>  Capture the website as an image (PNG or JPEG)");
+        Console.WriteLine("  --output <FILE>        The output file path for the captured content");
+        Console.WriteLine("  --width <PIXELS>       Image width in pixels (default: 1024, used with --capture-image)");
+        Console.WriteLine("  --height <PIXELS>      Image height in pixels (default: 768, used with --capture-image)");
+        Console.WriteLine("  --full-page            Capture the full page content");
+        Console.WriteLine("  --timeout <SECS>       Navigation timeout in seconds (default: 30)");
+        Console.WriteLine("  --test-engines         Run smoke tests for the embedded rendering engines");
+        Console.WriteLine("  --help                 Show this help message");
     }
 
     /// <summary>

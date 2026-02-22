@@ -87,6 +87,76 @@ public class ProgramTests
     }
 
     [Fact]
+    public async Task Main_CaptureImage_WithMissingOutput_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "https://example.com"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_CaptureImage_WithInvalidUrl_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "not-a-url", "--output", "test.png"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_CaptureImage_WithNonHttpUrl_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "ftp://example.com", "--output", "test.png"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_WithInvalidWidth_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "https://example.com", "--output", "test.png", "--width", "abc"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_WithNegativeWidth_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "https://example.com", "--output", "test.png", "--width", "-5"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_WithInvalidHeight_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "https://example.com", "--output", "test.png", "--height", "abc"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_WithNegativeHeight_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "https://example.com", "--output", "test.png", "--height", "-5"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_WithWidthMissingValue_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "https://example.com", "--output", "test.png", "--width"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_WithHeightMissingValue_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image", "https://example.com", "--output", "test.png", "--height"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Main_CaptureImage_WithMissingValue_ReturnsOne()
+    {
+        var result = await Program.Main(["--capture-image"]);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
     public void RunEngineTests_ProducesOutput()
     {
         var writer = new StringWriter();
@@ -143,5 +213,57 @@ public class CaptureOptionsTests
     {
         var options = new CaptureOptions { Url = "https://example.com", OutputPath = "output.html" };
         Assert.False(options.FullPage);
+    }
+}
+
+public class ImageCaptureOptionsTests
+{
+    [Fact]
+    public void ImageFormat_PngExtension_ReturnsPng()
+    {
+        var options = new ImageCaptureOptions { Url = "https://example.com", OutputPath = "output.png" };
+        Assert.Equal(ImageFormat.Png, options.ImageFormat);
+    }
+
+    [Fact]
+    public void ImageFormat_JpgExtension_ReturnsJpeg()
+    {
+        var options = new ImageCaptureOptions { Url = "https://example.com", OutputPath = "output.jpg" };
+        Assert.Equal(ImageFormat.Jpeg, options.ImageFormat);
+    }
+
+    [Fact]
+    public void ImageFormat_JpegExtension_ReturnsJpeg()
+    {
+        var options = new ImageCaptureOptions { Url = "https://example.com", OutputPath = "output.jpeg" };
+        Assert.Equal(ImageFormat.Jpeg, options.ImageFormat);
+    }
+
+    [Fact]
+    public void ImageFormat_UnknownExtension_DefaultsToPng()
+    {
+        var options = new ImageCaptureOptions { Url = "https://example.com", OutputPath = "output.bmp" };
+        Assert.Equal(ImageFormat.Png, options.ImageFormat);
+    }
+
+    [Fact]
+    public void DefaultWidth_Is1024()
+    {
+        var options = new ImageCaptureOptions { Url = "https://example.com", OutputPath = "output.png" };
+        Assert.Equal(1024, options.Width);
+    }
+
+    [Fact]
+    public void DefaultHeight_Is768()
+    {
+        var options = new ImageCaptureOptions { Url = "https://example.com", OutputPath = "output.png" };
+        Assert.Equal(768, options.Height);
+    }
+
+    [Fact]
+    public void DefaultTimeout_IsThirtySeconds()
+    {
+        var options = new ImageCaptureOptions { Url = "https://example.com", OutputPath = "output.png" };
+        Assert.Equal(30, options.TimeoutSeconds);
     }
 }
