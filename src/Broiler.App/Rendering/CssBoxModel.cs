@@ -372,7 +372,7 @@ namespace Broiler.App.Rendering
         /// Parses a CSS length value such as "10px", "50%", or "auto".
         /// Percentages are resolved against <paramref name="containerSize"/>.
         /// </summary>
-        internal static float ParseCssValue(string value, float containerSize, float defaultValue)
+        public static float ParseCssValue(string value, float containerSize, float defaultValue)
         {
             if (string.IsNullOrWhiteSpace(value) || value.Equals("auto", StringComparison.OrdinalIgnoreCase))
                 return defaultValue;
