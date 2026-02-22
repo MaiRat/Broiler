@@ -33,4 +33,40 @@ public class ScriptEngineTests
         var result = _engine.Execute(new[] { "var a = 1;", "var b = a + 1;" });
         Assert.True(result);
     }
+
+    /// <summary>
+    /// Regression test: a failing script must not prevent subsequent scripts
+    /// from executing (mirrors real browser behaviour).
+    /// </summary>
+    [Fact]
+    public void Execute_FailingScriptDoesNotBlockSubsequentScripts()
+    {
+        // The first script throws; the second should still run.
+        var result = _engine.Execute(new[]
+        {
+            "throw new Error('boom');",
+            "var survived = true;"
+        });
+
+        // Overall result is false because one script failed.
+        Assert.False(result);
+    }
+
+    /// <summary>
+    /// Regression test: a failing script in the HTML overload must not
+    /// prevent subsequent scripts from executing.
+    /// </summary>
+    [Fact]
+    public void Execute_WithHtml_FailingScriptDoesNotBlockSubsequentScripts()
+    {
+        var html = "<html><body></body></html>";
+
+        var result = _engine.Execute(new[]
+        {
+            "throw new Error('boom');",
+            "var survived = true;"
+        }, html);
+
+        Assert.False(result);
+    }
 }

@@ -18,20 +18,21 @@ namespace Broiler.App.Rendering
             if (scripts.Count == 0)
                 return true;
 
-            try
+            using var context = new JSContext();
+            var allSucceeded = true;
+            foreach (var script in scripts)
             {
-                using var context = new JSContext();
-                foreach (var script in scripts)
+                try
                 {
                     context.Eval(script);
                 }
-                return true;
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"JavaScript execution error: {ex.Message}");
+                    allSucceeded = false;
+                }
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"JavaScript execution error: {ex.Message}");
-                return false;
-            }
+            return allSucceeded;
         }
 
         /// <inheritdoc />
@@ -40,23 +41,24 @@ namespace Broiler.App.Rendering
             if (scripts.Count == 0)
                 return true;
 
-            try
-            {
-                using var context = new JSContext();
-                var bridge = new DomBridge();
-                bridge.Attach(context, html);
+            using var context = new JSContext();
+            var bridge = new DomBridge();
+            bridge.Attach(context, html);
 
-                foreach (var script in scripts)
+            var allSucceeded = true;
+            foreach (var script in scripts)
+            {
+                try
                 {
                     context.Eval(script);
                 }
-                return true;
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"JavaScript execution error: {ex.Message}");
+                    allSucceeded = false;
+                }
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"JavaScript execution error: {ex.Message}");
-                return false;
-            }
+            return allSucceeded;
         }
     }
 }

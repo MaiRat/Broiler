@@ -617,4 +617,35 @@ public class DomBridgeTests
         var result = _engine.Execute(new[] { script }, html);
         Assert.True(result);
     }
+
+    /// <summary>
+    /// Regression test for JSException: 'Cannot get property consent of null'.
+    /// When <c>localStorage.getItem</c> returns null, <c>JSON.parse(null)</c> yields null
+    /// and property access on null throws. The per-script error handling in
+    /// <see cref="ScriptEngine"/> must prevent this from crashing the pipeline;
+    /// the failing script returns false but does not block subsequent scripts.
+    /// </summary>
+    [Fact]
+    public void Execute_WithHtml_HeiseConsentScriptWithNullGetItem_DoesNotCrash()
+    {
+        var html = "<html><head></head><body></body></html>";
+
+        // This is the exact pattern from heise.de that caused the crash:
+        // getItem returns null → JSON.parse(null) → null → null.consent throws.
+        var crashingScript = @"
+            var ls = JSON.parse(window.localStorage.getItem('akwaConfig-v2'))
+            if (ls.consent && ls.consent[820]) {
+              // kameleoon loader
+            }
+        ";
+
+        // A subsequent script that should still execute despite the crash above.
+        var safeScript = "var ok = true;";
+
+        var result = _engine.Execute(new[] { crashingScript, safeScript }, html);
+
+        // The crashing script makes the overall result false, but the second
+        // script must still have executed (no unhandled exception).
+        Assert.False(result);
+    }
 }

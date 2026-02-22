@@ -91,4 +91,24 @@ public class WindowStubTests
 
         Assert.Null(ex);
     }
+
+    /// <summary>
+    /// Regression test for JSException: 'Cannot get property consent of null'.
+    /// <c>localStorage.getItem</c> returns null for a missing key, so
+    /// <c>JSON.parse(null)</c> yields null and <c>ls.consent</c> throws.
+    /// Verifies the exception is raised (correctly) from the JS engine.
+    /// </summary>
+    [Fact]
+    public void RegisterWindowStub_GetItemReturnsNull_JsonParseNullDereferenceThrows()
+    {
+        using var context = new JSContext();
+        CaptureService.RegisterWindowStub(context);
+
+        // getItem for a missing key returns null; JSON.parse(null) → null;
+        // accessing a property on null must throw a JSException.
+        Assert.ThrowsAny<Exception>(() => context.Eval(@"
+            var ls = JSON.parse(window.localStorage.getItem('akwaConfig-v2'))
+            if (ls.consent && ls.consent[820]) { }
+        "));
+    }
 }
