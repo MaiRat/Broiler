@@ -18,19 +18,19 @@ verification after issue resolution.
 
 ## Phase 2 — Website Capture Implementation
 
-- [ ] Implement `CaptureService` that uses Playwright to:
+- [x] Implement `CaptureService` that uses Playwright to:
   - Launch a headless Chromium browser
   - Navigate to the specified URL
   - Wait for the page to fully load (network idle)
   - Save a full-page screenshot to the output path
-- [ ] Add robust error handling:
+- [x] Add robust error handling:
   - Invalid URL validation
   - Navigation timeout with configurable duration
   - File I/O errors (permissions, disk space)
   - Browser launch failures with helpful messages
-- [ ] Support output formats: PNG (default), JPEG
-- [ ] Add `--full-page` flag for full-page vs. viewport-only capture
-- [ ] Add `--timeout` option (default: 30 seconds)
+- [x] Support output formats: PNG (default), JPEG
+- [x] Add `--full-page` flag for full-page vs. viewport-only capture
+- [x] Add `--timeout` option (default: 30 seconds)
 
 ## Phase 3 — Engine Testing Integration
 
