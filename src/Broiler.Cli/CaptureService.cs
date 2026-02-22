@@ -60,10 +60,17 @@ public class CaptureService
     /// <exception cref="IOException">Thrown when the output file cannot be written.</exception>
     public async Task CaptureAsync(CaptureOptions options)
     {
-        var outputDir = Path.GetDirectoryName(Path.GetFullPath(options.OutputPath));
-        if (outputDir != null && !Directory.Exists(outputDir))
+        try
         {
-            Directory.CreateDirectory(outputDir);
+            var outputDir = Path.GetDirectoryName(Path.GetFullPath(options.OutputPath));
+            if (outputDir != null && !Directory.Exists(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
+            }
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or PathTooLongException)
+        {
+            throw new IOException($"Cannot create output directory: {ex.Message}", ex);
         }
 
         using var playwright = await Playwright.CreateAsync();
@@ -76,7 +83,7 @@ public class CaptureService
         await page.GotoAsync(options.Url, new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
-            Timeout = options.TimeoutSeconds * 1_000,
+            Timeout = (float)options.TimeoutSeconds * 1_000,
         });
 
         await page.ScreenshotAsync(new PageScreenshotOptions
