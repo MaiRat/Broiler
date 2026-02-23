@@ -67,6 +67,7 @@ internal static class CssUtils
             "background-image" => cssBox.BackgroundImage,
             "background-position" => cssBox.BackgroundPosition,
             "background-repeat" => cssBox.BackgroundRepeat,
+            "background-size" => cssBox.BackgroundSize,
             "background-gradient" => cssBox.BackgroundGradient,
             "background-gradient-angle" => cssBox.BackgroundGradientAngle,
             "content" => cssBox.Content,
@@ -232,6 +233,9 @@ internal static class CssUtils
                 break;
             case "background-repeat":
                 cssBox.BackgroundRepeat = value;
+                break;
+            case "background-size":
+                cssBox.BackgroundSize = value;
                 break;
             case "background-gradient":
                 cssBox.BackgroundGradient = value;

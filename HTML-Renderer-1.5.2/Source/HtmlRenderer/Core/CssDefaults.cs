@@ -91,6 +91,21 @@ internal static class CssDefaults
         a               { color: #0055BB; text-decoration:underline }
         table           { border-color:#dfdfdf; }
         td, th          { border-color:#dfdfdf; overflow: hidden; }
+        /* HTML5 semantic/sectioning elements – display:block per WHATWG */
+        section, article,
+        nav, aside,
+        header, footer,
+        main, figure,
+        figcaption,
+        details         { display: block }
+        summary         { display: list-item }
+
+        /* HTML5 text-level elements – inline by default */
+        mark            { background-color: yellow; color: black }
+
+        /* Hidden elements (HTML5) */
+        template, dialog,
+        [hidden]        { display: none }
         style, title,
         script, link,
         meta, area,

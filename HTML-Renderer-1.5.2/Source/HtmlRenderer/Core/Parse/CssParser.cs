@@ -154,7 +154,8 @@ internal sealed class CssParser
             //Scan media types
             foreach (string t in media)
             {
-                if (String.IsNullOrEmpty(t.Trim()))
+                string mediaType = t.Trim();
+                if (String.IsNullOrEmpty(mediaType))
                     continue;
 
                 //Get blocks inside the at-rule
@@ -162,7 +163,14 @@ internal sealed class CssParser
 
                 //Scan blocks and feed them to the style sheet
                 foreach (Match insideBlock in insideBlocks)
-                    FeedStyleBlock(cssData, insideBlock.Value, t.Trim());
+                {
+                    // Treat @media screen rules as applicable to all
+                    // (HTML-Renderer always renders for screen)
+                    if (string.Equals(mediaType, "screen", StringComparison.OrdinalIgnoreCase))
+                        FeedStyleBlock(cssData, insideBlock.Value);
+                    else
+                        FeedStyleBlock(cssData, insideBlock.Value, mediaType);
+                }
             }
         }
     }

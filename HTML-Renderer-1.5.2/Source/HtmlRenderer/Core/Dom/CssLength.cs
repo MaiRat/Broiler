@@ -36,6 +36,17 @@ internal sealed class CssLength
             return;
         }
 
+        // Check for 3-character units first (e.g. "rem")
+        if (length.Length >= 4 && length.EndsWith(CssConstants.Rem, StringComparison.Ordinal))
+        {
+            Unit = CssUnit.Rem;
+            IsRelative = true;
+            string remNumber = length.Substring(0, length.Length - 3);
+            if (!double.TryParse(remNumber, NumberStyles.Number, NumberFormatInfo.InvariantInfo, out _number))
+                HasError = true;
+            return;
+        }
+
         //Get units of the length
         string u = length.Substring(length.Length - 2, 2);
 
@@ -152,6 +163,9 @@ internal sealed class CssLength
                     break;
                 case CssUnit.Picas:
                     u = "pc";
+                    break;
+                case CssUnit.Rem:
+                    u = "rem";
                     break;
             }
 

@@ -300,6 +300,7 @@ internal abstract class CssBoxProperties
     public string BackgroundImage { get; set; } = "none";
     public string BackgroundPosition { get; set; } = "0% 0%";
     public string BackgroundRepeat { get; set; } = "repeat";
+    public string BackgroundSize { get; set; } = "auto";
     public string BackgroundGradient { get; set; } = "none";
     public string BackgroundGradientAngle { get; set; } = "90";
 
@@ -992,6 +993,7 @@ internal abstract class CssBoxProperties
         BackgroundImage = p.BackgroundImage;
         BackgroundPosition = p.BackgroundPosition;
         BackgroundRepeat = p.BackgroundRepeat;
+        BackgroundSize = p.BackgroundSize;
         _borderTopWidth = p._borderTopWidth;
         _borderRightWidth = p._borderRightWidth;
         _borderBottomWidth = p._borderBottomWidth;

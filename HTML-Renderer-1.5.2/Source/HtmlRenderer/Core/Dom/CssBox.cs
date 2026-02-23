@@ -410,6 +410,21 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         ActualBottom = Math.Max(ActualBottom, Location.Y + ActualHeight);
 
+        // Apply position:relative offset after layout (visual only, does not affect flow)
+        if (Position == CssConstants.Relative)
+        {
+            double dx = 0, dy = 0;
+            if (Left != null && Left != CssConstants.Auto)
+                dx = CssValueParser.ParseLength(Left, Size.Width, this);
+            if (Top != null && Top != CssConstants.Auto)
+                dy = CssValueParser.ParseLength(Top, Size.Height, this);
+
+            if (dx != 0)
+                OffsetLeft(dx);
+            if (dy != 0)
+                OffsetTop(dy);
+        }
+
         CreateListItemBox(g);
 
         if (!IsFixed)
