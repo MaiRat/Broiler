@@ -23,6 +23,7 @@ internal static class CssConstants
     public const string Disc = "disc";
     public const string Fantasy = "fantasy";
     public const string Fixed = "fixed";
+    public const string Relative = "relative";
     public const string Hide = "hide";
     public const string Inherit = "inherit";
     public const string Inline = "inline";
@@ -109,6 +110,7 @@ internal static class CssConstants
     public const string Ex = "ex";
     public const string Pt = "pt";
     public const string Pc = "pc";
+    public const string Rem = "rem";
     public const double FontSize = 11f;
     public const string DefaultFont = "Segoe UI";
 }

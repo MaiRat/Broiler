@@ -10,5 +10,6 @@ internal enum CssUnit
     Centimeters,
     Milimeters,
     Points,
-    Picas
+    Picas,
+    Rem
 }

@@ -68,6 +68,10 @@ internal sealed class CssValueParser
         {
             number = value.Substring(0, value.Length - 1);
         }
+        else if (value.EndsWith(CssConstants.Rem, StringComparison.Ordinal) && value.Length > 3)
+        {
+            number = value.Substring(0, value.Length - 3);
+        }
         else if (value.Length > 2)
         {
             number = value.Substring(0, value.Length - 2);
@@ -115,13 +119,19 @@ internal sealed class CssValueParser
         double factor;
 
         //Number of the length
-        string number = hasUnit ? length.Substring(0, length.Length - 2) : length;
+        string number = hasUnit
+            ? length.Substring(0, length.Length - (unit == CssConstants.Rem ? 3 : 2))
+            : length;
 
         //TODO: Units behave different in paper and in screen!
         switch (unit)
         {
             case CssConstants.Em:
                 factor = emFactor;
+                break;
+            case CssConstants.Rem:
+                // rem is relative to root element font size (default 11pt)
+                factor = CssConstants.FontSize * (96.0 / 72.0);
                 break;
             case CssConstants.Ex:
                 factor = emFactor / 2;
@@ -160,6 +170,13 @@ internal sealed class CssValueParser
 
     private static string GetUnit(string length, string defaultUnit, out bool hasUnit)
     {
+        // Check for 3-character units first (e.g. "rem")
+        if (length.Length >= 4 && length.EndsWith(CssConstants.Rem, StringComparison.Ordinal))
+        {
+            hasUnit = true;
+            return CssConstants.Rem;
+        }
+
         var unit = length.Length >= 3 ? length.Substring(length.Length - 2, 2) : string.Empty;
         switch (unit)
         {

@@ -8,8 +8,9 @@ internal static class HtmlUtils
     private static readonly List<string> _list = new(
         [
             "area", "base", "basefont", "br", "col",
-            "frame", "hr", "img", "input", "isindex",
-            "link", "meta", "param"
+            "embed", "frame", "hr", "img", "input",
+            "isindex", "link", "meta", "param",
+            "source", "track", "wbr"
         ]
         );
 
