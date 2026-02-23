@@ -538,9 +538,9 @@ public class Acid1SplitTests : IDisposable
         double similarity = ImageComparer.CompareWithTolerance(rendered, reference, colorTolerance: 10);
 
         // Minimum threshold: the rendering must not regress below this level.
-        // Current measured similarity is ~39%. A drop below 37% indicates a
+        // Current measured similarity is ~50%. A drop below 47% indicates a
         // significant regression in the rendering engine.
-        const double MinThreshold = 0.37;
+        const double MinThreshold = 0.47;
 
         Assert.True(similarity >= MinThreshold,
             $"Full Acid1 similarity ({similarity:P1}) fell below the regression floor " +

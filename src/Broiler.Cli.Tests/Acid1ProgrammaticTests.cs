@@ -475,9 +475,9 @@ public class Acid1ProgrammaticTests
         double similarity = ImageComparer.CompareWithTolerance(rendered, reference, colorTolerance: 10);
 
         // The rendering must not regress below this threshold.
-        // Current measured similarity is ~39%.  A drop below 36% indicates
+        // Current measured similarity is ~50%.  A drop below 46% indicates
         // a significant rendering regression.
-        const double MinThreshold = 0.36;
+        const double MinThreshold = 0.46;
 
         Assert.True(similarity >= MinThreshold,
             $"Full Acid1 similarity ({similarity:P1}) fell below the regression floor " +

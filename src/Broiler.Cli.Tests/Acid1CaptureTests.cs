@@ -59,7 +59,7 @@ public class Acid1CaptureTests : IDisposable
     /// accommodating known CSS1 shortcomings in the HTML-Renderer engine.
     /// Raising this value is a sign of rendering improvement.
     /// </summary>
-    private const double MinSimilarityThreshold = 0.38;
+    private const double MinSimilarityThreshold = 0.48;
 
     private static readonly string TestDataDir =
         Path.Combine(AppContext.BaseDirectory, "TestData");
