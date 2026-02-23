@@ -853,7 +853,7 @@ public class Acid1CaptureTests : IDisposable
         }
 
         // Even a small amount of text pixels indicates the paragraph is present.
-        Assert.True(textPixels > 0 || startY >= bitmap.Height,
+        Assert.True(textPixels > 0,
             "No text-like pixels found in the bottom quarter of the image. " +
             "The clear:both paragraph may not be rendered below the floats.");
     }
