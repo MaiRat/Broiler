@@ -1220,14 +1220,17 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
         }
 
         /// <summary>
-        /// Scans preceding siblings for floated boxes and returns the maximum
-        /// ActualBottom among them. Used by the <c>clear</c> property to push
-        /// a box below all preceding floats.
+        /// Scans preceding siblings (and their floated children) for floated
+        /// boxes and returns the maximum ActualBottom among them.  Used by
+        /// the <c>clear</c> property to push a box below all preceding floats
+        /// in the same block formatting context.
         /// </summary>
         /// <param name="box">
-        /// The box whose preceding siblings are inspected. The method walks the
-        /// parent's child list up to (but not including) <paramref name="box"/>
-        /// and returns the largest <see cref="ActualBottom"/> of any floated sibling.
+        /// The box whose preceding siblings are inspected.  The method walks
+        /// the parent's child list up to (but not including)
+        /// <paramref name="box"/> and returns the largest
+        /// <see cref="ActualBottom"/> of any floated sibling or nested
+        /// floated child.
         /// </param>
         private static double GetMaxFloatBottom(CssBox box)
         {
@@ -1237,10 +1240,20 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
             foreach (var sibling in box.ParentBox.Boxes)
             {
                 if (sibling == box) break;
-                if (sibling.Float != CssConstants.None)
-                    maxBottom = Math.Max(maxBottom, sibling.ActualBottom + sibling.ActualBorderBottomWidth);
+                CollectMaxFloatBottom(sibling, ref maxBottom);
             }
             return maxBottom;
+        }
+
+        /// <summary>
+        /// Recursively collects the maximum bottom of floated boxes.
+        /// </summary>
+        private static void CollectMaxFloatBottom(CssBox box, ref double maxBottom)
+        {
+            if (box.Float != CssConstants.None)
+                maxBottom = Math.Max(maxBottom, box.ActualBottom + box.ActualBorderBottomWidth);
+            foreach (var child in box.Boxes)
+                CollectMaxFloatBottom(child, ref maxBottom);
         }
 
         /// <summary>
