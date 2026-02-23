@@ -404,13 +404,15 @@ public class Acid1SplitTests : IDisposable
             $"Expected >100 red pixels from floated div, found {redPixels}. " +
             "The floated div may not render.");
 
-        // Check for non-background pixels below the float region
-        int textPixels = CountPixels(bitmap, p =>
-            !IsWhite(p) && !IsBlue(p) && !IsBlack(p) && !IsRed(p),
+        // Check for non-background pixels below the float region.
+        // The paragraph text produces dark (near-black) pixels that we
+        // count separately from pure-black border/background pixels.
+        int contentPixels = CountPixels(bitmap, p =>
+            !IsWhite(p) && !IsBlue(p) && !IsRed(p),
             y1: 100);
-        // Even a small number of text pixels confirms the paragraph is present.
-        Assert.True(textPixels >= 0,
-            "The clear:both paragraph area should exist below the float.");
+        Assert.True(contentPixels > 0,
+            "Expected non-background pixels below y=100. " +
+            "The clear:both paragraph may not be rendered below the float.");
     }
 
     // -------------------------------------------------------------------------
