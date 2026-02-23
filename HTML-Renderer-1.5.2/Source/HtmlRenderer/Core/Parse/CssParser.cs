@@ -164,12 +164,12 @@ internal sealed class CssParser
                 //Scan blocks and feed them to the style sheet
                 foreach (Match insideBlock in insideBlocks)
                 {
-                    FeedStyleBlock(cssData, insideBlock.Value, mediaType);
-
                     // Treat @media screen rules as applicable to all
                     // (HTML-Renderer always renders for screen)
                     if (string.Equals(mediaType, "screen", StringComparison.OrdinalIgnoreCase))
                         FeedStyleBlock(cssData, insideBlock.Value);
+                    else
+                        FeedStyleBlock(cssData, insideBlock.Value, mediaType);
                 }
             }
         }

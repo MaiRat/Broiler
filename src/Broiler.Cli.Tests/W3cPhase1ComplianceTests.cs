@@ -26,7 +26,7 @@ public class W3cPhase1ComplianceTests
 
     private static bool IsRed(SKColor p) => p.Red > 150 && p.Green < 50 && p.Blue < 50;
     private static bool IsGreen(SKColor p) => p.Green > 100 && p.Red < 50 && p.Blue < 50;
-    private static bool IsBlue(SKColor p) => p.Blue > 150 && p.Blue > p.Red + 50 && p.Blue > p.Green + 50;
+    private static bool IsBlue(SKColor p) => p.Blue > 150 && p.Red < 100 && p.Green < 100;
 
     private static int CountPixels(SKBitmap bitmap, Func<SKColor, bool> predicate,
         int x1 = 0, int y1 = 0, int? x2 = null, int? y2 = null)
