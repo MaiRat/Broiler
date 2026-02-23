@@ -41,7 +41,7 @@ namespace HtmlRenderer.Parse
         /// <summary>
         /// Extracts a number; e.g.  5, 6, 7.5, 0.9
         /// </summary>
-        public const string CssNumber = @"{[0-9]+|[0-9]*\.[0-9]+}";
+        public const string CssNumber = @"([0-9]+|[0-9]*\.[0-9]+)";
 
         /// <summary>
         /// Extracts css percentages from the string; e.g. 100% .5% 5.4%
