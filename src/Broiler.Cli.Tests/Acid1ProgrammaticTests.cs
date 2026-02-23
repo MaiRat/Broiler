@@ -33,12 +33,11 @@ public class Acid1ProgrammaticTests : IDisposable
     private const int RenderHeight = 407;
 
     /// <summary>
-    /// Minimum similarity threshold for the programmatic rendering against
-    /// the reference image.  This is intentionally set above the permissive
-    /// 0.38 used in <see cref="Acid1CaptureTests"/> to catch regressions
-    /// that the older tests would miss.  The threshold is based on the
-    /// current measured similarity of the engine and should be raised as
-    /// the renderer improves.
+    /// Minimum similarity threshold (regression floor) for the programmatic
+    /// rendering against the reference image.  The value is based on the
+    /// current measured similarity of the engine.  A drop below this level
+    /// indicates a significant rendering regression.  This threshold should
+    /// be raised as the renderer improves towards full CSS1 compliance.
     /// </summary>
     private const double MinSimilarityThreshold = 0.35;
 
