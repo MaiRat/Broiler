@@ -28,6 +28,15 @@
     <Content Include="..\..\acid\acid1\acid1.html" Link="TestData\acid1.html" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\acid1.png" Link="TestData\acid1.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\acid1-fail.png" Link="TestData\acid1-fail.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section1-body-border.html" Link="TestData\split\section1-body-border.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section2-dt-float-left.html" Link="TestData\split\section2-dt-float-left.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section3-dd-float-right.html" Link="TestData\split\section3-dd-float-right.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section4-li-float-left.html" Link="TestData\split\section4-li-float-left.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section5-blockquote-float.html" Link="TestData\split\section5-blockquote-float.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section6-h1-float.html" Link="TestData\split\section6-h1-float.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section7-form-line-height.html" Link="TestData\split\section7-form-line-height.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section8-clear-both.html" Link="TestData\split\section8-clear-both.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section9-percentage-width.html" Link="TestData\split\section9-percentage-width.html" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
