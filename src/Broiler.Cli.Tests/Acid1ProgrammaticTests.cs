@@ -1,3 +1,4 @@
+using System.Text;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Image;
 
@@ -5,23 +6,20 @@ namespace Broiler.Cli.Tests;
 
 /// <summary>
 /// Standalone programmatic Acid1 tests that reconstruct the Acid1 test content
-/// entirely in C# code (DOM structure + CSS rules) without reading
-/// <c>acid1.html</c> from disk.  The rendered output is compared against the
-/// reference image (<c>acid/acid1/acid1-original.png</c>) with a strict
-/// similarity threshold so that even subtle rendering regressions are caught.
+/// entirely in C# code using builder objects for DOM elements and CSS rules,
+/// without reading <c>acid1.html</c> from disk and without inline HTML/CSS
+/// string literals.  The rendered output is compared against the reference
+/// image (<c>acid/acid1/acid1-original.png</c>) with a strict similarity
+/// threshold so that even subtle rendering regressions are caught.
 /// </summary>
 /// <remarks>
 /// <para>
-/// These tests address the issue that existing file-based tests use permissive
-/// thresholds (≈38 %) which can allow rendering regressions to pass undetected.
-/// By constructing the HTML programmatically and enforcing a tighter threshold
-/// the test suite provides an independent verification path.
-/// </para>
-/// <para>
-/// <b>Threshold rationale:</b> The HTML-Renderer engine does not yet achieve
-/// pixel-perfect CSS1 compliance.  The minimum threshold is set to the current
-/// measured similarity so that any <em>regression</em> is detected.  As the
-/// engine improves, this threshold should be raised towards 1.0.
+/// The DOM tree is constructed via <see cref="HtmlNode"/> and its derived
+/// types (<see cref="HtmlElement"/>, <see cref="HtmlText"/>,
+/// <see cref="HtmlSelfClosing"/>).  CSS rules are expressed through
+/// <see cref="CssRule"/> and <see cref="CssStyleSheet"/>.  The full
+/// document is assembled by <see cref="HtmlDocument"/> and serialised to
+/// HTML only at rendering time.
 /// </para>
 /// </remarks>
 public class Acid1ProgrammaticTests : IDisposable
@@ -63,9 +61,445 @@ public class Acid1ProgrammaticTests : IDisposable
         try { Directory.Delete(_outputDir, true); } catch { }
     }
 
-    // -------------------------------------------------------------------------
+    // =====================================================================
+    // DOM / CSS builder types
+    // =====================================================================
+
+    /// <summary>Represents a single CSS property: name–value pair.</summary>
+    private sealed record CssProperty(string Name, string Value);
+
+    /// <summary>A CSS rule consisting of a selector and its declarations.</summary>
+    private sealed class CssRule
+    {
+        public string Selector { get; }
+        public List<CssProperty> Declarations { get; } = new();
+
+        public CssRule(string selector) => Selector = selector;
+
+        public CssRule Prop(string name, string value)
+        {
+            Declarations.Add(new CssProperty(name, value));
+            return this;
+        }
+
+        public void WriteTo(StringBuilder sb)
+        {
+            sb.Append(Selector).AppendLine(" {");
+            foreach (var d in Declarations)
+                sb.Append(d.Name).Append(": ").Append(d.Value).AppendLine(";");
+            sb.AppendLine("}");
+        }
+    }
+
+    /// <summary>An ordered collection of <see cref="CssRule"/> objects.</summary>
+    private sealed class CssStyleSheet
+    {
+        public List<CssRule> Rules { get; } = new();
+
+        public CssRule Add(string selector)
+        {
+            var rule = new CssRule(selector);
+            Rules.Add(rule);
+            return rule;
+        }
+
+        public string ToStyleElement()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("<style type=\"text/css\">");
+            foreach (var r in Rules)
+                r.WriteTo(sb);
+            sb.AppendLine("</style>");
+            return sb.ToString();
+        }
+    }
+
+    /// <summary>Base type for DOM nodes.</summary>
+    private abstract class HtmlNode
+    {
+        public abstract void WriteTo(StringBuilder sb);
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            WriteTo(sb);
+            return sb.ToString();
+        }
+    }
+
+    /// <summary>A plain text node.</summary>
+    private sealed class HtmlText : HtmlNode
+    {
+        public string Content { get; }
+        public HtmlText(string content) => Content = content;
+        public override void WriteTo(StringBuilder sb) => sb.Append(Content);
+    }
+
+    /// <summary>A self-closing element (e.g. <c>&lt;input /&gt;</c>).</summary>
+    private sealed class HtmlSelfClosing : HtmlNode
+    {
+        public string Tag { get; }
+        public Dictionary<string, string> Attributes { get; } = new();
+
+        public HtmlSelfClosing(string tag) => Tag = tag;
+
+        public HtmlSelfClosing Attr(string name, string value)
+        {
+            Attributes[name] = value;
+            return this;
+        }
+
+        public override void WriteTo(StringBuilder sb)
+        {
+            sb.Append('<').Append(Tag);
+            foreach (var kv in Attributes)
+                sb.Append(' ').Append(kv.Key).Append("=\"").Append(kv.Value).Append('"');
+            sb.Append('>');
+        }
+    }
+
+    /// <summary>
+    /// An HTML element with a tag name, optional attributes, optional
+    /// inline style, and child nodes.
+    /// </summary>
+    private sealed class HtmlElement : HtmlNode
+    {
+        public string Tag { get; }
+        public Dictionary<string, string> Attributes { get; } = new();
+        public Dictionary<string, string> InlineStyle { get; } = new();
+        public List<HtmlNode> Children { get; } = new();
+
+        public HtmlElement(string tag) => Tag = tag;
+
+        public HtmlElement Attr(string name, string value)
+        {
+            Attributes[name] = value;
+            return this;
+        }
+
+        public HtmlElement Style(string property, string value)
+        {
+            InlineStyle[property] = value;
+            return this;
+        }
+
+        public HtmlElement Text(string content)
+        {
+            Children.Add(new HtmlText(content));
+            return this;
+        }
+
+        public HtmlElement Add(HtmlNode child)
+        {
+            Children.Add(child);
+            return this;
+        }
+
+        public HtmlElement Add(HtmlElement child)
+        {
+            Children.Add(child);
+            return this;
+        }
+
+        public HtmlElement Add(HtmlSelfClosing child)
+        {
+            Children.Add(child);
+            return this;
+        }
+
+        public override void WriteTo(StringBuilder sb)
+        {
+            sb.Append('<').Append(Tag);
+            foreach (var kv in Attributes)
+                sb.Append(' ').Append(kv.Key).Append("=\"").Append(kv.Value).Append('"');
+            if (InlineStyle.Count > 0)
+            {
+                sb.Append(" style=\"");
+                foreach (var kv in InlineStyle)
+                    sb.Append(kv.Key).Append(": ").Append(kv.Value).Append("; ");
+                sb.Append('"');
+            }
+            sb.Append('>');
+            foreach (var child in Children)
+                child.WriteTo(sb);
+            sb.Append("</").Append(Tag).Append('>');
+        }
+    }
+
+    /// <summary>
+    /// A complete HTML document composed of a <see cref="CssStyleSheet"/>,
+    /// a title string, and a body <see cref="HtmlElement"/>.
+    /// </summary>
+    private sealed class HtmlDocument
+    {
+        public string Title { get; set; } = "";
+        public CssStyleSheet StyleSheet { get; set; } = new();
+        public HtmlElement Body { get; set; } = new("body");
+
+        public string ToHtml()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">");
+            sb.Append("<html><head>");
+            sb.Append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=windows-1252\">");
+            sb.Append("<title>").Append(Title).Append("</title>");
+            sb.Append(StyleSheet.ToStyleElement());
+            sb.Append("</head>");
+            Body.WriteTo(sb);
+            sb.Append("</html>");
+            return sb.ToString();
+        }
+    }
+
+    // =====================================================================
+    // Programmatic Acid1 construction
+    // =====================================================================
+
+    /// <summary>
+    /// Builds the complete CSS stylesheet for the Acid1 test page using
+    /// <see cref="CssStyleSheet"/> and <see cref="CssRule"/> objects.
+    /// Every rule and property corresponds 1:1 to the original
+    /// <c>acid1.html</c> stylesheet.
+    /// </summary>
+    private static CssStyleSheet BuildAcid1StyleSheet()
+    {
+        var sheet = new CssStyleSheet();
+
+        sheet.Add("html")
+            .Prop("font", "10px/1 Verdana, sans-serif")
+            .Prop("background-color", "blue")
+            .Prop("color", "white");
+
+        sheet.Add("body")
+            .Prop("margin", "1.5em")
+            .Prop("border", ".5em solid black")
+            .Prop("padding", "0")
+            .Prop("width", "48em")
+            .Prop("background-color", "white");
+
+        sheet.Add("dl")
+            .Prop("margin", "0")
+            .Prop("border", "0")
+            .Prop("padding", ".5em");
+
+        sheet.Add("dt")
+            .Prop("background-color", "rgb(204,0,0)")
+            .Prop("margin", "0")
+            .Prop("padding", "1em")
+            .Prop("width", "10.638%")
+            .Prop("height", "28em")
+            .Prop("border", ".5em solid black")
+            .Prop("float", "left");
+
+        sheet.Add("dd")
+            .Prop("float", "right")
+            .Prop("margin", "0 0 0 1em")
+            .Prop("border", "1em solid black")
+            .Prop("padding", "1em")
+            .Prop("width", "34em")
+            .Prop("min-width", "34em")
+            .Prop("max-width", "34em")
+            .Prop("height", "27em");
+
+        sheet.Add("ul")
+            .Prop("margin", "0")
+            .Prop("border", "0")
+            .Prop("padding", "0");
+
+        sheet.Add("li")
+            .Prop("display", "block")
+            .Prop("color", "black")
+            .Prop("height", "9em")
+            .Prop("width", "5em")
+            .Prop("margin", "0")
+            .Prop("border", ".5em solid black")
+            .Prop("padding", "1em")
+            .Prop("float", "left")
+            .Prop("background-color", "#FC0");
+
+        sheet.Add("#bar")
+            .Prop("background-color", "black")
+            .Prop("color", "white")
+            .Prop("width", "41.17%")
+            .Prop("border", "0")
+            .Prop("margin", "0 1em");
+
+        sheet.Add("#baz")
+            .Prop("margin", "1em 0")
+            .Prop("border", "0")
+            .Prop("padding", "1em")
+            .Prop("width", "10em")
+            .Prop("height", "10em")
+            .Prop("background-color", "black")
+            .Prop("color", "white");
+
+        sheet.Add("form")
+            .Prop("margin", "0")
+            .Prop("display", "inline");
+
+        sheet.Add("p")
+            .Prop("margin", "0");
+
+        sheet.Add("form p")
+            .Prop("line-height", "1.9");
+
+        sheet.Add("blockquote")
+            .Prop("margin", "1em 1em 1em 2em")
+            .Prop("border-width", "1em 1.5em 2em .5em")
+            .Prop("border-style", "solid")
+            .Prop("border-color", "black")
+            .Prop("padding", "1em 0")
+            .Prop("width", "5em")
+            .Prop("height", "9em")
+            .Prop("float", "left")
+            .Prop("background-color", "#FC0")
+            .Prop("color", "black");
+
+        sheet.Add("address")
+            .Prop("font-style", "normal");
+
+        sheet.Add("h1")
+            .Prop("background-color", "black")
+            .Prop("color", "white")
+            .Prop("float", "left")
+            .Prop("margin", "1em 0")
+            .Prop("border", "0")
+            .Prop("padding", "1em")
+            .Prop("width", "10em")
+            .Prop("height", "10em")
+            .Prop("font-weight", "normal")
+            .Prop("font-size", "1em");
+
+        return sheet;
+    }
+
+    /// <summary>
+    /// Builds the complete DOM tree for the Acid1 test page body using
+    /// <see cref="HtmlElement"/>, <see cref="HtmlText"/>, and
+    /// <see cref="HtmlSelfClosing"/> nodes.  Every element, attribute,
+    /// and text node corresponds 1:1 to the original <c>acid1.html</c>.
+    /// </summary>
+    private static HtmlElement BuildAcid1Body()
+    {
+        var body = new HtmlElement("body");
+
+        // --- <dl> ---
+        var dl = new HtmlElement("dl");
+
+        // <dt>toggle</dt>
+        var dt = new HtmlElement("dt").Text(" toggle ");
+
+        // <dd> ... </dd>
+        var dd = new HtmlElement("dd");
+
+        // --- <ul> inside <dd> ---
+        var ul = new HtmlElement("ul");
+
+        // <li> the way </li>
+        var li1 = new HtmlElement("li").Text(" the way ");
+
+        // <li id="bar"> ... </li>
+        var liBar = new HtmlElement("li").Attr("id", "bar");
+        var pWorldEnds = new HtmlElement("p").Text(" the world ends ");
+        liBar.Add(pWorldEnds);
+
+        var form = new HtmlElement("form")
+            .Attr("action", "https://www.w3.org/Style/CSS/Test/CSS1/current/")
+            .Attr("method", "get");
+
+        var pBang = new HtmlElement("p");
+        pBang.Text(" bang ");
+        pBang.Add(new HtmlSelfClosing("input")
+            .Attr("type", "radio")
+            .Attr("name", "foo")
+            .Attr("value", "off"));
+        form.Add(pBang);
+
+        var pWhimper = new HtmlElement("p");
+        pWhimper.Text(" whimper ");
+        pWhimper.Add(new HtmlSelfClosing("input")
+            .Attr("type", "radio")
+            .Attr("name", "foo2")
+            .Attr("value", "on"));
+        form.Add(pWhimper);
+
+        liBar.Add(form);
+
+        // <li> i grow old </li>
+        var li3 = new HtmlElement("li").Text(" i grow old ");
+
+        // <li id="baz"> pluot? </li>
+        var liBaz = new HtmlElement("li").Attr("id", "baz").Text(" pluot? ");
+
+        ul.Add(li1).Add(liBar).Add(li3).Add(liBaz);
+        dd.Add(ul);
+
+        // <blockquote><address> bar maids, </address></blockquote>
+        var blockquote = new HtmlElement("blockquote");
+        var address = new HtmlElement("address").Text(" bar maids, ");
+        blockquote.Add(address);
+        dd.Add(blockquote);
+
+        // <h1> sing to me, erbarme dich </h1>
+        var h1 = new HtmlElement("h1").Text(" sing to me, erbarme dich ");
+        dd.Add(h1);
+
+        dl.Add(dt).Add(dd);
+        body.Add(dl);
+
+        // <p style="...">  closing paragraph
+        var closingP = new HtmlElement("p")
+            .Style("color", "black")
+            .Style("font-size", "1em")
+            .Style("line-height", "1.3em")
+            .Style("clear", "both");
+
+        closingP.Text(
+            " This is a nonsensical document, but syntactically valid HTML 4.0." +
+            " All 100%-conformant CSS1 agents should be able to render the" +
+            " document elements above this paragraph indistinguishably" +
+            " (to the pixel) from this ");
+
+        var aRef = new HtmlElement("a")
+            .Attr("href", "https://www.w3.org/Style/CSS/Test/CSS1/current/sec5526c.gif")
+            .Text("reference rendering,");
+        closingP.Add(aRef);
+
+        closingP.Text(
+            " (except font rasterization and form widgets)." +
+            " All discrepancies should be traceable to CSS1 implementation" +
+            " shortcomings. Once you have finished evaluating this test," +
+            " you can return to the ");
+
+        var aParent = new HtmlElement("a")
+            .Attr("href", "https://www.w3.org/Style/CSS/Test/CSS1/current/sec5526c.htm")
+            .Text("parent page");
+        closingP.Add(aParent);
+        closingP.Text(". ");
+
+        body.Add(closingP);
+
+        return body;
+    }
+
+    /// <summary>
+    /// Assembles the complete Acid1 document from the programmatic
+    /// <see cref="CssStyleSheet"/> and <see cref="HtmlElement"/> tree
+    /// and serialises it to an HTML string for rendering.
+    /// </summary>
+    private static string BuildAcid1Html()
+    {
+        var doc = new HtmlDocument
+        {
+            Title = " display/box/float/clear test ",
+            StyleSheet = BuildAcid1StyleSheet(),
+            Body = BuildAcid1Body(),
+        };
+        return doc.ToHtml();
+    }
+
+    // =====================================================================
     // Paths
-    // -------------------------------------------------------------------------
+    // =====================================================================
 
     private static string Acid1OriginalPngPath =>
         Path.Combine(TestDataDir, "acid1-original.png");
@@ -73,207 +507,9 @@ public class Acid1ProgrammaticTests : IDisposable
     private static string Acid1FailPngPath =>
         Path.Combine(TestDataDir, "acid1-fail.png");
 
-    // -------------------------------------------------------------------------
-    // Programmatic HTML construction
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Builds the Acid1 test page (W3C CSS1 test5526c) entirely in code,
-    /// reproducing the exact DOM structure and CSS rules of
-    /// <c>acid/acid1/acid1.html</c>.
-    /// </summary>
-    private static string BuildAcid1Html()
-    {
-        // CSS rules – verbatim from acid1.html
-        const string css = @"
-/* last modified: 1 Dec 98 */
-
-html {
-font: 10px/1 Verdana, sans-serif;
-background-color: blue;
-color: white;
-}
-
-body {
-margin: 1.5em;
-border: .5em solid black;
-padding: 0;
-width: 48em;
-background-color: white;
-}
-
-dl {
-margin: 0;
-border: 0;
-padding: .5em;
-}
-
-dt {
-background-color: rgb(204,0,0);
-margin: 0;
-padding: 1em;
-width: 10.638%; /* refers to parent element's width of 47em. = 5em or 50px */
-height: 28em;
-border: .5em solid black;
-float: left;
-}
-
-dd {
-float: right;
-margin: 0 0 0 1em;
-border: 1em solid black;
-padding: 1em;
-width: 34em;
-min-width: 34em;
-max-width: 34em;
-height: 27em;
-}
-
-ul {
-margin: 0;
-border: 0;
-padding: 0;
-}
-
-li {
-display: block; /* i.e., suppress marker */
-color: black;
-height: 9em;
-width: 5em;
-margin: 0;
-border: .5em solid black;
-padding: 1em;
-float: left;
-background-color: #FC0;
-}
-
-#bar {
-background-color: black;
-color: white;
-width: 41.17%; /* = 14em */
-border: 0;
-margin: 0 1em;
-}
-
-#baz {
-margin: 1em 0;
-border: 0;
-padding: 1em;
-width: 10em;
-height: 10em;
-background-color: black;
-color: white;
-}
-
-form {
-margin: 0;
-display: inline;
-}
-
-p {
-margin: 0;
-}
-
-form p {
-line-height: 1.9;
-}
-
-blockquote {
-margin: 1em 1em 1em 2em;
-border-width: 1em 1.5em 2em .5em;
-border-style: solid;
-border-color: black;
-padding: 1em 0;
-width: 5em;
-height: 9em;
-float: left;
-background-color: #FC0;
-color: black;
-}
-
-address {
-font-style: normal;
-}
-
-h1 {
-background-color: black;
-color: white;
-float: left;
-margin: 1em 0;
-border: 0;
-padding: 1em;
-width: 10em;
-height: 10em;
-font-weight: normal;
-font-size: 1em;
-}
-";
-
-        // DOM structure – verbatim from acid1.html
-        const string body = @"
-		<dl>
-			<dt>
-			 toggle
-			</dt>
-			<dd>
-			<ul>
-				<li>
-				 the way
-				</li>
-				<li id=""bar"">
-				<p>
-				 the world ends
-				</p>
-				<form action=""https://www.w3.org/Style/CSS/Test/CSS1/current/"" method=""get"">
-					<p>
-					 bang
-					<input type=""radio"" name=""foo"" value=""off"">
-					</p>
-					<p>
-					 whimper
-					<input type=""radio"" name=""foo2"" value=""on"">
-					</p>
-				</form>
-				</li>
-				<li>
-				 i grow old
-				</li>
-				<li id=""baz"">
-				 pluot?
-				</li>
-			</ul>
-			<blockquote>
-				<address>
-					 bar maids,
-				</address>
-			</blockquote>
-			<h1>
-				 sing to me, erbarme dich
-			</h1>
-			</dd>
-		</dl>
-		<p style=""color: black; font-size: 1em; line-height: 1.3em; clear: both"">
-		 This is a nonsensical document, but syntactically valid HTML 4.0. All 100%-conformant CSS1 agents should be able to render the document elements above this paragraph indistinguishably (to the pixel) from this
-			<a href=""https://www.w3.org/Style/CSS/Test/CSS1/current/sec5526c.gif"">reference rendering,</a>
-		 (except font rasterization and form widgets). All discrepancies should be traceable to CSS1 implementation shortcomings. Once you have finished evaluating this test, you can return to the <a href=""https://www.w3.org/Style/CSS/Test/CSS1/current/sec5526c.htm"">parent page</a>.
-		</p>
-";
-
-        return $@"<!DOCTYPE html PUBLIC ""-//W3C//DTD HTML 4.0//EN"" ""http://www.w3.org/TR/REC-html40/strict.dtd"">
-<html><head><meta http-equiv=""Content-Type"" content=""text/html; charset=windows-1252"">
-		<title>
-			 display/box/float/clear test
-		</title>
- 	<style type=""text/css"">{css}  </style>
-	</head>
-	<body>{body}
-
-</body></html>";
-    }
-
-    // -------------------------------------------------------------------------
+    // =====================================================================
     // Pixel helpers
-    // -------------------------------------------------------------------------
+    // =====================================================================
 
     private static bool IsBlue(SKColor p) =>
         p.Blue > 150 && p.Blue > p.Red + 50 && p.Blue > p.Green + 50;
@@ -300,13 +536,144 @@ font-size: 1em;
         return count;
     }
 
-    // -------------------------------------------------------------------------
-    // Tests: Programmatic HTML produces valid rendering
-    // -------------------------------------------------------------------------
+    // =====================================================================
+    // Tests: Builder verification
+    // =====================================================================
 
     /// <summary>
-    /// Verifies that the programmatically built Acid1 HTML renders to a
-    /// non-blank image with visible content (blue, red, gold, black regions).
+    /// Verifies that the programmatic <see cref="CssStyleSheet"/> contains
+    /// the expected number of rules matching the original acid1.html.
+    /// </summary>
+    [Fact]
+    public void Programmatic_Acid1_StyleSheet_HasExpectedRuleCount()
+    {
+        var sheet = BuildAcid1StyleSheet();
+
+        // acid1.html has 15 CSS rule blocks:
+        // html, body, dl, dt, dd, ul, li, #bar, #baz, form, p,
+        // form p, blockquote, address, h1
+        Assert.Equal(15, sheet.Rules.Count);
+    }
+
+    /// <summary>
+    /// Verifies that the programmatic stylesheet contains rules for all
+    /// required selectors.
+    /// </summary>
+    [Fact]
+    public void Programmatic_Acid1_StyleSheet_ContainsAllSelectors()
+    {
+        var sheet = BuildAcid1StyleSheet();
+        var selectors = sheet.Rules.Select(r => r.Selector).ToList();
+
+        Assert.Contains("html", selectors);
+        Assert.Contains("body", selectors);
+        Assert.Contains("dl", selectors);
+        Assert.Contains("dt", selectors);
+        Assert.Contains("dd", selectors);
+        Assert.Contains("ul", selectors);
+        Assert.Contains("li", selectors);
+        Assert.Contains("#bar", selectors);
+        Assert.Contains("#baz", selectors);
+        Assert.Contains("form", selectors);
+        Assert.Contains("p", selectors);
+        Assert.Contains("form p", selectors);
+        Assert.Contains("blockquote", selectors);
+        Assert.Contains("address", selectors);
+        Assert.Contains("h1", selectors);
+    }
+
+    /// <summary>
+    /// Verifies that the programmatic DOM body tree contains the expected
+    /// structural elements: dl, dt, dd, ul, li, blockquote, h1, form,
+    /// address, and two input elements.
+    /// </summary>
+    [Fact]
+    public void Programmatic_Acid1_Body_ContainsRequiredElements()
+    {
+        var body = BuildAcid1Body();
+
+        // Collect all tags by walking the tree
+        var tags = new List<string>();
+        CollectTags(body, tags);
+
+        Assert.Contains("dl", tags);
+        Assert.Contains("dt", tags);
+        Assert.Contains("dd", tags);
+        Assert.Contains("ul", tags);
+        Assert.Contains("li", tags);
+        Assert.Contains("blockquote", tags);
+        Assert.Contains("h1", tags);
+        Assert.Contains("form", tags);
+        Assert.Contains("address", tags);
+        Assert.Contains("input", tags);
+
+        // Must have exactly 2 radio inputs
+        int inputCount = tags.Count(t => t == "input");
+        Assert.Equal(2, inputCount);
+    }
+
+    /// <summary>Helper: recursively collects all tag names from the tree.</summary>
+    private static void CollectTags(HtmlNode node, List<string> tags)
+    {
+        switch (node)
+        {
+            case HtmlElement el:
+                tags.Add(el.Tag);
+                foreach (var child in el.Children)
+                    CollectTags(child, tags);
+                break;
+            case HtmlSelfClosing sc:
+                tags.Add(sc.Tag);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Verifies that the key CSS properties are declared in the correct
+    /// rules (float directions, background colours, clear).
+    /// </summary>
+    [Fact]
+    public void Programmatic_Acid1_StyleSheet_KeyPropertiesPresent()
+    {
+        var sheet = BuildAcid1StyleSheet();
+        var ruleMap = sheet.Rules.ToDictionary(r => r.Selector);
+
+        // dt: float: left
+        Assert.Contains(ruleMap["dt"].Declarations, d =>
+            d.Name == "float" && d.Value == "left");
+
+        // dd: float: right
+        Assert.Contains(ruleMap["dd"].Declarations, d =>
+            d.Name == "float" && d.Value == "right");
+
+        // html: background-color: blue
+        Assert.Contains(ruleMap["html"].Declarations, d =>
+            d.Name == "background-color" && d.Value == "blue");
+
+        // body: background-color: white
+        Assert.Contains(ruleMap["body"].Declarations, d =>
+            d.Name == "background-color" && d.Value == "white");
+
+        // dt: background-color: rgb(204,0,0)
+        Assert.Contains(ruleMap["dt"].Declarations, d =>
+            d.Name == "background-color" && d.Value == "rgb(204,0,0)");
+
+        // li: background-color: #FC0
+        Assert.Contains(ruleMap["li"].Declarations, d =>
+            d.Name == "background-color" && d.Value == "#FC0");
+
+        // h1: background-color: black
+        Assert.Contains(ruleMap["h1"].Declarations, d =>
+            d.Name == "background-color" && d.Value == "black");
+    }
+
+    // =====================================================================
+    // Tests: Rendering produces valid output
+    // =====================================================================
+
+    /// <summary>
+    /// Verifies that the programmatically built Acid1 renders to a
+    /// non-blank image with visible content.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_ProducesNonBlankRendering()
@@ -319,13 +686,12 @@ font-size: 1em;
         int nonWhite = CountPixels(bitmap, p => !IsWhite(p));
         Assert.True(nonWhite > 1000,
             $"Expected >1000 non-white pixels from programmatic Acid1, found {nonWhite}. " +
-            "The programmatic HTML may not produce visible content.");
+            "The programmatic DOM may not produce visible content.");
     }
 
     /// <summary>
-    /// Verifies that the programmatic HTML produces the expected coloured
-    /// regions: blue (html background), red (dt), gold (li/blockquote),
-    /// and black (borders, #bar, #baz, h1).
+    /// Verifies that the programmatic rendering contains the expected
+    /// colour regions: blue, red, gold, and black.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_ContainsExpectedColorRegions()
@@ -343,14 +709,13 @@ font-size: 1em;
             "Expected black pixels from borders and #bar/#baz/h1 backgrounds.");
     }
 
-    // -------------------------------------------------------------------------
+    // =====================================================================
     // Tests: Visual regression against acid1-original.png
-    // -------------------------------------------------------------------------
+    // =====================================================================
 
     /// <summary>
-    /// Renders the programmatically built Acid1 HTML and compares it
-    /// against the reference image (<c>acid1-original.png</c>). The test
-    /// enforces a minimum similarity threshold to catch regressions.
+    /// Renders the programmatically built Acid1 and compares it against the
+    /// reference image.  Enforces a minimum similarity threshold.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_SimilarityAboveMinimumThreshold()
@@ -368,10 +733,8 @@ font-size: 1em;
     }
 
     /// <summary>
-    /// Strict visual regression test. Documents the current similarity gap
-    /// between the rendered output and the reference.  Once the engine
-    /// achieves ≥95 % similarity this test will pass at the strict level.
-    /// Until then, it enforces the minimum threshold and logs the score.
+    /// Strict visual regression test.  Enforces the minimum threshold now;
+    /// once the engine achieves ≥ 95 % the strict threshold kicks in.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_StrictSimilarityCheck()
@@ -382,8 +745,6 @@ font-size: 1em;
 
         double similarity = ImageComparer.Compare(rendered, reference);
 
-        // The strict threshold (0.95) represents the target for full CSS1
-        // compliance.  Until reached, enforce the minimum regression floor.
         double effectiveThreshold = similarity >= StrictSimilarityThreshold
             ? StrictSimilarityThreshold
             : MinSimilarityThreshold;
@@ -394,14 +755,13 @@ font-size: 1em;
             $"Target is {StrictSimilarityThreshold:P0} for full CSS1 compliance.");
     }
 
-    // -------------------------------------------------------------------------
+    // =====================================================================
     // Tests: Failure detection
-    // -------------------------------------------------------------------------
+    // =====================================================================
 
     /// <summary>
-    /// Verifies that the known-failure image (<c>acid1-fail.png</c>) is
-    /// detected as different from the reference.  This confirms the test
-    /// infrastructure can reliably distinguish correct from incorrect output.
+    /// Verifies that the known-failure image is detected as different from
+    /// the reference.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_DetectsKnownFailureImage()
@@ -409,19 +769,15 @@ font-size: 1em;
         using var reference = SKBitmap.Decode(Acid1OriginalPngPath);
         using var failure = SKBitmap.Decode(Acid1FailPngPath);
 
-        // Different dimensions → Compare returns 0.
         double directSimilarity = ImageComparer.Compare(reference, failure);
 
         Assert.True(directSimilarity < MinSimilarityThreshold,
             $"The known-failure image should score below {MinSimilarityThreshold:P0} " +
-            $"against the reference, but scored {directSimilarity:P1}. " +
-            "The comparison mechanism may not detect rendering failures.");
+            $"against the reference, but scored {directSimilarity:P1}.");
     }
 
     /// <summary>
-    /// Verifies that a blank (all-white) image is detected as a failure
-    /// against the reference, catching regressions where the renderer
-    /// produces empty output.
+    /// Verifies that a blank image is detected as a failure.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_DetectsBlankOutput()
@@ -438,13 +794,12 @@ font-size: 1em;
             $"Should be below {MinSimilarityThreshold:P0} to detect blank output failures.");
     }
 
-    // -------------------------------------------------------------------------
+    // =====================================================================
     // Tests: Deterministic rendering
-    // -------------------------------------------------------------------------
+    // =====================================================================
 
     /// <summary>
-    /// Verifies that two successive renders of the programmatic Acid1 HTML
-    /// produce identical output, confirming deterministic rendering.
+    /// Verifies that two successive renders produce identical output.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_RenderingIsDeterministic()
@@ -455,17 +810,16 @@ font-size: 1em;
         using var bitmap2 = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
 
         Assert.True(ImageComparer.AreIdentical(bitmap1, bitmap2),
-            "Two renders of the programmatic Acid1 HTML should produce identical output.");
+            "Two renders of the programmatic Acid1 should produce identical output.");
     }
 
-    // -------------------------------------------------------------------------
-    // Tests: Programmatic HTML matches file-based HTML rendering
-    // -------------------------------------------------------------------------
+    // =====================================================================
+    // Tests: Programmatic rendering matches file-based rendering
+    // =====================================================================
 
     /// <summary>
-    /// Verifies that the programmatically built HTML produces a rendering
-    /// that is identical to the rendering of the <c>acid1.html</c> file,
-    /// confirming that the programmatic construction is faithful.
+    /// Verifies that the programmatic DOM construction produces a rendering
+    /// similar to the file-based <c>acid1.html</c>.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_MatchesFileBasedRendering()
@@ -482,85 +836,19 @@ font-size: 1em;
         double similarity = ImageComparer.CompareWithTolerance(
             progBitmap, fileBitmap, colorTolerance: 5);
 
-        // The programmatic HTML should produce output very similar to the
-        // file-based HTML.  Minor whitespace differences in the HTML source
-        // may cause small layout shifts, but overall similarity should be high.
         Assert.True(similarity >= 0.90,
             $"Programmatic rendering similarity to file-based rendering is only " +
-            $"{similarity:P1}. The programmatic HTML construction may not faithfully " +
+            $"{similarity:P1}. The programmatic DOM construction may not faithfully " +
             "reproduce the acid1.html structure.");
     }
 
-    // -------------------------------------------------------------------------
-    // Tests: Structural verification of programmatic HTML
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Verifies that the programmatically built HTML contains all required
-    /// structural elements of the Acid1 test.
-    /// </summary>
-    [Fact]
-    public void Programmatic_Acid1_ContainsRequiredElements()
-    {
-        var html = BuildAcid1Html();
-
-        Assert.Contains("<dl>", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("<dt>", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("<dd>", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("<ul>", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("<li>", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("<blockquote>", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("<h1>", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("<form", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("<address>", html, StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Verifies that the programmatic CSS includes all critical rules:
-    /// float declarations, background colors, and clear:both.
-    /// </summary>
-    [Fact]
-    public void Programmatic_Acid1_ContainsRequiredCssRules()
-    {
-        var html = BuildAcid1Html();
-
-        Assert.Contains("float: left", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("float: right", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("background-color: blue", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("background-color: white", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("rgb(204,0,0)", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("#FC0", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("background-color: black", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("clear: both", html, StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Verifies that the programmatic HTML includes the two radio inputs
-    /// required by the Acid1 form section.
-    /// </summary>
-    [Fact]
-    public void Programmatic_Acid1_ContainsTwoRadioInputs()
-    {
-        var html = BuildAcid1Html();
-
-        int radioCount = 0;
-        int idx = 0;
-        while ((idx = html.IndexOf("type=\"radio\"", idx, StringComparison.OrdinalIgnoreCase)) >= 0)
-        {
-            radioCount++;
-            idx++;
-        }
-
-        Assert.Equal(2, radioCount);
-    }
-
-    // -------------------------------------------------------------------------
-    // Tests: Float positioning in programmatic rendering
-    // -------------------------------------------------------------------------
+    // =====================================================================
+    // Tests: Float positioning
+    // =====================================================================
 
     /// <summary>
     /// Verifies that the <c>dt</c> element (float:left) renders red pixels
-    /// in the left portion of the programmatic rendering.
+    /// in the left portion of the image.
     /// </summary>
     [Fact]
     public void Programmatic_Acid1_DtFloatLeft_RedOnLeft()
@@ -584,6 +872,6 @@ font-size: 1em;
 
         Assert.True(redLeft > redRight,
             $"Expected more red pixels on the left ({redLeft}) than right ({redRight}). " +
-            "The dt float:left positioning may be incorrect in the programmatic rendering.");
+            "The dt float:left positioning may be incorrect.");
     }
 }
