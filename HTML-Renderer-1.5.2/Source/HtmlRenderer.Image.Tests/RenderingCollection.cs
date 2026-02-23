@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace HtmlRenderer.Image.Tests;
 
 /// <summary>

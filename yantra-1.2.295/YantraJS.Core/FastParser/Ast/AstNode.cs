@@ -1,55 +1,42 @@
-﻿using YantraJS.Utils;
+﻿namespace YantraJS.Core.FastParser;
 
-namespace YantraJS.Core.FastParser
+public abstract class AstNode(FastToken start, FastNodeType type, FastToken end, bool isStatement = false, bool isBinding = false)
 {
-    public abstract class AstNode
+    public readonly FastNodeType Type = type;
+    public readonly FastToken Start = start;
+    public readonly FastToken End = end;
+
+    public readonly bool IsStatement = isStatement;
+
+    public readonly bool IsBinding = isBinding;
+
+    //public (int Start, int End) Range =>
+    //    (Start.Span.Offset, End.Span.Offset + End.Span.Length);
+
+    //public (int Start, int End) Location =>
+    //    (Start.Span.Offset, Start.Span.Offset + Start.Span.Length);
+
+    public StringSpan Code
     {
-        public readonly FastNodeType Type;
-        public readonly FastToken Start;
-        public readonly FastToken End;
-
-        public readonly bool IsStatement;
-
-        public readonly bool IsBinding;
-
-        //public (int Start, int End) Range =>
-        //    (Start.Span.Offset, End.Span.Offset + End.Span.Length);
-
-        //public (int Start, int End) Location =>
-        //    (Start.Span.Offset, Start.Span.Offset + Start.Span.Length);
-
-        public StringSpan Code
+        get
         {
-            get
+            var startSpan = Start.Span;
+            var start = startSpan.Offset;
+
+            if(End.Type == TokenTypes.EOF)
             {
-                var startSpan = this.Start.Span;
-                var start = startSpan.Offset;
-
-                if(this.End.Type == TokenTypes.EOF)
-                {
-                    return startSpan;
-                }
-
-                var endSpan = this.End.Span;
-                var end = endSpan.Offset;
-                var length = endSpan.Length;
-
-                var total = end + length - start;
-
-                return new StringSpan(startSpan.Source,
-                    start,
-                    total);
+                return startSpan;
             }
-        }
 
-        public AstNode(FastToken start, FastNodeType type, FastToken end, bool isStatement = false, bool isBinding = false)
-        {
-            this.Start = start;
-            this.Type = type;
-            this.End = end;
-            this.IsStatement = isStatement;
-            this.IsBinding = isBinding;
+            var endSpan = End.Span;
+            var end = endSpan.Offset;
+            var length = endSpan.Length;
+
+            var total = end + length - start;
+
+            return new StringSpan(startSpan.Source,
+                start,
+                total);
         }
     }
-
 }

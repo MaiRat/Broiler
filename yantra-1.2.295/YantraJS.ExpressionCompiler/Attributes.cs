@@ -1,65 +1,45 @@
 ﻿#nullable enable
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Yantra.Core
+namespace Yantra.Core;
+
+public class JSInternalObjectAttribute: Attribute
 {
-    public class JSInternalObjectAttribute: Attribute
-    {
 
-    }
-    public class JSBaseClassAttribute: Attribute
-    {
-        public readonly string Name;
+}
+public class JSBaseClassAttribute(string name) : Attribute
+{
+    public readonly string Name = name;
+}
 
-        public JSBaseClassAttribute(string name)
-        {
-            this.Name = name;
-        }
-    }
+public class JSPrototypeMethodAttribute: Attribute {
+}
 
-    public class JSPrototypeMethodAttribute: Attribute {
-    }
+public class JSGlobalFunctionAttribute: Attribute
+{
 
-    public class JSGlobalFunctionAttribute: Attribute
-    {
+}
 
-    }
+public class JSFunctionGeneratorAttribute(string? name = null, string keysClass = "KeyStrings") : Attribute
+{
+    public readonly string? Name = name;
 
-    public class JSFunctionGeneratorAttribute : Attribute
-    {
-        public readonly string? Name;
+    public readonly string KeysClass = keysClass;
 
-        public readonly string KeysClass;
+    public bool Register { get; set; } = true;
 
-        public bool Register { get; set; } = true;
+    public bool Globals { get; set; }
+}
 
-        public bool Globals { get; set; }
+public class JSClassGeneratorAttribute(string? name = null, string keysClass = "KeyStrings") : Attribute
+{
+    public readonly string? Name = name;
 
-        public JSFunctionGeneratorAttribute(string? name = null, string keysClass = "KeyStrings")
-        {
-            this.Name = name;
-            this.KeysClass = keysClass;
-        }
-    }
+    public readonly string KeysClass = keysClass;
 
-    public class JSClassGeneratorAttribute : Attribute
-    {
-        public readonly string? Name;
+    public bool Register { get; set; } = true;
+}
 
-        public readonly string KeysClass;
-
-        public bool Register { get; set; } = true;
-
-        public JSClassGeneratorAttribute(string? name = null, string keysClass = "KeyStrings")
-        {
-            this.Name = name;
-            this.KeysClass = keysClass;
-        }
-    }
-
-    public class JSRegistrationGeneratorAttribute : Attribute
-    {
-    }
+public class JSRegistrationGeneratorAttribute : Attribute
+{
 }

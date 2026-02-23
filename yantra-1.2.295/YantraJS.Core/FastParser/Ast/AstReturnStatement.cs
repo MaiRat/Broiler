@@ -1,24 +1,17 @@
 ﻿#nullable enable
-namespace YantraJS.Core.FastParser
+namespace YantraJS.Core.FastParser;
+
+public class AstReturnStatement(FastToken token, FastToken previousToken, AstExpression? target = null) : AstStatement(token, FastNodeType.ReturnStatement, previousToken)
 {
-    public class AstReturnStatement : AstStatement
+    public readonly AstExpression? Argument = target;
+
+    public override string ToString()
     {
-        public readonly AstExpression? Argument;
-
-        public AstReturnStatement(FastToken token, FastToken previousToken, AstExpression? target = null)
-            : base(token, FastNodeType.ReturnStatement, previousToken)
+        var hasSemiColonAtEnd = End.Type == TokenTypes.SemiColon ? ":" : "";
+        if (Argument != null)
         {
-            this.Argument = target;
+            return $"return {Argument}{hasSemiColonAtEnd}";
         }
-
-        public override string ToString()
-        {
-            var hasSemiColonAtEnd = End.Type == TokenTypes.SemiColon ? ":" : "";
-            if (Argument != null)
-            {
-                return $"return {Argument}{hasSemiColonAtEnd}";
-            }
-            return $"return {hasSemiColonAtEnd}";
-        }
+        return $"return {hasSemiColonAtEnd}";
     }
 }

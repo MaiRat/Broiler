@@ -1,31 +1,30 @@
 ﻿#nullable enable
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public enum YOperator
 {
-    public enum YOperator
-    {
-        Add,
-        Subtract,
-        Multipley,
-        Divide,
-        Mod,
-        Power,
+    Add,
+    Subtract,
+    Multipley,
+    Divide,
+    Mod,
+    Power,
 
-        Xor,
-        BitwiseAnd,
-        BitwiseOr,
-        BooleanAnd,
-        BooleanOr,
+    Xor,
+    BitwiseAnd,
+    BitwiseOr,
+    BooleanAnd,
+    BooleanOr,
 
-        Less,
-        LessOrEqual,
-        Greater,
-        GreaterOrEqual,
-        Equal,
-        NotEqual,
+    Less,
+    LessOrEqual,
+    Greater,
+    GreaterOrEqual,
+    Equal,
+    NotEqual,
 
-        LeftShift,
-        RightShift,
-        UnsignedRightShift
-    }
+    LeftShift,
+    RightShift,
+    UnsignedRightShift
 }

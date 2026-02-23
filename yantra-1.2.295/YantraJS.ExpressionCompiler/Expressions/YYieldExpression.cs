@@ -1,27 +1,19 @@
 ﻿using System.CodeDom.Compiler;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YYieldExpression(YExpression arg, bool @delegate) : YExpression(YExpressionType.Yield, arg.Type)
 {
-    public class YYieldExpression: YExpression
+    public readonly YExpression Argument = arg;
+    public readonly bool DelegateYield = @delegate;
+
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly YExpression Argument;
-        public readonly bool DelegateYield;
-
-        public YYieldExpression(YExpression arg, bool @delegate): 
-            base(YExpressionType.Yield, arg.Type)
+        writer.Write("yield ");
+        if (DelegateYield)
         {
-            this.Argument = arg;
-            this.DelegateYield = @delegate;
+            writer.Write("*");
         }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            writer.Write("yield ");
-            if (DelegateYield)
-            {
-                writer.Write("*");
-            }
-            Argument.Print(writer);
-        }
+        Argument.Print(writer);
     }
 }

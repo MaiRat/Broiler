@@ -1,46 +1,35 @@
-﻿using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
+﻿using System.CodeDom.Compiler;
 using YantraJS.Core;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+
+
+public class YListInitExpression(
+    YNewExpression newExpression,
+    IFastEnumerable<YElementInit> parameters) : YExpression(YExpressionType.ListInit, newExpression.Type)
 {
+    public readonly YNewExpression NewExpression = newExpression;
+    public readonly IFastEnumerable<YElementInit> Members = parameters;
 
-
-    public class YListInitExpression : YExpression
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly YNewExpression NewExpression;
-        public readonly IFastEnumerable<YElementInit> Members;
-
-        public YListInitExpression(
-            YNewExpression newExpression,
-            IFastEnumerable<YElementInit> parameters) : base(YExpressionType.ListInit, newExpression.Type)
+        NewExpression.Print(writer);
+        writer.Write(" {");
+        writer.Indent++;
+        var en = Members.GetFastEnumerator();
+        while(en.MoveNext(out var e))
         {
-            this.NewExpression = newExpression;
-            this.Members = parameters;
-        }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            NewExpression.Print(writer);
-            writer.Write(" {");
-            writer.Indent++;
-            var en = Members.GetFastEnumerator();
-            while(en.MoveNext(out var e))
+            writer.Write("{");
+            var enp = e.Arguments.GetFastEnumerator();
+            while(enp.MoveNext(out var p))
             {
-                writer.Write("{");
-                var enp = e.Arguments.GetFastEnumerator();
-                while(enp.MoveNext(out var p))
-                {
-                    p.Print(writer);
-                    writer.Write(",");
-                }
-                writer.WriteLine("},");
+                p.Print(writer);
+                writer.Write(",");
             }
-            writer.Indent--;
-            writer.WriteLine("}");
+            writer.WriteLine("},");
         }
+        writer.Indent--;
+        writer.WriteLine("}");
     }
 }

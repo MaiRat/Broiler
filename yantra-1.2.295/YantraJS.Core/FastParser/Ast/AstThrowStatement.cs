@@ -1,13 +1,6 @@
-﻿namespace YantraJS.Core.FastParser
-{
-    public class AstThrowStatement : AstStatement
-    {
-        public readonly AstExpression Argument;
+﻿namespace YantraJS.Core.FastParser;
 
-        public AstThrowStatement(FastToken token, FastToken previousToken, AstExpression target)
-            : base(token, FastNodeType.ThrowStatement, previousToken)
-        {
-            this.Argument = target;
-        }
-    }
+public class AstThrowStatement(FastToken token, FastToken previousToken, AstExpression target) : AstStatement(token, FastNodeType.ThrowStatement, previousToken)
+{
+    public readonly AstExpression Argument = target;
 }

@@ -16,21 +16,21 @@ public class ScriptEngineTests
     [Fact]
     public void Execute_ValidScript_ReturnsTrue()
     {
-        var result = _engine.Execute(new[] { "var x = 1 + 2;" });
+        var result = _engine.Execute(["var x = 1 + 2;"]);
         Assert.True(result);
     }
 
     [Fact]
     public void Execute_InvalidScript_ReturnsFalse()
     {
-        var result = _engine.Execute(new[] { "this is not valid javascript @@!!" });
+        var result = _engine.Execute(["this is not valid javascript @@!!"]);
         Assert.False(result);
     }
 
     [Fact]
     public void Execute_MultipleValidScripts_ReturnsTrue()
     {
-        var result = _engine.Execute(new[] { "var a = 1;", "var b = a + 1;" });
+        var result = _engine.Execute(["var a = 1;", "var b = a + 1;"]);
         Assert.True(result);
     }
 
@@ -42,11 +42,11 @@ public class ScriptEngineTests
     public void Execute_FailingScriptDoesNotBlockSubsequentScripts()
     {
         // The first script throws; the second should still run.
-        var result = _engine.Execute(new[]
-        {
+        var result = _engine.Execute(
+        [
             "throw new Error('boom');",
             "var survived = true;"
-        });
+        ]);
 
         // Overall result is false because one script failed.
         Assert.False(result);
@@ -61,11 +61,11 @@ public class ScriptEngineTests
     {
         var html = "<html><body></body></html>";
 
-        var result = _engine.Execute(new[]
-        {
+        var result = _engine.Execute(
+        [
             "throw new Error('boom');",
             "var survived = true;"
-        }, html);
+        ], html);
 
         Assert.False(result);
     }

@@ -1,27 +1,15 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public readonly struct ObjectProperty(
+    AstExpression left,
+    AstExpression right,
+    AstExpression init,
+    bool spread = false,
+    bool computed = false)
 {
-    public readonly struct ObjectProperty
-    {
-        public readonly AstExpression Key;
-        public readonly AstExpression Value;
-        public readonly AstExpression Init;
-        public readonly bool Computed;
-        public readonly bool Spread;
-
-        public ObjectProperty(
-            AstExpression left, 
-            AstExpression right,
-            AstExpression init,
-            bool spread = false,
-            bool computed = false)
-        {
-            this.Key = left;
-            this.Value = right;
-            this.Init = init;
-            this.Spread = spread;                  
-            this.Computed = computed;
-        }
-
-    }
-
+    public readonly AstExpression Key = left;
+    public readonly AstExpression Value = right;
+    public readonly AstExpression Init = init;
+    public readonly bool Computed = computed;
+    public readonly bool Spread = spread;
 }

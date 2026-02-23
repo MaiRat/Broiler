@@ -1,5 +1,3 @@
-using System.Net.Http;
-
 namespace Broiler.Cli.Tests;
 
 /// <summary>

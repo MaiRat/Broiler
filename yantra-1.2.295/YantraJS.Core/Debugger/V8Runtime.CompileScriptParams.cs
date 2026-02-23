@@ -1,21 +1,18 @@
-﻿namespace YantraJS.Core.Debugger
+﻿namespace YantraJS.Core.Debugger;
+
+
+public partial class V8Runtime
 {
-
-    public partial class V8Runtime
+    public class CompileScriptParams
     {
-        public class CompileScriptParams
-        {
-            public string Expression { get; set; }
+        public string Expression { get; set; }
 
-            public string SourceUrl { get; set; }
+        public string SourceUrl { get; set; }
 
-            public bool PersistScript { get; set; }
+        public bool PersistScript { get; set; }
 
-            public long ExecutionContextId { get; set; }
-        }
-
-        
+        public long ExecutionContextId { get; set; }
     }
 
-
+    
 }

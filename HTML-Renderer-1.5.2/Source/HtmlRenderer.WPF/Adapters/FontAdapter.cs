@@ -1,125 +1,53 @@
-﻿// "Therefore those skilled at the unorthodox
-// are infinite as heaven and earth,
-// inexhaustible as the great rivers.
-// When they come to an end,
-// they begin again,
-// like the days and months;
-// they die and are reborn,
-// like the four seasons."
-// 
-// - Sun Tsu,
-// "The Art of War"
-
-using System.Windows.Media;
+﻿using System.Windows.Media;
 using TheArtOfDev.HtmlRenderer.Adapters;
 
-namespace TheArtOfDev.HtmlRenderer.WPF.Adapters
+namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
+
+internal sealed class FontAdapter : RFont
 {
-    /// <summary>
-    /// Adapter for WPF Font.
-    /// </summary>
-    internal sealed class FontAdapter : RFont
+    private readonly double _size;
+    private readonly double _underlineOffset = -1;
+    private readonly double _height = -1;
+    private double _whitespaceWidth = -1;
+
+    public FontAdapter(Typeface font, double size)
     {
-        #region Fields and Consts
+        Font = font;
+        _size = size;
+        _height = 96d / 72d * _size * Font.FontFamily.LineSpacing;
+        _underlineOffset = 96d / 72d * _size * (Font.FontFamily.LineSpacing + font.UnderlinePosition);
 
-        /// <summary>
-        /// the underline win-forms font.
-        /// </summary>
-        private readonly Typeface _font;
-
-        /// <summary>
-        /// The glyph font for the font
-        /// </summary>
-        private readonly GlyphTypeface _glyphTypeface;
-
-        /// <summary>
-        /// the size of the font
-        /// </summary>
-        private readonly double _size;
-
-        /// <summary>
-        /// the vertical offset of the font underline location from the top of the font.
-        /// </summary>
-        private readonly double _underlineOffset = -1;
-
-        /// <summary>
-        /// Cached font height.
-        /// </summary>
-        private readonly double _height = -1;
-
-        /// <summary>
-        /// Cached font whitespace width.
-        /// </summary>
-        private double _whitespaceWidth = -1;
-
-        #endregion
-
-
-        /// <summary>
-        /// Init.
-        /// </summary>
-        public FontAdapter(Typeface font, double size)
+        if (font.TryGetGlyphTypeface(out GlyphTypeface typeface))
         {
-            _font = font;
-            _size = size;
-            _height = 96d / 72d * _size * _font.FontFamily.LineSpacing;
-            _underlineOffset = 96d / 72d * _size * (_font.FontFamily.LineSpacing + font.UnderlinePosition);
-
-            GlyphTypeface typeface;
-            if (font.TryGetGlyphTypeface(out typeface))
+            GlyphTypeface = typeface;
+        }
+        else
+        {
+            foreach (var sysTypeface in Fonts.SystemTypefaces)
             {
-                _glyphTypeface = typeface;
-            }
-            else
-            {
-                foreach (var sysTypeface in Fonts.SystemTypefaces)
-                {
-                    if (sysTypeface.TryGetGlyphTypeface(out typeface))
-                        break;
-                }
+                if (sysTypeface.TryGetGlyphTypeface(out typeface))
+                    break;
             }
         }
+    }
 
-        /// <summary>
-        /// the underline win-forms font.
-        /// </summary>
-        public Typeface Font
-        {
-            get { return _font; }
-        }
+    public Typeface Font { get; }
 
-        public GlyphTypeface GlyphTypeface
-        {
-            get { return _glyphTypeface; }
-        }
+    public GlyphTypeface GlyphTypeface { get; }
 
-        public override double Size
-        {
-            get { return _size; }
-        }
+    public override double Size => _size;
 
-        public override double UnderlineOffset
-        {
-            get { return _underlineOffset; }
-        }
+    public override double UnderlineOffset => _underlineOffset;
 
-        public override double Height
-        {
-            get { return _height; }
-        }
+    public override double Height => _height;
 
-        public override double LeftPadding
-        {
-            get { return _height / 6f; }
-        }
+    public override double LeftPadding => _height / 6f;
 
-        public override double GetWhitespaceWidth(RGraphics graphics)
-        {
-            if (_whitespaceWidth < 0)
-            {
-                _whitespaceWidth = graphics.MeasureString(" ", this).Width;
-            }
-            return _whitespaceWidth;
-        }
+    public override double GetWhitespaceWidth(RGraphics graphics)
+    {
+        if (_whitespaceWidth < 0)
+            _whitespaceWidth = graphics.MeasureString(" ", this).Width;
+
+        return _whitespaceWidth;
     }
 }

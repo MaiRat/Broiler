@@ -1,13 +1,6 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstSpreadElement(FastToken start, FastToken end, AstExpression element) : AstExpression(start, FastNodeType.SpreadElement, end)
 {
-    public class AstSpreadElement : AstExpression
-    {
-        public readonly AstExpression Argument;
-
-        public AstSpreadElement(FastToken start, FastToken end, AstExpression element) : base(start, FastNodeType.SpreadElement, end)
-        {
-            this.Argument = element;
-        }
-    }
-
+    public readonly AstExpression Argument = element;
 }

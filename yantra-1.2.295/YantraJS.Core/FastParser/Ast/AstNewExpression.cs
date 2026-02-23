@@ -1,21 +1,11 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstNewExpression(FastToken begin,
+    AstExpression node,
+    IFastEnumerable<AstExpression> arguments) : AstExpression(begin, FastNodeType.NewExpression, node.End)
 {
-    public class AstNewExpression : AstExpression
-    {
-        public readonly AstExpression Callee;
-        public readonly IFastEnumerable<AstExpression> Arguments;
+    public readonly AstExpression Callee = node;
+    public readonly IFastEnumerable<AstExpression> Arguments = arguments;
 
-        public AstNewExpression(FastToken begin, 
-            AstExpression node,
-            IFastEnumerable<AstExpression> arguments): base(begin, FastNodeType.NewExpression, node.End)
-        {
-            this.Callee = node;
-            this.Arguments = arguments;
-        }
-
-        public override string ToString()
-        {
-            return $"new {Callee}({Arguments.Join()})";
-        }
-    }
+    public override string ToString() => $"new {Callee}({Arguments.Join()})";
 }

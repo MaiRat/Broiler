@@ -1,26 +1,18 @@
 ﻿using System;
 using YantraJS.Core.Core.Storage;
 
-namespace YantraJS.Core.Storage
+namespace YantraJS.Core.Storage;
+
+internal class ConcurrentTypeTrie<T>(Func<Type, T> factory)
 {
-    internal class ConcurrentTypeTrie<T>
+    readonly ConcurrentUInt32Map<T> cache = ConcurrentUInt32Map<T>.Create();
+
+    public T this[Type key]
     {
-
-        readonly Func<Type, T> factory;
-        readonly ConcurrentUInt32Map<T> cache = ConcurrentUInt32Map<T>.Create();
-
-        public ConcurrentTypeTrie(Func<Type, T> factory)
+        get
         {
-            this.factory = factory;
-        }
-
-        public T this[Type key]
-        {
-            get
-            {
-                var k = ConcurrentTypeCache.GetOrCreate(key);
-                return cache.GetOrCreate(k, () => factory(key));
-            }
+            var k = ConcurrentTypeCache.GetOrCreate(key);
+            return cache.GetOrCreate(k, () => factory(key));
         }
     }
 }

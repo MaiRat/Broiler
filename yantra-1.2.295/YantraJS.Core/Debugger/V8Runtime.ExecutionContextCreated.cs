@@ -1,15 +1,12 @@
-﻿namespace YantraJS.Core.Debugger
+﻿namespace YantraJS.Core.Debugger;
+
+
+public partial class V8Runtime
 {
-
-    public partial class V8Runtime
+    public class ExecutionContextCreated: V8ProtocolEvent
     {
-        public class ExecutionContextCreated: V8ProtocolEvent
-        {
-            internal override string EventName => "Runtime.executionContextCreated";
+        internal override string EventName => "Runtime.executionContextCreated";
 
-            public ExecutionContextDescription Context { get; set; }
-        }
+        public ExecutionContextDescription Context { get; set; }
     }
-
-
 }

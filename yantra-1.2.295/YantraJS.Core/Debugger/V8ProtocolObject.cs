@@ -1,20 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿namespace YantraJS.Core.Debugger;
 
-namespace YantraJS.Core.Debugger
+
+public class V8ProtocolObject(V8InspectorProtocol inspectorContext)
 {
-
-    public class V8ProtocolObject
-    {
-        protected readonly V8InspectorProtocol inspectorContext;
-
-        public V8ProtocolObject(V8InspectorProtocol inspectorContext)
-        {
-            this.inspectorContext = inspectorContext;
-        }
-    }
+    protected readonly V8InspectorProtocol inspectorContext = inspectorContext;
 }

@@ -38,9 +38,9 @@ public class RenderingStagesTests
     {
         var commands = new List<PaintCommand>
         {
-            new PaintCommand { Type = PaintCommandType.Background, ZIndex = 0, Opacity = 1f },
-            new PaintCommand { Type = PaintCommandType.Background, ZIndex = 1, Opacity = 1f },
-            new PaintCommand { Type = PaintCommandType.Text, ZIndex = 0, Opacity = 1f }
+            new() { Type = PaintCommandType.Background, ZIndex = 0, Opacity = 1f },
+            new() { Type = PaintCommandType.Background, ZIndex = 1, Opacity = 1f },
+            new() { Type = PaintCommandType.Text, ZIndex = 0, Opacity = 1f }
         };
 
         var compositor = new Compositor();
@@ -53,8 +53,8 @@ public class RenderingStagesTests
     {
         var commands = new List<PaintCommand>
         {
-            new PaintCommand { Type = PaintCommandType.Background, ZIndex = 1, Opacity = 1f },
-            new PaintCommand { Type = PaintCommandType.Text, ZIndex = 0, Opacity = 1f }
+            new() { Type = PaintCommandType.Background, ZIndex = 1, Opacity = 1f },
+            new() { Type = PaintCommandType.Text, ZIndex = 0, Opacity = 1f }
         };
 
         var compositor = new Compositor();

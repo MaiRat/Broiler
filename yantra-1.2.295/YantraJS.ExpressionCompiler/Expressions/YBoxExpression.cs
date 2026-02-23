@@ -1,24 +1,14 @@
-﻿using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.CodeDom.Compiler;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YBoxExpression(YExpression target) : YExpression(YExpressionType.Box, typeof(object))
 {
-    public class YBoxExpression : YExpression
+    public readonly YExpression Target = target;
+
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly YExpression Target;
-
-        public YBoxExpression(YExpression target)
-            : base(YExpressionType.Box, typeof(object))
-        {
-            this.Target = target;
-        }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            Target.Print(writer);
-            writer.Write(" as object");
-        }
+        Target.Print(writer);
+        writer.Write(" as object");
     }
 }

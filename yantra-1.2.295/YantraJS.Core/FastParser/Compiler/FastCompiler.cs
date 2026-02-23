@@ -11,240 +11,218 @@ using Exp = YantraJS.Expressions.YExpression;
 using Expression = YantraJS.Expressions.YExpression;
 using ParameterExpression = YantraJS.Expressions.YParameterExpression;
 
-namespace YantraJS.Core.FastParser.Compiler
+namespace YantraJS.Core.FastParser.Compiler;
+
+public partial class FastCompiler : AstMapVisitor<YExpression>
 {
-    public partial class FastCompiler : AstMapVisitor<YExpression>
-    {
 
-        private readonly FastPool pool;
+    private readonly FastPool pool;
 
-        readonly LinkedStack<FastFunctionScope> scope = new LinkedStack<FastFunctionScope>();
-        private readonly string location;
+    readonly LinkedStack<FastFunctionScope> scope = new();
+    private readonly string location;
 
-        public LoopScope LoopScope => this.scope.Top.Loop.Top;
+    public LoopScope LoopScope => scope.Top.Loop.Top;
 
-        private StringArray _keyStrings = new StringArray();
+    private StringArray _keyStrings = new();
 
-        // private FastList<object> _innerFunctions;
+    // private FastList<object> _innerFunctions;
 
-        private YParameterExpression scriptInfo;
+    private YParameterExpression scriptInfo;
 
-        public YExpression<JSFunctionDelegate> Method { get; }
+    public YExpression<JSFunctionDelegate> Method { get; }
 
-        public FastCompiler(
-            in StringSpan code,
-            string location = null,
-            IList<string> argsList = null,
-            ICodeCache codeCache = null) {
-            this.pool = new FastPool();
+    public FastCompiler(
+        in StringSpan code,
+        string location = null,
+        IList<string> argsList = null,
+        ICodeCache codeCache = null) {
+        pool = new FastPool();
 
-            location = location ?? "vm.js";
-            this.location = location;
+        location = location ?? "vm.js";
+        this.location = location;
 
-            // FileNameExpression = Exp.Variable(typeof(string), "_fileName");
-            // CodeStringExpression = Exp.Variable(typeof(string), "code");
+        // FileNameExpression = Exp.Variable(typeof(string), "_fileName");
+        // CodeStringExpression = Exp.Variable(typeof(string), "code");
 
 
-            // this.Code = new ParsedScript(code);
+        // this.Code = new ParsedScript(code);
 
 
-            // _innerFunctions = pool.AllocateList<object>();
+        // _innerFunctions = pool.AllocateList<object>();
 
-            // add top level...
+        // add top level...
 
-            var parserPool = new FastPool();
-            var parser = new FastParser(new FastTokenStream(parserPool, code));
-            var jScript = parser.ParseProgram();
-            parserPool.Dispose();
+        var parserPool = new FastPool();
+        var parser = new FastParser(new FastTokenStream(parserPool, code));
+        var jScript = parser.ParseProgram();
+        parserPool.Dispose();
 
-            using (var fx = this.scope.Push(new FastFunctionScope(pool, (AstFunctionExpression)null, isAsync: jScript.IsAsync))) {
-
-
-                // System.Console.WriteLine($"Parsing done...");
-
-                var lScope = fx.Context;
-
-                if (argsList != null && jScript.HoistingScope != null) {
-                    var list = new Sequence<StringSpan>(jScript.HoistingScope.Count);
-                    //try
-                    //{
-                        var e = jScript.HoistingScope.GetFastEnumerator();
-                        while (e.MoveNext(out var a))
-                        {
-                            if (argsList.Contains(a.Value))
-                                continue;
-                            list.Add(a);
-                        }
-                        jScript.HoistingScope = list;
-                    // list.Clear();
-                    //} finally
-                    //    {
-                    //        list.Clear();
-                    //    }
-                }
-
-                this.scriptInfo = Exp.Parameter(typeof(ScriptInfo));
+        using (var fx = scope.Push(new FastFunctionScope(pool, (AstFunctionExpression)null, isAsync: jScript.IsAsync))) {
 
 
-                var args = fx.ArgumentsExpression;
+            // System.Console.WriteLine($"Parsing done...");
 
-                var te = ArgumentsBuilder.This(args);
+            var lScope = fx.Context;
 
-                var stackItem = fx.StackItem;
-
-                var vList = new Sequence<ParameterExpression>() {
-                    scriptInfo,
-                    lScope,
-                    stackItem
-                };
-
-
-
-
-
-                if (argsList != null) {
-                    int i = 0;
-                    foreach (var arg in argsList) {
-
-                        // global arguments are set here for FunctionConstructor
-
-                        fx.CreateVariable(arg,
-                            JSVariableBuilder.FromArgument(fx.ArgumentsExpression, i++, arg));
-                    }
-                }
-
-                var l = fx.ReturnLabel;
-
-                var script = Visit(jScript);
-
-                var sList = new Sequence<Exp>() {
-                    Exp.Assign(scriptInfo, ScriptInfoBuilder.New(location,code.Value)),
-                    Exp.Assign(lScope, JSContextBuilder.Current)
-                };
-
-                //sList.Add(Exp.Assign(ScriptInfoBuilder.Functions(scriptInfo),
-                //    Exp.Constant(_innerFunctions.ToArray())));
-
-                JSContextStackBuilder.Push(sList, lScope, stackItem, Exp.Constant(location), StringSpanBuilder.Empty, 0, 0);
-
-                sList.Add(ScriptInfoBuilder.Build(scriptInfo, _keyStrings));
-
-                // ref var keyStrings = ref _keyStrings;
-                //foreach (var ks in keyStrings.AllValues())
+            if (argsList != null && jScript.HoistingScope != null) {
+                var list = new Sequence<StringSpan>(jScript.HoistingScope.Count);
+                //try
                 //{
-                //    var v = ks.Value;
-                //    vList.Add(v);
-                //    sList.Add(Exp.Assign(v, ExpHelper.KeyStringsBuilder.GetOrCreate(Exp.Constant(ks.Key))));
-                //}
-
-                vList.AddRange(fx.VariableParameters);
-                sList.AddRange(fx.InitList);
-                // register globals..
-                foreach (var v in fx.Variables) {
-                    if (v.Variable != null && v.Variable.Type == typeof(JSVariable)) {
-                        if (argsList?.Contains(v.Name) ?? false)
+                    var e = jScript.HoistingScope.GetFastEnumerator();
+                    while (e.MoveNext(out var a))
+                    {
+                        if (argsList.Contains(a.Value))
                             continue;
-                        if (v.Name == "this")
-                            continue;
-                        sList.Add(JSContextBuilder.Register(lScope, v.Variable));
+                        list.Add(a);
                     }
-                }
-
-
-                sList.Add(Exp.Return(l, script.ToJSValue()));
-                sList.Add(Exp.Label(l, JSUndefinedBuilder.Value));
-
-                script = Exp.Block(vList, Exp.TryFinally(Exp.Block(sList), JSContextStackBuilder.Pop(stackItem, lScope)));
-                if (jScript.IsAsync)
-                {
-                    var g = GeneratorRewriter.Rewrite("vm", script, fx.ReturnLabel, fx.Generator,
-                        replaceArgs: fx.Arguments,
-                        replaceStackItem: fx.StackItem,
-                        replaceContext: fx.Context,
-                        replaceScriptInfo: scriptInfo);
-
-                    var jsf = JSAsyncFunctionBuilder.Create(
-                        JSGeneratorFunctionBuilderV2.New(g, StringSpanBuilder.New("vm"), StringSpanBuilder.New(code.Value)));
-
-                    var np = Expression.Parameter(ArgumentsBuilder.refType, "a");
-                    jsf = JSFunctionBuilder.InvokeFunction(jsf, np);
-                    // scr
-                    this.Method = Exp.Lambda<JSFunctionDelegate>("vm", jsf, new ParameterExpression[] { np });
-                    return;
-                }
-
-
-                var lambda = Exp.Lambda<JSFunctionDelegate>("body", script, fx.Arguments);
-
-                // System.Console.WriteLine($"Code Generation done...");
-
-                this.Method = lambda;
+                    jScript.HoistingScope = list;
+                // list.Clear();
+                //} finally
+                //    {
+                //        list.Clear();
+                //    }
             }
-        }
 
-        private Expression VisitExpression(AstExpression exp) => Visit(exp);
+            scriptInfo = Exp.Parameter(typeof(ScriptInfo));
 
-        private Expression VisitStatement(AstStatement exp) => Visit(exp);
 
-        protected override Expression VisitClassStatement(AstClassExpression classStatement)
-        {
-            return CreateClass(classStatement.Identifier, classStatement.Base, classStatement);
-        }
+            var args = fx.ArgumentsExpression;
 
-        protected override Expression VisitContinueStatement(AstContinueStatement continueStatement)
-        {
-            string name = continueStatement.Label?.Name.Value;
-            if (name != null)
+            var te = ArgumentsBuilder.This(args);
+
+            var stackItem = fx.StackItem;
+
+            var vList = new Sequence<ParameterExpression>() {
+                scriptInfo,
+                lScope,
+                stackItem
+            };
+
+
+
+
+
+            if (argsList != null) {
+                int i = 0;
+                foreach (var arg in argsList) {
+
+                    // global arguments are set here for FunctionConstructor
+
+                    fx.CreateVariable(arg,
+                        JSVariableBuilder.FromArgument(fx.ArgumentsExpression, i++, arg));
+                }
+            }
+
+            var l = fx.ReturnLabel;
+
+            var script = Visit(jScript);
+
+            var sList = new Sequence<Exp>() {
+                Exp.Assign(scriptInfo, ScriptInfoBuilder.New(location,code.Value)),
+                Exp.Assign(lScope, JSContextBuilder.Current)
+            };
+
+            //sList.Add(Exp.Assign(ScriptInfoBuilder.Functions(scriptInfo),
+            //    Exp.Constant(_innerFunctions.ToArray())));
+
+            JSContextStackBuilder.Push(sList, lScope, stackItem, Exp.Constant(location), StringSpanBuilder.Empty, 0, 0);
+
+            sList.Add(ScriptInfoBuilder.Build(scriptInfo, _keyStrings));
+
+            // ref var keyStrings = ref _keyStrings;
+            //foreach (var ks in keyStrings.AllValues())
+            //{
+            //    var v = ks.Value;
+            //    vList.Add(v);
+            //    sList.Add(Exp.Assign(v, ExpHelper.KeyStringsBuilder.GetOrCreate(Exp.Constant(ks.Key))));
+            //}
+
+            vList.AddRange(fx.VariableParameters);
+            sList.AddRange(fx.InitList);
+            // register globals..
+            foreach (var v in fx.Variables) {
+                if (v.Variable != null && v.Variable.Type == typeof(JSVariable)) {
+                    if (argsList?.Contains(v.Name) ?? false)
+                        continue;
+                    if (v.Name == "this")
+                        continue;
+                    sList.Add(JSContextBuilder.Register(lScope, v.Variable));
+                }
+            }
+
+
+            sList.Add(Exp.Return(l, script.ToJSValue()));
+            sList.Add(Exp.Label(l, JSUndefinedBuilder.Value));
+
+            script = Exp.Block(vList, Exp.TryFinally(Exp.Block(sList), JSContextStackBuilder.Pop(stackItem, lScope)));
+            if (jScript.IsAsync)
             {
-                var target = this.LoopScope.Get(name);
-                if (target == null)
-                    throw JSContext.Current.NewSyntaxError($"No label found for {name}");
-                return Exp.Continue(target.Break);
+                var g = GeneratorRewriter.Rewrite("vm", script, fx.ReturnLabel, fx.Generator,
+                    replaceArgs: fx.Arguments,
+                    replaceStackItem: fx.StackItem,
+                    replaceContext: fx.Context,
+                    replaceScriptInfo: scriptInfo);
+
+                var jsf = JSAsyncFunctionBuilder.Create(
+                    JSGeneratorFunctionBuilderV2.New(g, StringSpanBuilder.New("vm"), StringSpanBuilder.New(code.Value)));
+
+                var np = Expression.Parameter(ArgumentsBuilder.refType, "a");
+                jsf = JSFunctionBuilder.InvokeFunction(jsf, np);
+                // scr
+                Method = Exp.Lambda<JSFunctionDelegate>("vm", jsf, [np]);
+                return;
             }
-            return Exp.Continue(this.scope.Top.Loop.Top.Continue);
-        }
 
-        protected override Expression VisitDebuggerStatement(AstDebuggerStatement debuggerStatement)
+
+            var lambda = Exp.Lambda<JSFunctionDelegate>("body", script, fx.Arguments);
+
+            // System.Console.WriteLine($"Code Generation done...");
+
+            Method = lambda;
+        }
+    }
+
+    private Expression VisitExpression(AstExpression exp) => Visit(exp);
+
+    private Expression VisitStatement(AstStatement exp) => Visit(exp);
+
+    protected override Expression VisitClassStatement(AstClassExpression classStatement) => CreateClass(classStatement.Identifier, classStatement.Base, classStatement);
+
+    protected override Expression VisitContinueStatement(AstContinueStatement continueStatement)
+    {
+        string name = continueStatement.Label?.Name.Value;
+        if (name != null)
         {
-            return ExpHelper.JSDebuggerBuilder.RaiseBreak();
+            var target = LoopScope.Get(name);
+            if (target == null)
+                throw JSContext.Current.NewSyntaxError($"No label found for {name}");
+            return Exp.Continue(target.Break);
         }
+        return Exp.Continue(scope.Top.Loop.Top.Continue);
+    }
+
+    protected override Expression VisitDebuggerStatement(AstDebuggerStatement debuggerStatement) => ExpHelper.JSDebuggerBuilder.RaiseBreak();
 
 
 
-        protected override Expression VisitEmptyExpression(AstEmptyExpression emptyExpression)
-        {
-            return Exp.Empty;
-        }
+    protected override Expression VisitEmptyExpression(AstEmptyExpression emptyExpression) => Exp.Empty;
 
-        protected override Expression VisitExpressionStatement(AstExpressionStatement expressionStatement)
-        {
-            return Visit(expressionStatement.Expression);
-        }
+    protected override Expression VisitExpressionStatement(AstExpressionStatement expressionStatement) => Visit(expressionStatement.Expression);
 
-        protected override Expression VisitFunctionExpression(AstFunctionExpression functionExpression)
-        {
-            return CreateFunction(functionExpression);
-        }
+    protected override Expression VisitFunctionExpression(AstFunctionExpression functionExpression) => CreateFunction(functionExpression);
 
 
 
 
 
-        protected override Expression VisitSpreadElement(AstSpreadElement spreadElement)
-        {
-            throw new NotImplementedException();
-        }
+    protected override Expression VisitSpreadElement(AstSpreadElement spreadElement) => throw new NotImplementedException();
 
-        protected override Expression VisitThrowStatement(AstThrowStatement throwStatement)
-        {
-            return ExpHelper.JSExceptionBuilder.Throw(VisitExpression(throwStatement.Argument));
-        }
+    protected override Expression VisitThrowStatement(AstThrowStatement throwStatement) => ExpHelper.JSExceptionBuilder.Throw(VisitExpression(throwStatement.Argument));
 
-        protected override Expression VisitYieldExpression(AstYieldExpression yieldExpression)
-        {
-            var target = VisitExpression(yieldExpression.Argument);
-            return YExpression.Yield(target, yieldExpression.Delegate);
+    protected override Expression VisitYieldExpression(AstYieldExpression yieldExpression)
+    {
+        var target = VisitExpression(yieldExpression.Argument);
+        return YExpression.Yield(target, yieldExpression.Delegate);
 
-        }
     }
 }

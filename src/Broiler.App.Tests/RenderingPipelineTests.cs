@@ -1,4 +1,3 @@
-using System.Net.Http;
 using Broiler.App.Rendering;
 
 namespace Broiler.App.Tests;
@@ -15,7 +14,7 @@ public class RenderingPipelineTests
 
         var content = new PageContent(
             "<html><script>var x = 1;</script></html>",
-            new[] { "var x = 1;" });
+            ["var x = 1;"]);
 
         Assert.True(pipeline.ExecuteScripts(content));
         pipeline.Dispose();
@@ -45,7 +44,7 @@ public class RenderingPipelineTests
 
         var content = new PageContent(
             "<html></html>",
-            new[] { "invalid js @@" });
+            ["invalid js @@"]);
 
         Assert.False(pipeline.ExecuteScripts(content));
         pipeline.Dispose();

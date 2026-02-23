@@ -1,14 +1,7 @@
-﻿namespace YantraJS.Expressions
-{
-    public class YSwitchCaseExpression
-    {
-        public readonly YExpression Body;
-        public readonly YExpression[] TestValues;
+﻿namespace YantraJS.Expressions;
 
-        public YSwitchCaseExpression(YExpression body, YExpression[] testValues)
-        {
-            this.Body = body;
-            this.TestValues = testValues;
-        }
-    }
+public class YSwitchCaseExpression(YExpression body, YExpression[] testValues)
+{
+    public readonly YExpression Body = body;
+    public readonly YExpression[] TestValues = testValues;
 }

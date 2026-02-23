@@ -1,72 +1,62 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace YantraJS.Parser
+namespace YantraJS.Parser;
+
+public class Error(string message) : Exception(message)
 {
-    public class Error: Exception
+    public string Name;
+    public int Index;
+    public int LineNumber;
+    public int Column;
+    public string Description;
+}
+public class ErrorHandler
+{
+    public readonly List<Error> Errors;
+    public bool Tolerant;
+    public ErrorHandler()
     {
-        public string Name;
-        public int Index;
-        public int LineNumber;
-        public int Column;
-        public string Description;
-        public Error(string message): base(message) {
+        Errors = [];
+        Tolerant = false;
+    }
+    void RecordError(Error error) => Errors.Add(error);
+    void Tolerate(Error error)
+    {
+        if (Tolerant)
+        {
+            RecordError(error);
+        }
+        else
+        {
+            throw error;
         }
     }
-    public class ErrorHandler
+    Error ConstructError(string msg, double column)
     {
-        public readonly List<Error> Errors;
-        public bool Tolerant;
-        public ErrorHandler()
+        var error = new Error(msg);
+        return error;
+    }
+    Error CreateError(int index, int line, int col, string description)
+    {
+        var msg = "Line " + line + ": " + description;
+        var error = ConstructError(msg, col);
+        error.Index = index;
+        error.LineNumber = line;
+        error.Description = description;
+        return error;
+    }
+    public void ThrowError(int index, int line, int col, string description) => throw CreateError(index, line, col, description);
+    public void TolerateError(int index, int line, int col, string description)
+    {
+        var error = CreateError(index, line, col, description);
+        if (Tolerant)
         {
-            this.Errors = new List<Error>();
-            this.Tolerant = false;
+            RecordError(error);
         }
-        void RecordError(Error error)
+        else
         {
-            this.Errors.Add(error);
-        }
-        void Tolerate(Error error)
-        {
-            if (this.Tolerant)
-            {
-                this.RecordError(error);
-            }
-            else
-            {
-                throw error;
-            }
-        }
-        Error ConstructError(string msg, double column)
-        {
-            var error = new Error(msg);
-            return error;
-        }
-        Error CreateError(int index, int line, int col, string description)
-        {
-            var msg = "Line " + line + ": " + description;
-            var error = this.ConstructError(msg, col);
-            error.Index = index;
-            error.LineNumber = line;
-            error.Description = description;
-            return error;
-        }
-        public void ThrowError(int index, int line, int col, string description)
-        {
-            throw this.CreateError(index, line, col, description);
-        }
-        public void TolerateError(int index, int line, int col, string description)
-        {
-            var error = this.CreateError(index, line, col, description);
-            if (this.Tolerant)
-            {
-                this.RecordError(error);
-            }
-            else
-            {
-                throw error;
-            }
+            throw error;
         }
     }
 }

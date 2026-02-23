@@ -1,23 +1,11 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstForOfStatement(FastToken token, FastToken previousToken, AstNode beginNode, AstExpression target, AstStatement statement) : AstStatement(token, FastNodeType.ForOfStatement, previousToken)
 {
-    public class AstForOfStatement : AstStatement
-    {
-        public readonly AstNode Init;
-        public readonly AstExpression Target;
-        public readonly AstStatement Body;
+    public readonly AstNode Init = beginNode;
+    public readonly AstExpression Target = target;
+    public readonly AstStatement Body = statement;
 
-        public AstForOfStatement(FastToken token, FastToken previousToken, AstNode beginNode, AstExpression target, AstStatement statement)
-            : base(token, FastNodeType.ForOfStatement, previousToken)
-        {
-            this.Init = beginNode;
-            this.Target = target;
-            this.Body = statement;
-        }
+    public override string ToString() => $"for ({Init} of {Target}) {{ {Body} }}";
 
-        public override string ToString()
-        {
-            return $"for ({Init} of {Target}) {{ {Body} }}";
-        }
-
-    }
 }

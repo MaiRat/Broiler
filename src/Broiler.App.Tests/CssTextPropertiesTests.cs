@@ -5,64 +5,34 @@ namespace Broiler.App.Tests;
 public class CssTextPropertiesTests
 {
     [Fact]
-    public void TextLayout_ParseWhiteSpace_Normal()
-    {
-        Assert.Equal(CssWhiteSpace.Normal, TextLayout.ParseWhiteSpace("normal"));
-    }
+    public void TextLayout_ParseWhiteSpace_Normal() => Assert.Equal(CssWhiteSpace.Normal, TextLayout.ParseWhiteSpace("normal"));
 
     [Fact]
-    public void TextLayout_ParseWhiteSpace_NoWrap()
-    {
-        Assert.Equal(CssWhiteSpace.NoWrap, TextLayout.ParseWhiteSpace("nowrap"));
-    }
+    public void TextLayout_ParseWhiteSpace_NoWrap() => Assert.Equal(CssWhiteSpace.NoWrap, TextLayout.ParseWhiteSpace("nowrap"));
 
     [Fact]
-    public void TextLayout_ParseWhiteSpace_Pre()
-    {
-        Assert.Equal(CssWhiteSpace.Pre, TextLayout.ParseWhiteSpace("pre"));
-    }
+    public void TextLayout_ParseWhiteSpace_Pre() => Assert.Equal(CssWhiteSpace.Pre, TextLayout.ParseWhiteSpace("pre"));
 
     [Fact]
-    public void TextLayout_ParseWordBreak_Normal()
-    {
-        Assert.Equal(CssWordBreak.Normal, TextLayout.ParseWordBreak("normal"));
-    }
+    public void TextLayout_ParseWordBreak_Normal() => Assert.Equal(CssWordBreak.Normal, TextLayout.ParseWordBreak("normal"));
 
     [Fact]
-    public void TextLayout_ParseWordBreak_BreakAll()
-    {
-        Assert.Equal(CssWordBreak.BreakAll, TextLayout.ParseWordBreak("break-all"));
-    }
+    public void TextLayout_ParseWordBreak_BreakAll() => Assert.Equal(CssWordBreak.BreakAll, TextLayout.ParseWordBreak("break-all"));
 
     [Fact]
-    public void TextLayout_ParseTextOverflow_Clip()
-    {
-        Assert.Equal(CssTextOverflow.Clip, TextLayout.ParseTextOverflow("clip"));
-    }
+    public void TextLayout_ParseTextOverflow_Clip() => Assert.Equal(CssTextOverflow.Clip, TextLayout.ParseTextOverflow("clip"));
 
     [Fact]
-    public void TextLayout_ParseTextOverflow_Ellipsis()
-    {
-        Assert.Equal(CssTextOverflow.Ellipsis, TextLayout.ParseTextOverflow("ellipsis"));
-    }
+    public void TextLayout_ParseTextOverflow_Ellipsis() => Assert.Equal(CssTextOverflow.Ellipsis, TextLayout.ParseTextOverflow("ellipsis"));
 
     [Fact]
-    public void TextLayout_ShouldWrap_Normal_ReturnsTrue()
-    {
-        Assert.True(TextLayout.ShouldWrap(CssWhiteSpace.Normal));
-    }
+    public void TextLayout_ShouldWrap_Normal_ReturnsTrue() => Assert.True(TextLayout.ShouldWrap(CssWhiteSpace.Normal));
 
     [Fact]
-    public void TextLayout_ShouldWrap_NoWrap_ReturnsFalse()
-    {
-        Assert.False(TextLayout.ShouldWrap(CssWhiteSpace.NoWrap));
-    }
+    public void TextLayout_ShouldWrap_NoWrap_ReturnsFalse() => Assert.False(TextLayout.ShouldWrap(CssWhiteSpace.NoWrap));
 
     [Fact]
-    public void TextLayout_ShouldWrap_PreWrap_ReturnsTrue()
-    {
-        Assert.True(TextLayout.ShouldWrap(CssWhiteSpace.PreWrap));
-    }
+    public void TextLayout_ShouldWrap_PreWrap_ReturnsTrue() => Assert.True(TextLayout.ShouldWrap(CssWhiteSpace.PreWrap));
 
     [Fact]
     public void TextLayout_ResolveWhiteSpace_Normal_CollapsesWhitespace()

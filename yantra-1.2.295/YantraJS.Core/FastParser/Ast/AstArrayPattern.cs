@@ -1,19 +1,8 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstArrayPattern(FastToken start, FastToken end, IFastEnumerable<AstExpression> elements) : AstBindingPattern(start, FastNodeType.ArrayPattern, end)
 {
-    public class AstArrayPattern : AstBindingPattern
-    {
-        public readonly IFastEnumerable<AstExpression> Elements;
+    public readonly IFastEnumerable<AstExpression> Elements = elements;
 
-        public AstArrayPattern(FastToken start, FastToken end, IFastEnumerable<AstExpression> elements) 
-            : base(start, FastNodeType.ArrayPattern, end)
-        {
-            this.Elements = elements;
-        }
-
-        public override string ToString()
-        {
-            return $"[{Elements.Join()}]";
-        }
-    }
-
+    public override string ToString() => $"[{Elements.Join()}]";
 }

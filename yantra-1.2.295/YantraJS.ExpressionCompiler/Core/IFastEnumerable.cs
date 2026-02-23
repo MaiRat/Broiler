@@ -1,27 +1,26 @@
 ﻿using System.Collections.Generic;
 
-namespace YantraJS.Core
+namespace YantraJS.Core;
+
+public interface IFastEnumerable<T>: IEnumerable<T>
 {
-    public interface IFastEnumerable<T>: IEnumerable<T>
-    {
-        int Count { get; }
+    int Count { get; }
 
-        T this[int index] { get; }
+    T this[int index] { get; }
 
-        IFastEnumerator<T> GetFastEnumerator();
+    IFastEnumerator<T> GetFastEnumerator();
 
-        T First();
+    T First();
 
-        T FirstOrDefault();
+    T FirstOrDefault();
 
-        T Last();
+    T Last();
 
-        T LastOrDefault();
+    T LastOrDefault();
 
-        bool Any();
+    bool Any();
 
-        T[] ToArray();
-    }
-    
-    
+    T[] ToArray();
 }
+
+

@@ -1,25 +1,17 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YTypeIsExpression(YExpression target, Type type) : YExpression(YExpressionType.TypeIs, typeof(bool))
 {
-    public class YTypeIsExpression: YExpression
+    public readonly YExpression Target = target;
+    public readonly Type TypeOperand = type;
+
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly YExpression Target;
-        public readonly Type TypeOperand;
-
-        public YTypeIsExpression(YExpression target, Type type)
-            : base(YExpressionType.TypeIs, typeof(bool))
-        {
-            this.Target = target;
-            this.TypeOperand = type;
-        }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            Target.Print(writer);
-            writer.Write(" is ");
-            writer.Write(TypeOperand.GetFriendlyName());
-        }
+        Target.Print(writer);
+        writer.Write(" is ");
+        writer.Write(TypeOperand.GetFriendlyName());
     }
 }

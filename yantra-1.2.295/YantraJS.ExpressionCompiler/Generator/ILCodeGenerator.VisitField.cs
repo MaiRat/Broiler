@@ -1,46 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection.Emit;
-using System.Text;
+﻿using System.Reflection.Emit;
 using YantraJS.Expressions;
 
-namespace YantraJS.Generator
+namespace YantraJS.Generator;
+
+public partial class ILCodeGenerator
 {
-    public partial class ILCodeGenerator
+    protected override CodeInfo VisitField(YFieldExpression yFieldExpression)
     {
-        protected override CodeInfo VisitField(YFieldExpression yFieldExpression)
+
+        var field = yFieldExpression.FieldInfo;
+        if (field.IsStatic)
         {
 
-            var field = yFieldExpression.FieldInfo;
-            if (field.IsStatic)
+            if (field.IsLiteral)
             {
-
-                if (field.IsLiteral)
-                {
-                    il.EmitConstant( field.GetRawConstantValue());
-                    return true;
-                }
-
-                //if (RequiresAddress && field.FieldType.IsValueType)
-                //{
-                //    il.Emit(OpCodes.Ldsflda, field);
-                //    return true;
-                //}
-                il.Emit(OpCodes.Ldsfld, field);
+                il.EmitConstant( field.GetRawConstantValue());
                 return true;
             }
 
-            Visit(yFieldExpression.Target);
-
             //if (RequiresAddress && field.FieldType.IsValueType)
             //{
-            //    il.Emit(OpCodes.Ldflda, field);
+            //    il.Emit(OpCodes.Ldsflda, field);
             //    return true;
             //}
-
-            il.Emit(OpCodes.Ldfld, field);
+            il.Emit(OpCodes.Ldsfld, field);
             return true;
         }
+
+        Visit(yFieldExpression.Target);
+
+        //if (RequiresAddress && field.FieldType.IsValueType)
+        //{
+        //    il.Emit(OpCodes.Ldflda, field);
+        //    return true;
+        //}
+
+        il.Emit(OpCodes.Ldfld, field);
+        return true;
     }
 }

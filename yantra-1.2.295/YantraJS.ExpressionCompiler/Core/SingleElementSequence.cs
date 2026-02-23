@@ -2,137 +2,87 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace YantraJS.Core
+namespace YantraJS.Core;
+
+public struct SingleElementSequence<T>(T item) : IFastEnumerable<T>
 {
-    public struct SingleElementSequence<T> : IFastEnumerable<T>
+    public readonly T this[int index] => index == 0 ? item : throw new IndexOutOfRangeException();
+
+    public readonly int Count => 1;
+
+    public readonly T First() => item;
+
+    public readonly T FirstOrDefault() => item;
+
+    readonly IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetFastEnumerator();
+
+    public readonly IEnumerator<T> GetEnumerator() => new SingleSequenceEnumerator(item);
+
+    public readonly SingleSequenceEnumerator GetFastEnumerator() => new(item);
+
+    readonly IFastEnumerator<T> IFastEnumerable<T>.GetFastEnumerator() => GetFastEnumerator();
+
+    public readonly T Last() => item;
+
+    public readonly T LastOrDefault() => item;
+
+    readonly IEnumerator IEnumerable.GetEnumerator() => GetFastEnumerator();
+
+    public readonly bool Any() => true;
+
+    public readonly T[] ToArray() => [item];
+
+    public struct SingleSequenceEnumerator(T item) : IFastEnumerator<T>, IEnumerator<T>
     {
-        private readonly T item;
+        private readonly T item = item;
+        private bool done = false;
 
-        public SingleElementSequence(T item)
+        public readonly T Current => item;
+
+        readonly object IEnumerator.Current => item;
+
+        public readonly void Dispose()
         {
-            this.item = item;
+            
         }
 
-        public T this[int index] => index == 0 ? item : throw new IndexOutOfRangeException();
-
-        public int Count => 1;
-
-        public T First()
+        public bool MoveNext(out T item)
         {
-            return item;
-        }
-
-        public T FirstOrDefault()
-        {
-            return item;
-        }
-
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return GetFastEnumerator();
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return new SingleSequenceEnumerator(item);
-        }
-
-        public SingleSequenceEnumerator GetFastEnumerator()
-        {
-            return new SingleSequenceEnumerator(item);
-        }
-
-        IFastEnumerator<T> IFastEnumerable<T>.GetFastEnumerator()
-        {
-            return GetFastEnumerator();
-        }
-
-        public T Last()
-        {
-            return item;
-        }
-
-        public T LastOrDefault()
-        {
-            return item;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetFastEnumerator();
-        }
-
-        public bool Any()
-        {
+            if (done)
+            {
+                item = default;
+                return false;
+            }
+            done = true;
+            item = this.item;
             return true;
         }
 
-        public T[] ToArray()
+        public bool MoveNext(out T item, out int index)
         {
-            return new T[] { item };
+            index = 0;
+            if (done)
+            {
+                item = default;
+                return false;
+            }
+            done = true;
+            item = this.item;
+            return true;
         }
 
-        public struct SingleSequenceEnumerator : IFastEnumerator<T>, IEnumerator<T>
+        public bool MoveNext()
         {
-            private readonly T item;
-            private bool done;
-
-            public SingleSequenceEnumerator(T item)
+            if (done)
             {
-                this.item = item;
-                done = false;
+                return false;
             }
-
-            public T Current => item;
-
-            object IEnumerator.Current => item;
-
-            public void Dispose()
-            {
-                
-            }
-
-            public bool MoveNext(out T item)
-            {
-                if (done)
-                {
-                    item = default;
-                    return false;
-                }
-                done = true;
-                item = this.item;
-                return true;
-            }
-
-            public bool MoveNext(out T item, out int index)
-            {
-                index = 0;
-                if (done)
-                {
-                    item = default;
-                    return false;
-                }
-                done = true;
-                item = this.item;
-                return true;
-            }
-
-            public bool MoveNext()
-            {
-                if (done)
-                {
-                    return false;
-                }
-                done = true;
-                return true;
-            }
-
-            public void Reset()
-            {
-                throw new NotImplementedException();
-            }
+            done = true;
+            return true;
         }
+
+        public void Reset() => throw new NotImplementedException();
     }
-    
-    
 }
+
+

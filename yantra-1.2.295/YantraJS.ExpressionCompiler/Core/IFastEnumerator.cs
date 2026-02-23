@@ -1,14 +1,11 @@
-﻿using System.Collections.Generic;
+﻿namespace YantraJS.Core;
 
-namespace YantraJS.Core
+public interface IFastEnumerator<T>
 {
-    public interface IFastEnumerator<T>
-    {
-        bool MoveNext(out T item);
+    bool MoveNext(out T item);
 
-        bool MoveNext(out T item, out int index);
+    bool MoveNext(out T item, out int index);
 
-    }
-    
-    
 }
+
+

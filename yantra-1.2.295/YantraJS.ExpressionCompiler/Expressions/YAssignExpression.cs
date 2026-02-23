@@ -2,25 +2,17 @@
 using System;
 using System.CodeDom.Compiler;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YAssignExpression(YExpression left, YExpression right, Type? type) : YExpression(YExpressionType.Assign, type ?? left.Type)
 {
-    public class YAssignExpression : YExpression
+    public readonly YExpression Left = left;
+    public readonly YExpression Right = right;
+
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly YExpression Left;
-        public readonly YExpression Right;
-
-        public YAssignExpression(YExpression left, YExpression right, Type? type)
-            : base(YExpressionType.Assign, type ?? left.Type)
-        {
-            this.Left = left;
-            this.Right = right;
-        }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            Left.Print(writer);
-            writer.Write(" = ");
-            Right.Print(writer);
-        }
+        Left.Print(writer);
+        writer.Write(" = ");
+        Right.Print(writer);
     }
 }

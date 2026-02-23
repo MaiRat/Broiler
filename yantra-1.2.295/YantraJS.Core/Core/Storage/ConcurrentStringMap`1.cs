@@ -1,212 +1,205 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace YantraJS.Core.Core.Storage
+namespace YantraJS.Core.Core.Storage;
+
+/// <summary>
+/// 
+/// </summary>
+public class ConcurrentNameMap
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public class ConcurrentNameMap
+    private ConcurrentStringMap<uint> map;
+    private long id;
+
+    public ConcurrentNameMap()
     {
-        private ConcurrentStringMap<uint> map;
-        private long id;
+        map = ConcurrentStringMap<uint>.Create();
+        id = 0;
+    }
 
-        public ConcurrentNameMap()
+    public (uint Key, StringSpan Name) Get(in StringSpan name)
+    {
+        uint r = map.GetOrCreate(name, (n) => (uint)Interlocked.Increment(ref id));
+        return (r, name);
+    }
+
+    public bool TryGetValue(in StringSpan name, out (uint Key, StringSpan Name) value)
+    {
+        if(map.TryGetValue(name, out var i))
         {
-            map = ConcurrentStringMap<uint>.Create();
-            id = 0;
+            value = (i, name);
+            return true;
         }
+        value = (0, null);
+        return false;
+    }
+}
 
-        public (uint Key, StringSpan Name) Get(in StringSpan name)
+public class ConcurrentStringMap<T>
+{
+
+    private StringMap<T> Map;
+
+    private ReaderWriterLockSlim lockSlim;
+
+    public static ConcurrentStringMap<T> Create() => new()
+    {
+        lockSlim = new ReaderWriterLockSlim()
+    };
+
+
+    public T this[in StringSpan key]
+    {
+        get
         {
-            uint r = map.GetOrCreate(name, (n) => ((uint)Interlocked.Increment(ref id)));
-            return (r, name);
+            
+            lockSlim.EnterReadLock();
+            var value = Map[key];
+            lockSlim.ExitReadLock();
+            return value;
         }
-
-        public bool TryGetValue(in StringSpan name, out (uint Key, StringSpan Name) value)
+        set
         {
-            if(map.TryGetValue(name, out var i))
-            {
-                value = (i, name);
-                return true;
-            }
-            value = (0, null);
-            return false;
+            lockSlim.EnterWriteLock();
+            Map.Put(key) = value;
+            lockSlim.ExitWriteLock();
         }
     }
 
-    public class ConcurrentStringMap<T>
+    public bool TryGetValue(in StringSpan key, out T value)
     {
+        lockSlim.EnterReadLock();
+        var r = Map.TryGetValue(key, out value);
+        lockSlim.ExitReadLock();
+        return r;
+    }
 
-        private StringMap<T> Map;
-
-        private ReaderWriterLockSlim lockSlim;
-
-        public static ConcurrentStringMap<T> Create()
+    public T GetOrCreate(in StringSpan key, Func<StringSpan, T> value)
+    {
+        lockSlim.EnterUpgradeableReadLock();
+        if (Map.TryGetValue(key, out var v))
         {
-            return new ConcurrentStringMap<T> {
-                lockSlim = new ReaderWriterLockSlim()
-            };
+            lockSlim.ExitUpgradeableReadLock();
+            return v;
         }
-
-
-        public T this[in StringSpan key]
+        T r;
+        try
         {
-            get
-            {
-                
-                lockSlim.EnterReadLock();
-                var value = Map[key];
-                lockSlim.ExitReadLock();
-                return value;
-            }
-            set
-            {
-                lockSlim.EnterWriteLock();
-                Map.Put(key) = value;
-                lockSlim.ExitWriteLock();
-            }
+            lockSlim.EnterWriteLock();
+            r = value(key);
+            Map.Put(key) = r;
         }
-
-        public bool TryGetValue(in StringSpan key, out T value)
+        finally
         {
+            lockSlim.ExitWriteLock();
+            lockSlim.ExitUpgradeableReadLock();
+        }
+        return r;
+    }
+}
+
+
+public class ConcurrentUInt32Map<T>
+{
+
+    private SAUint32Map<T> Map;
+
+    private ReaderWriterLockSlim lockSlim;
+
+    public static ConcurrentUInt32Map<T> Create() => new()
+    {
+        lockSlim = new ReaderWriterLockSlim()
+    };
+
+
+    public T this[uint key]
+    {
+        get
+        {
+
             lockSlim.EnterReadLock();
-            var r = Map.TryGetValue(key, out value);
+            var value = Map[key];
             lockSlim.ExitReadLock();
-            return r;
+            return value;
         }
+        set
+        {
+            lockSlim.EnterWriteLock();
+            Map.Put(key) = value;
+            lockSlim.ExitWriteLock();
+        }
+    }
 
-        public T GetOrCreate(in StringSpan key, Func<StringSpan, T> value)
+    public bool TryGetValue(uint key, out T value)
+    {
+        lockSlim.EnterReadLock();
+        var r = Map.TryGetValue(key, out value);
+        lockSlim.ExitReadLock();
+        return r;
+    }
+
+    internal T GetOrCreate<TP>(uint key, Func<TP, T> value, in TP p)
+    {
+        try
         {
             lockSlim.EnterUpgradeableReadLock();
             if (Map.TryGetValue(key, out var v))
-            {
-                lockSlim.ExitUpgradeableReadLock();
                 return v;
-            }
-            T r;
+            var r = value(p);
+            lockSlim.EnterWriteLock();
             try
             {
-                lockSlim.EnterWriteLock();
-                r = value(key);
                 Map.Put(key) = r;
             }
             finally
             {
                 lockSlim.ExitWriteLock();
-                lockSlim.ExitUpgradeableReadLock();
             }
             return r;
+        }
+        finally
+        {
+            lockSlim.ExitUpgradeableReadLock();
         }
     }
 
-
-    public class ConcurrentUInt32Map<T>
+    internal T GetOrCreate(uint key, Func<T> value)
     {
-
-        private SAUint32Map<T> Map;
-
-        private ReaderWriterLockSlim lockSlim;
-
-        public static ConcurrentUInt32Map<T> Create()
+        try
         {
-            return new ConcurrentUInt32Map<T>
+            lockSlim.EnterUpgradeableReadLock();
+            if (Map.TryGetValue(key, out var v))
+                return v;
+            var r = value();
+            lockSlim.EnterWriteLock();
+            try
             {
-                lockSlim = new ReaderWriterLockSlim()
-            };
-        }
-
-
-        public T this[uint key]
-        {
-            get
-            {
-
-                lockSlim.EnterReadLock();
-                var value = Map[key];
-                lockSlim.ExitReadLock();
-                return value;
+                Map.Put(key) = r;
             }
-            set
+            finally
             {
-                lockSlim.EnterWriteLock();
-                Map.Put(key) = value;
                 lockSlim.ExitWriteLock();
             }
-        }
-
-        public bool TryGetValue(uint key, out T value)
-        {
-            lockSlim.EnterReadLock();
-            var r = Map.TryGetValue(key, out value);
-            lockSlim.ExitReadLock();
             return r;
         }
-
-        internal T GetOrCreate<TP>(uint key, Func<TP, T> value, in TP p)
+        finally
         {
-            try
-            {
-                lockSlim.EnterUpgradeableReadLock();
-                if (Map.TryGetValue(key, out var v))
-                    return v;
-                var r = value(p);
-                lockSlim.EnterWriteLock();
-                try
-                {
-                    Map.Put(key) = r;
-                }
-                finally
-                {
-                    lockSlim.ExitWriteLock();
-                }
-                return r;
-            }
-            finally
-            {
-                lockSlim.ExitUpgradeableReadLock();
-            }
+            lockSlim.ExitUpgradeableReadLock();
         }
+    }
 
-        internal T GetOrCreate(uint key, Func<T> value)
+    public IEnumerable<T> All
+    {
+        get
         {
-            try
-            {
-                lockSlim.EnterUpgradeableReadLock();
-                if (Map.TryGetValue(key, out var v))
-                    return v;
-                var r = value();
-                lockSlim.EnterWriteLock();
-                try
-                {
-                    Map.Put(key) = r;
+            try {
+                lockSlim.EnterReadLock();
+                foreach (var k in Map.AllValues()) {
+                    yield return k.Value;
                 }
-                finally
-                {
-                    lockSlim.ExitWriteLock();
-                }
-                return r;
-            }
-            finally
-            {
-                lockSlim.ExitUpgradeableReadLock();
-            }
-        }
-
-        public IEnumerable<T> All
-        {
-            get
-            {
-                try {
-                    lockSlim.EnterReadLock();
-                    foreach (var k in Map.AllValues()) {
-                        yield return k.Value;
-                    }
-                } finally {
-                    lockSlim.ExitReadLock();
-                }
+            } finally {
+                lockSlim.ExitReadLock();
             }
         }
     }

@@ -1,26 +1,8 @@
-// "Therefore those skilled at the unorthodox
-// are infinite as heaven and earth,
-// inexhaustible as the great rivers.
-// When they come to an end,
-// they begin again,
-// like the days and months;
-// they die and are reborn,
-// like the four seasons."
-// 
-// - Sun Tsu,
-// "The Art of War"
+namespace TheArtOfDev.HtmlRenderer.Core;
 
-namespace TheArtOfDev.HtmlRenderer.Core
+internal static class CssDefaults
 {
-    internal static class CssDefaults
-    {
-        /// <summary>
-        /// CSS Specification's Default Style Sheet for HTML 4
-        /// </summary>
-        /// <remarks>
-        /// http://www.w3.org/TR/CSS21/sample.html
-        /// </remarks>
-        public const string DefaultStyleSheet = @"
+    public const string DefaultStyleSheet = @"
         html, address,
         blockquote,
         body, dd, div,
@@ -124,5 +106,4 @@ namespace TheArtOfDev.HtmlRenderer.Core
             padding: 8px; 
             Font: 9pt Tahoma;
         }";
-    }
 }

@@ -1,34 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection.Emit;
-using System.Text;
-using YantraJS.Expressions;
+﻿using YantraJS.Expressions;
 
-namespace YantraJS.Generator
+namespace YantraJS.Generator;
+
+public struct CodeInfo(bool success)
 {
-    public struct CodeInfo
-    {
-        public readonly bool Success;
+    public readonly bool Success = success;
 
+    public static implicit operator CodeInfo(bool success) => new(success);
 
-        public CodeInfo(bool success)
-        {
-            this.Success = success;
-        }
+    public static implicit operator bool (CodeInfo ci) => ci.Success;
 
+}
 
-        public static implicit operator CodeInfo(bool success)
-        {
-            return new CodeInfo(success);
-        }
+public partial class ILCodeGenerator: YExpressionVisitor<CodeInfo>
+{
 
-        public static implicit operator bool (CodeInfo ci) => ci.Success;
-
-    }
-
-    public partial class ILCodeGenerator: YExpressionVisitor<CodeInfo>
-    {
-
-    }
 }

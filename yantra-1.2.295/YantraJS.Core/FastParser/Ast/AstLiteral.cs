@@ -1,37 +1,21 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstLiteral(TokenTypes tokenType, FastToken token) : AstExpression(token, FastNodeType.Literal, token)
 {
-    public class AstLiteral : AstExpression
-    {
-        public readonly TokenTypes TokenType;
+    public readonly TokenTypes TokenType = tokenType;
 
-        public double NumericValue => Start.Number;
+    public double NumericValue => Start.Number;
 
-        public string StringValue => Start.CookedText ?? Start.Span.Value;
+    public string StringValue => Start.CookedText ?? Start.Span.Value;
 
-        public (string Pattern, string Flags) Regex => (this.Start.CookedText, this.Start.Flags);
+    public (string Pattern, string Flags) Regex => (Start.CookedText, Start.Flags);
 
-        public AstLiteral(TokenTypes tokenType, FastToken token): base(token, FastNodeType.Literal, token)
-        {
-            this.TokenType = tokenType;
-        }
+    public override string ToString() => TokenType.ToString();
+}
 
-        public override string ToString()
-        {
-            return TokenType.ToString();
-        }
-    }
+public class AstSuper(FastToken token) : AstExpression(token, FastNodeType.Super, token)
+{
+    public readonly TokenTypes TokenType;
 
-    public class AstSuper: AstExpression
-    {
-        public readonly TokenTypes TokenType;
-
-        public AstSuper(FastToken token) : base(token, FastNodeType.Super, token)
-        {
-        }
-
-        public override string ToString()
-        {
-            return "super";
-        }
-    }
+    public override string ToString() => "super";
 }

@@ -1,21 +1,14 @@
 ﻿using System.CodeDom.Compiler;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YArrayLengthExpression(YExpression target) : YExpression(YExpressionType.ArrayLength, typeof(int))
 {
-    public class YArrayLengthExpression: YExpression
+    public readonly YExpression Target = target;
+
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly YExpression Target;
-
-        public YArrayLengthExpression(YExpression target)
-            : base(YExpressionType.ArrayLength, typeof(int))
-        {
-            this.Target = target;
-        }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            Target.Print(writer);
-            writer.Write(".Length");
-        }
+        Target.Print(writer);
+        writer.Write(".Length");
     }
 }

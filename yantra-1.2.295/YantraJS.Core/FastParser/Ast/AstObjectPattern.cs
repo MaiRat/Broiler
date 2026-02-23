@@ -1,16 +1,9 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstObjectPattern(
+    FastToken start,
+    FastToken end,
+    IFastEnumerable<ObjectProperty> properties) : AstBindingPattern(start, FastNodeType.ObjectPattern, end)
 {
-    public class AstObjectPattern : AstBindingPattern
-    {
-        public readonly IFastEnumerable<ObjectProperty> Properties;
-
-        public AstObjectPattern(
-            FastToken start, 
-            FastToken end,
-            IFastEnumerable<ObjectProperty> properties) : base(start, FastNodeType.ObjectPattern, end)
-        {
-            this.Properties = properties;
-        }
-    }
-
+    public readonly IFastEnumerable<ObjectProperty> Properties = properties;
 }

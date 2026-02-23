@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Broiler.App.Rendering;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using YantraJS.Core;
@@ -28,14 +27,11 @@ public sealed class EngineTestService
     /// <summary>
     /// Runs smoke tests for all embedded engines and returns results.
     /// </summary>
-    public IReadOnlyList<EngineTestResult> RunAll()
-    {
-        return new[]
-        {
+    public IReadOnlyList<EngineTestResult> RunAll() =>
+        [
             TestHtmlRenderer(),
             TestYantraJS(),
-        };
-    }
+        ];
 
     /// <summary>
     /// Tests the HTML-Renderer core by performing a basic CSS block

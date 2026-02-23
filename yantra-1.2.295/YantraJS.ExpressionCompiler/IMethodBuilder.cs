@@ -1,11 +1,9 @@
-﻿using System.Collections.Generic;
-using YantraJS.Core;
+﻿using YantraJS.Core;
 using YantraJS.Expressions;
 
-namespace YantraJS
+namespace YantraJS;
+
+public interface IMethodBuilder
 {
-    public interface IMethodBuilder
-    {
-        YExpression Relay(YExpression @this, IFastEnumerable<YExpression> closures, YLambdaExpression innerLambda);
-    }
+    YExpression Relay(YExpression @this, IFastEnumerable<YExpression> closures, YLambdaExpression innerLambda);
 }

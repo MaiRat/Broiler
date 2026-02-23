@@ -1,34 +1,26 @@
 ﻿using System.CodeDom.Compiler;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YUnaryExpression(YExpression exp, YUnaryOperator @operator) : YExpression(YExpressionType.Unary, exp.Type)
 {
-    public class YUnaryExpression: YExpression
+    public readonly YExpression Target = exp;
+    public readonly YUnaryOperator Operator = @operator;
+
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly YExpression Target;
-        public readonly YUnaryOperator Operator;
-
-        public YUnaryExpression(YExpression exp, YUnaryOperator @operator)
-            : base(YExpressionType.Unary, exp.Type)
+        switch (Operator)
         {
-            this.Target = exp;
-            this.Operator = @operator;
-        }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            switch (Operator)
-            {
-                case YUnaryOperator.Not:
-                    writer.Write("~(");
-                    Target.Print(writer);
-                    writer.Write(")");
-                    break;
-                case YUnaryOperator.Negative:
-                    writer.Write("!(");
-                    Target.Print(writer);
-                    writer.Write(")");
-                    break;
-            }
+            case YUnaryOperator.Not:
+                writer.Write("~(");
+                Target.Print(writer);
+                writer.Write(")");
+                break;
+            case YUnaryOperator.Negative:
+                writer.Write("!(");
+                Target.Print(writer);
+                writer.Write(")");
+                break;
         }
     }
 }

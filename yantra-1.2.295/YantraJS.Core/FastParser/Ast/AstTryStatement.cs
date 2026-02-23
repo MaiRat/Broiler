@@ -1,19 +1,9 @@
-﻿namespace YantraJS.Core.FastParser
-{
-    public class AstTryStatement : AstStatement
-    {
-        public readonly AstStatement Block;
-        public readonly AstIdentifier Identifier;
-        public readonly AstStatement Catch;
-        public readonly AstStatement Finally;
+﻿namespace YantraJS.Core.FastParser;
 
-        public AstTryStatement(FastToken token, FastToken previousToken, AstStatement body, AstIdentifier id, AstStatement @catch, AstStatement @finally)
-            : base(token, FastNodeType.TryStatement, previousToken)
-        {
-            this.Block = body;
-            this.Identifier = id;
-            this.Catch = @catch;
-            this.Finally = @finally;
-        }
-    }
+public class AstTryStatement(FastToken token, FastToken previousToken, AstStatement body, AstIdentifier id, AstStatement @catch, AstStatement @finally) : AstStatement(token, FastNodeType.TryStatement, previousToken)
+{
+    public readonly AstStatement Block = body;
+    public readonly AstIdentifier Identifier = id;
+    public readonly AstStatement Catch = @catch;
+    public readonly AstStatement Finally = @finally;
 }

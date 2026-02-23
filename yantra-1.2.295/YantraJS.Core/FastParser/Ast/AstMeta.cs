@@ -1,15 +1,7 @@
-﻿namespace YantraJS.Core.FastParser
-{
-    public class AstMeta : AstExpression
-    {
-        public readonly AstIdentifier Identifier;
-        public readonly AstIdentifier Property;
+﻿namespace YantraJS.Core.FastParser;
 
-        public AstMeta(AstIdentifier id, AstIdentifier property)
-            : base(id.Start, FastNodeType.Meta, property.End)
-        {
-            this.Identifier = id;
-            this.Property = property;
-        }
-    }
+public class AstMeta(AstIdentifier id, AstIdentifier property) : AstExpression(id.Start, FastNodeType.Meta, property.End)
+{
+    public readonly AstIdentifier Identifier = id;
+    public readonly AstIdentifier Property = property;
 }

@@ -1,87 +1,75 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
+﻿using System.ComponentModel;
 
-namespace YantraJS.Core.Core.Storage
+namespace YantraJS.Core.Core.Storage;
+
+public struct VirtualMemory<T>
 {
-    public struct VirtualMemory<T>
+
+    private T[] nodes = null;
+    private int last = 0;
+
+    public readonly bool IsEmpty => Count == 0;
+
+    public readonly int Count => nodes?.Length ?? 0;
+
+    public VirtualMemory()
     {
 
-        private T[] nodes = null;
-        private int last = 0;
+    }
 
-        public bool IsEmpty => this.Count == 0;
-
-        public int Count => this.nodes?.Length ?? 0;
-
-        public VirtualMemory()
+    public readonly ref T this[VirtualArray a, int index]
+    {
+        get
         {
-
-        }
-
-        public ref T this[VirtualArray a, int index]
-        {
-            get
-            {
-                return ref this.nodes[a.Offset + index];
-            }
-        }
-
-        [Browsable(false)]
-        public ref T GetAt(int index) {
-            return ref this.nodes[index];
-        }
-
-        public VirtualArray Allocate(int length)
-        {
-            var max = this.last + length;
-            if (this.nodes == null || this.nodes.Length <= max)
-            {
-                // we need to resize...
-                var capacity = this.last * 2;
-                if (capacity <= max)
-                {
-                    capacity = ((max / 16)+ 1) * 16;
-                }
-                this.SetCapacity(capacity);
-            }
-            var offset = this.last;
-            this.last += length;
-            return new VirtualArray(offset, length);
-        }
-
-        public void SetCapacity(int max)
-        {
-            if (max <=0)
-            {
-                return;
-            }
-            if (nodes == null)
-            {
-                nodes = new T[max];
-                return;
-            }
-
-            if (this.nodes.Length >= max)
-            {
-                return;
-            }
-            System.Array.Resize(ref this.nodes, max);
+            return ref nodes[a.Offset + index];
         }
     }
 
-    public readonly struct VirtualArray
-    {
-        public readonly int Offset;
-        public readonly int Length;
+    [Browsable(false)]
+    public readonly ref T GetAt(int index) => ref nodes[index];
 
-        public VirtualArray(int offset, int length)
+    public VirtualArray Allocate(int length)
+    {
+        var max = last + length;
+        if (nodes == null || nodes.Length <= max)
         {
-            this.Offset = offset;
-            this.Length = length;
+            // we need to resize...
+            var capacity = last * 2;
+            if (capacity <= max)
+            {
+                capacity = ((max / 16)+ 1) * 16;
+            }
+            SetCapacity(capacity);
+        }
+        var offset = last;
+        last += length;
+        return new VirtualArray(offset, length);
+    }
+
+    public void SetCapacity(int max)
+    {
+        if (max <=0)
+        {
+            return;
+        }
+        if (nodes == null)
+        {
+            nodes = new T[max];
+            return;
         }
 
-        public bool IsEmpty => this.Length == 0;
+        if (nodes.Length >= max)
+        {
+            return;
+        }
+        System.Array.Resize(ref nodes, max);
     }
+}
+
+public readonly struct VirtualArray(int offset, int length)
+{
+    public readonly int Offset = offset;
+    public readonly int Length = length;
+
+    public bool IsEmpty => Length == 0;
 }

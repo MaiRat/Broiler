@@ -3,26 +3,13 @@ using System;
 using System.CodeDom.Compiler;
 using System.Reflection;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YDelegateExpression(MethodInfo method, Type? type = null) : YExpression(YExpressionType.Delegate, type ?? GetSignature(method))
 {
-    public class YDelegateExpression: YExpression
-    {
-        public readonly MethodInfo Method;
+    public readonly MethodInfo Method = method;
 
-        public YDelegateExpression(MethodInfo method, Type? type = null)
-            : base(YExpressionType.Delegate, type ?? GetSignature(method))
-        {
-            this.Method = method;
-        }
+    private static Type GetSignature(MethodInfo method) => throw new NotImplementedException();
 
-        private static Type GetSignature(MethodInfo method)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            writer.Write($"delegate({Method.Name})");
-        }
-    }
+    public override void Print(IndentedTextWriter writer) => writer.Write($"delegate({Method.Name})");
 }

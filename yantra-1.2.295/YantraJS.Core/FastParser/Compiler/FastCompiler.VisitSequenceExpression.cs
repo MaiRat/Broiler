@@ -1,35 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Text;
-using YantraJS.Core.LinqExpressions;
-using YantraJS.ExpHelper;
-
-using Exp = YantraJS.Expressions.YExpression;
+﻿using Exp = YantraJS.Expressions.YExpression;
 using Expression = YantraJS.Expressions.YExpression;
-using ParameterExpression = YantraJS.Expressions.YParameterExpression;
-using LambdaExpression = YantraJS.Expressions.YLambdaExpression;
-using LabelTarget = YantraJS.Expressions.YLabelTarget;
-using SwitchCase = YantraJS.Expressions.YSwitchCaseExpression;
-using GotoExpression = YantraJS.Expressions.YGoToExpression;
-using TryExpression = YantraJS.Expressions.YTryCatchFinallyExpression;
-using System.Linq;
 
-namespace YantraJS.Core.FastParser.Compiler
+namespace YantraJS.Core.FastParser.Compiler;
+
+partial class FastCompiler
 {
-    partial class FastCompiler
+    protected override Expression VisitSequenceExpression(AstSequenceExpression sequenceExpression)
     {
-        protected override Expression VisitSequenceExpression(AstSequenceExpression sequenceExpression)
+        var list = new Sequence<Exp>();
+        var e = sequenceExpression.Expressions.GetFastEnumerator();
+        while (e.MoveNext(out var exp))
         {
-            var list = new Sequence<Exp>();
-            var e = sequenceExpression.Expressions.GetFastEnumerator();
-            while (e.MoveNext(out var exp))
-            {
-                if (exp != null) list.Add(Visit(exp));
-            }
-            var r = Exp.Block(list);
-            // list.Clear();
-            return r;
+            if (exp != null) list.Add(Visit(exp));
         }
+        var r = Exp.Block(list);
+        // list.Clear();
+        return r;
     }
 }

@@ -1,19 +1,9 @@
 ﻿#nullable enable
-namespace YantraJS.Core.FastParser
+namespace YantraJS.Core.FastParser;
+
+public class AstArrayExpression(FastToken start, FastToken end, IFastEnumerable<AstExpression> nodes) : AstExpression(start, FastNodeType.ArrayExpression, end)
 {
-    public class AstArrayExpression : AstExpression
-    {
-        public readonly IFastEnumerable<AstExpression> Elements;
+    public readonly IFastEnumerable<AstExpression> Elements = nodes;
 
-        public AstArrayExpression(FastToken start, FastToken end, IFastEnumerable<AstExpression> nodes)
-            : base(start, FastNodeType.ArrayExpression, end)
-        {
-            this.Elements = nodes;
-        }
-
-        public override string ToString()
-        {
-            return $"[{Elements.Join()}]";
-        }
-    }
+    public override string ToString() => $"[{Elements.Join()}]";
 }

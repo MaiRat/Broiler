@@ -1,25 +1,17 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YNewArrayBoundsExpression(Type type, YExpression size) : YExpression(YExpressionType.NewArrayBounds, type.MakeArrayType())
 {
-    public class YNewArrayBoundsExpression: YExpression
+    public readonly Type ElementType = type;
+    public readonly YExpression Size = size;
+
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly Type ElementType;
-        public readonly YExpression Size;
-
-        public YNewArrayBoundsExpression(Type type, YExpression size)
-            : base(YExpressionType.NewArrayBounds, type.MakeArrayType())
-        {
-            this.ElementType = type;
-            this.Size = size;
-        }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            writer.Write($"new {ElementType.GetFriendlyName()} [");
-            Size.Print(writer);
-            writer.Write("]");
-        }
+        writer.Write($"new {ElementType.GetFriendlyName()} [");
+        Size.Print(writer);
+        writer.Write("]");
     }
 }

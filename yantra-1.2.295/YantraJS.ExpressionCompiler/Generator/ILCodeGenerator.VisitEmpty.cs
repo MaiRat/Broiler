@@ -1,19 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection.Emit;
-using System.Text;
-using YantraJS.Expressions;
+﻿using YantraJS.Expressions;
 
-namespace YantraJS.Generator
+namespace YantraJS.Generator;
+
+public partial class ILCodeGenerator
 {
-    public partial class ILCodeGenerator
-    {
 
-        protected override CodeInfo VisitEmpty(YEmptyExpression exp)
-        {
-            return true;
-        }
+    protected override CodeInfo VisitEmpty(YEmptyExpression exp) => true;
 
-    }
 }

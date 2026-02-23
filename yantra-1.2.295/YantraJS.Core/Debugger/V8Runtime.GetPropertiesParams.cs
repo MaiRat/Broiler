@@ -1,14 +1,11 @@
-﻿namespace YantraJS.Core.Debugger
+﻿namespace YantraJS.Core.Debugger;
+
+
+public partial class V8Runtime
 {
+    public class GetPropertiesParams { 
+        public string ObjectId { get; set; }
 
-    public partial class V8Runtime
-    {
-        public class GetPropertiesParams { 
-            public string ObjectId { get; set; }
-
-            public bool ownProperties { get; set; }
-        }
+        public bool ownProperties { get; set; }
     }
-
-
 }

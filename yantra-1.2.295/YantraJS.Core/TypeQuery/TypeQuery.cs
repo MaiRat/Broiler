@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 namespace YantraJS.Core.Types;
 
@@ -10,7 +9,7 @@ public static class TypeQuery
 {
 
     // we will try to reduce cache
-    private static Dictionary<MethodInfo, object> cache = new Dictionary<MethodInfo, object>();
+    private static Dictionary<MethodInfo, object> cache = [];
 
     private static T GetOrCreate<T>(MethodInfo method, Func<T> fx)
     {
@@ -23,21 +22,17 @@ public static class TypeQuery
         return rt;
     }
 
-    public static ConstructorInfo QueryConstructor<T>(Func<Expression<Func<T>>> fx)
+    public static ConstructorInfo QueryConstructor<T>(Func<Expression<Func<T>>> fx) => GetOrCreate(fx.Method, () =>
     {
-        return GetOrCreate(fx.Method, () => {
-            var exp = fx();
-            if (exp.Body is not NewExpression ne)
-                throw new ArgumentException($"Constructor not found in {exp.Type} {exp}");
-            return ne.Constructor;
-        });
-
-    }
+        var exp = fx();
+        if (exp.Body is not NewExpression ne)
+            throw new ArgumentException($"Constructor not found in {exp.Type} {exp}");
+        return ne.Constructor;
+    });
 
     public static FieldInfo QueryInstanceField<T, TReturn>(Func<Expression<Func<T, TReturn>>> fx)
-        where T : class
-    {
-        return GetOrCreate(fx.Method, () => {
+        where T : class => GetOrCreate(fx.Method, () =>
+        {
             var exp = fx();
             if (exp.Body is not MemberExpression me)
                 throw new ArgumentException($"Field not found in {exp}");
@@ -46,25 +41,19 @@ public static class TypeQuery
             return field;
         });
 
-    }
-
-    public static FieldInfo QueryStaticField<TReturn>(Func<Expression<Func<TReturn>>> fx)
+    public static FieldInfo QueryStaticField<TReturn>(Func<Expression<Func<TReturn>>> fx) => GetOrCreate(fx.Method, () =>
     {
-        return GetOrCreate(fx.Method, () => {
-            var exp = fx();
-            if (exp.Body is not MemberExpression me)
-                throw new ArgumentException($"Field not found in {exp}");
-            if (me.Member is not FieldInfo field)
-                throw new ArgumentException($"{me.Member} is not a field");
-            return field;
-        });
-
-    }
+        var exp = fx();
+        if (exp.Body is not MemberExpression me)
+            throw new ArgumentException($"Field not found in {exp}");
+        if (me.Member is not FieldInfo field)
+            throw new ArgumentException($"{me.Member} is not a field");
+        return field;
+    });
 
     public static PropertyInfo QueryInstanceProperty<T, TReturn>(Func<Expression<Func<T, TReturn>>> fx)
-        where T : class
-    {
-        return GetOrCreate(fx.Method, () => {
+        where T : class => GetOrCreate(fx.Method, () =>
+        {
             var exp = fx();
             if (exp.Body is not MemberExpression me)
                 throw new ArgumentException($"Field not found in {exp}");
@@ -73,61 +62,45 @@ public static class TypeQuery
             return field;
         });
 
-    }
-
-    public static MethodInfo QueryStaticMethod<T>(Func<Expression<Func<T>>> fx)
+    public static MethodInfo QueryStaticMethod<T>(Func<Expression<Func<T>>> fx) => GetOrCreate(fx.Method, () =>
     {
-        return GetOrCreate(fx.Method, () => {
-            var exp = fx();
-            if (exp.Body is not MethodCallExpression me)
-                throw new ArgumentException($"Method found in {exp}");
-            return me.Method;
-        });
+        var exp = fx();
+        if (exp.Body is not MethodCallExpression me)
+            throw new ArgumentException($"Method found in {exp}");
+        return me.Method;
+    });
 
-    }
-
-    public static MethodInfo QueryStaticMethod(Func<Expression<Action>> fx)
+    public static MethodInfo QueryStaticMethod(Func<Expression<Action>> fx) => GetOrCreate(fx.Method, () =>
     {
-        return GetOrCreate(fx.Method, () => {
-            var exp = fx();
-            if (exp.Body is not MethodCallExpression me)
-                throw new ArgumentException($"Method found in {exp}");
-            return me.Method;
-        });
-    }
+        var exp = fx();
+        if (exp.Body is not MethodCallExpression me)
+            throw new ArgumentException($"Method found in {exp}");
+        return me.Method;
+    });
 
-    public static MethodInfo QueryInstanceMethod<T, TOut>(Func<Expression<Func<T, TOut>>> fx)
+    public static MethodInfo QueryInstanceMethod<T, TOut>(Func<Expression<Func<T, TOut>>> fx) => GetOrCreate(fx.Method, () =>
     {
-        return GetOrCreate(fx.Method, () => {
-            var exp = fx();
-            if (exp.Body is not MethodCallExpression me)
-                throw new ArgumentException($"Method found in {exp}");
-            return me.Method;
-        });
+        var exp = fx();
+        if (exp.Body is not MethodCallExpression me)
+            throw new ArgumentException($"Method found in {exp}");
+        return me.Method;
+    });
 
-    }
-
-    public static MethodInfo QueryInstanceMethod<T>(Func<Expression<Action<T>>> fx)
+    public static MethodInfo QueryInstanceMethod<T>(Func<Expression<Action<T>>> fx) => GetOrCreate(fx.Method, () =>
     {
-        return GetOrCreate(fx.Method, () => {
-            var exp = fx();
-            if (exp.Body is not MethodCallExpression me)
-                throw new ArgumentException($"Method found in {exp}");
-            return me.Method;
-        });
+        var exp = fx();
+        if (exp.Body is not MethodCallExpression me)
+            throw new ArgumentException($"Method found in {exp}");
+        return me.Method;
+    });
 
-    }
-
-    public static MethodInfo QueryInstanceMethod(Func<LambdaExpression> fx)
+    public static MethodInfo QueryInstanceMethod(Func<LambdaExpression> fx) => GetOrCreate(fx.Method, () =>
     {
-        return GetOrCreate(fx.Method, () => {
-            var exp = fx();
-            if (exp.Body is not MethodCallExpression me)
-                throw new ArgumentException($"Method found in {exp}");
-            return me.Method;
-        });
-
-    }
+        var exp = fx();
+        if (exp.Body is not MethodCallExpression me)
+            throw new ArgumentException($"Method found in {exp}");
+        return me.Method;
+    });
 
     private static ConstructorInfo QueryConstructor<T>(Expression<Func<T>> expression)
     {

@@ -1,13 +1,6 @@
-﻿namespace YantraJS.Core.FastParser
-{
-    public class AstAwaitExpression : AstExpression
-    {
-        public readonly AstExpression Argument;
+﻿namespace YantraJS.Core.FastParser;
 
-        public AstAwaitExpression(FastToken token, FastToken previousToken, AstExpression target)
-            : base(token, FastNodeType.AwaitExpression, previousToken)
-        {
-            this.Argument = target;
-        }
-    }
+public class AstAwaitExpression(FastToken token, FastToken previousToken, AstExpression target) : AstExpression(token, FastNodeType.AwaitExpression, previousToken)
+{
+    public readonly AstExpression Argument = target;
 }

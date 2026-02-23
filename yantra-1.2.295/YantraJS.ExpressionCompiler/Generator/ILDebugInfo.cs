@@ -1,19 +1,11 @@
 ﻿#nullable enable
 using YantraJS.Expressions;
 
-namespace YantraJS.Generator
-{
-    public readonly struct ILDebugInfo
-    {
-        public readonly int ILOffset;
-        public readonly Position Start;
-        public readonly Position End;
+namespace YantraJS.Generator;
 
-        public ILDebugInfo(int ilOffset, in Position start, in Position end)
-        {
-            this.ILOffset = ilOffset;
-            this.Start = start;
-            this.End = end;
-        }
-    }
+public readonly struct ILDebugInfo(int ilOffset, in Position start, in Position end)
+{
+    public readonly int ILOffset = ilOffset;
+    public readonly Position Start = start;
+    public readonly Position End = end;
 }

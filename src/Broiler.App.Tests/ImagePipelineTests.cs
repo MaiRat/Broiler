@@ -5,28 +5,16 @@ namespace Broiler.App.Tests;
 public class ImagePipelineTests
 {
     [Fact]
-    public void ImageDecoder_DetectFormat_Png()
-    {
-        Assert.Equal(ImageFormat.Png, ImageDecoder.DetectFormat("image.png"));
-    }
+    public void ImageDecoder_DetectFormat_Png() => Assert.Equal(ImageFormat.Png, ImageDecoder.DetectFormat("image.png"));
 
     [Fact]
-    public void ImageDecoder_DetectFormat_Jpeg()
-    {
-        Assert.Equal(ImageFormat.Jpeg, ImageDecoder.DetectFormat("photo.jpg"));
-    }
+    public void ImageDecoder_DetectFormat_Jpeg() => Assert.Equal(ImageFormat.Jpeg, ImageDecoder.DetectFormat("photo.jpg"));
 
     [Fact]
-    public void ImageDecoder_DetectFormat_Svg()
-    {
-        Assert.Equal(ImageFormat.Svg, ImageDecoder.DetectFormat("icon.svg"));
-    }
+    public void ImageDecoder_DetectFormat_Svg() => Assert.Equal(ImageFormat.Svg, ImageDecoder.DetectFormat("icon.svg"));
 
     [Fact]
-    public void ImageDecoder_DetectFormat_DataUri()
-    {
-        Assert.Equal(ImageFormat.Png, ImageDecoder.DetectFormat("data:image/png;base64,abc"));
-    }
+    public void ImageDecoder_DetectFormat_DataUri() => Assert.Equal(ImageFormat.Png, ImageDecoder.DetectFormat("data:image/png;base64,abc"));
 
     [Fact]
     public void ImageDecoder_DetectFormatFromBytes_Png()

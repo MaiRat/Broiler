@@ -1,38 +1,30 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
-namespace YantraJS.Core.Generator
+namespace YantraJS.Core.Generator;
+
+public struct JSGeneratorEnumerator(JSGenerator g) : IEnumerator<(uint Key, JSProperty Value)>
 {
-    public struct JSGeneratorEnumerator : IEnumerator<(uint Key, JSProperty Value)>
+    uint index = 0;
+
+    public readonly (uint Key, JSProperty Value) Current => (index - 1, JSProperty.Property(g.value));
+
+    readonly object IEnumerator.Current => Current;
+
+    public readonly void Dispose()
     {
-        readonly JSGenerator g;
-        uint index;
-        public JSGeneratorEnumerator(JSGenerator g)
-        {
-            this.g = g;
-            index = 0;
-        }
 
-        public (uint Key, JSProperty Value) Current => (index - 1, JSProperty.Property(g.value));
+    }
 
-        object IEnumerator.Current => this.Current;
+    public bool MoveNext()
+    {
+        g.Next();
+        index++;
+        return !g.done;
+    }
 
-        public void Dispose()
-        {
+    public readonly void Reset()
+    {
 
-        }
-
-        public bool MoveNext()
-        {
-            this.g.Next();
-            index++;
-            return !g.done;
-        }
-
-        public void Reset()
-        {
-
-        }
     }
 }

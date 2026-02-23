@@ -1,26 +1,16 @@
-using SkiaSharp;
-using TheArtOfDev.HtmlRenderer.Image;
-
 namespace HtmlRenderer.Image.Tests;
 
 /// <summary>
 /// Tests for rendering HTML to files.
 /// </summary>
 [Collection("Rendering")]
-public class RenderToFileTests
+public class RenderToFileTests(RenderingFixture fixture)
 {
-    private readonly RenderingFixture _fixture;
-
-    public RenderToFileTests(RenderingFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public void RenderToFile_Png_CreatesValidFile()
     {
-        Assert.True(File.Exists(_fixture.PngFilePath));
-        var bytes = File.ReadAllBytes(_fixture.PngFilePath);
+        Assert.True(File.Exists(fixture.PngFilePath));
+        var bytes = File.ReadAllBytes(fixture.PngFilePath);
         Assert.True(bytes.Length > 0);
         // Verify PNG signature
         Assert.Equal(0x89, bytes[0]);
@@ -30,8 +20,8 @@ public class RenderToFileTests
     [Fact]
     public void RenderToFile_Jpeg_CreatesValidFile()
     {
-        Assert.True(File.Exists(_fixture.JpegFilePath));
-        var bytes = File.ReadAllBytes(_fixture.JpegFilePath);
+        Assert.True(File.Exists(fixture.JpegFilePath));
+        var bytes = File.ReadAllBytes(fixture.JpegFilePath);
         Assert.True(bytes.Length > 0);
         // Verify JPEG signature
         Assert.Equal(0xFF, bytes[0]);

@@ -1,94 +1,90 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using YantraJS.Extensions;
+﻿using YantraJS.Extensions;
 
-namespace YantraJS.Core
+namespace YantraJS.Core;
+
+/// <summary>
+/// JSPrimitive class does not hold prototype, prototype is only resolved from
+/// current context when requested first time
+/// 
+/// Boolean, Number, Integer are derived from JSPrimitive
+/// </summary>
+public abstract class JSPrimitive: JSValue
 {
-    /// <summary>
-    /// JSPrimitive class does not hold prototype, prototype is only resolved from
-    /// current context when requested first time
-    /// 
-    /// Boolean, Number, Integer are derived from JSPrimitive
-    /// </summary>
-    public abstract class JSPrimitive: JSValue
+    internal protected void ResolvePrototype() { 
+        if (prototypeChain == null)
+        {
+            BasePrototypeObject = GetPrototype();
+        }
+    }
+
+    protected abstract JSObject GetPrototype();
+
+    protected JSPrimitive() : base(null)
     {
-        internal protected void ResolvePrototype() { 
+
+    }
+
+    protected JSPrimitive(JSObject prototype): base(prototype)
+    {
+
+    }
+
+    public override JSValue this[JSSymbol symbol] {
+        get
+        {
+            ResolvePrototype();
             if (prototypeChain == null)
+                return JSUndefined.Value;
+            var px = prototypeChain.GetInternalProperty(symbol);
+            if (px.IsEmpty)
             {
-                BasePrototypeObject = GetPrototype();
+                // throw JSContext.Current.NewTypeError($"{name} property not found on {this.GetType().Name}:{this}");
+                return JSUndefined.Value;
             }
+            return this.GetValue(px);
         }
+        set => base[symbol] = value;
+    }
 
-        protected abstract JSObject GetPrototype();
-
-        protected JSPrimitive() : base(null)
-        {
-
-        }
-
-        protected JSPrimitive(JSObject prototype): base(prototype)
-        {
-
-        }
-
-        public override JSValue this[JSSymbol symbol] {
-            get
-            {
-                ResolvePrototype();
-                if (prototypeChain == null)
-                    return JSUndefined.Value;
-                var px = prototypeChain.GetInternalProperty(symbol);
-                if (px.IsEmpty)
-                {
-                    // throw JSContext.Current.NewTypeError($"{name} property not found on {this.GetType().Name}:{this}");
-                    return JSUndefined.Value;
-                }
-                return this.GetValue(px);
-            }
-            set => base[symbol] = value;
-        }
-
-        public override JSValue this[KeyString name]
-        {
-            get
-            {
-                ResolvePrototype();
-                if (prototypeChain == null)
-                    return JSUndefined.Value;
-                var px = prototypeChain.GetInternalProperty(name);
-                if (px.IsEmpty)
-                {
-                    // throw JSContext.Current.NewTypeError($"{name} property not found on {this.GetType().Name}:{this}");
-                    return JSUndefined.Value;
-                }
-                return this.GetValue(px);
-            }
-            set
-            {
-                // throw new NotSupportedException();
-            }
-        }
-
-        public override IElementEnumerator GetAllKeys(bool showEnumerableOnly = true, bool inherited = true)
+    public override JSValue this[KeyString name]
+    {
+        get
         {
             ResolvePrototype();
-            return base.GetAllKeys(showEnumerableOnly, inherited);
-        }
-
-        internal override JSFunctionDelegate GetMethod(in KeyString key)
-        {
-            if(prototypeChain == null)
+            if (prototypeChain == null)
+                return JSUndefined.Value;
+            var px = prototypeChain.GetInternalProperty(name);
+            if (px.IsEmpty)
             {
-                BasePrototypeObject = GetPrototype();
+                // throw JSContext.Current.NewTypeError($"{name} property not found on {this.GetType().Name}:{this}");
+                return JSUndefined.Value;
             }
-            return prototypeChain?.GetMethod(key);
+            return this.GetValue(px);
         }
-
-        public override JSValue GetPrototypeOf()
+        set
         {
-            ResolvePrototype();
-            return base.GetPrototypeOf();
+            // throw new NotSupportedException();
         }
+    }
+
+    public override IElementEnumerator GetAllKeys(bool showEnumerableOnly = true, bool inherited = true)
+    {
+        ResolvePrototype();
+        return base.GetAllKeys(showEnumerableOnly, inherited);
+    }
+
+    internal override JSFunctionDelegate GetMethod(in KeyString key)
+    {
+        if(prototypeChain == null)
+        {
+            BasePrototypeObject = GetPrototype();
+        }
+        return prototypeChain?.GetMethod(key);
+    }
+
+    public override JSValue GetPrototypeOf()
+    {
+        ResolvePrototype();
+        return base.GetPrototypeOf();
     }
 }

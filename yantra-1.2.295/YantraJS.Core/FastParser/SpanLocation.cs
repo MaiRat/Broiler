@@ -1,19 +1,9 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public readonly struct SpanLocation(int line, int column)
 {
-    public readonly struct SpanLocation
-    {
-        public readonly int Line;
-        public readonly int Column;
+    public readonly int Line = line;
+    public readonly int Column = column;
 
-        public SpanLocation(int line, int column)
-        {
-            this.Line = line;
-            this.Column = column;
-        }
-
-        public override string ToString()
-        {
-            return $"{Line}, {Column}";
-        }
-    }
+    public override string ToString() => $"{Line}, {Column}";
 }

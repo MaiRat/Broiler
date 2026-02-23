@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Text;
+﻿using System.Runtime.CompilerServices;
 
 #if !WEB_ATOMS
 [assembly: InternalsVisibleTo("YantraJS.Tests")]

@@ -1,32 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using YantraJS.Expressions;
 
-namespace YantraJS.Core.LinqExpressions.GeneratorsV2
+namespace YantraJS.Core.LinqExpressions.GeneratorsV2;
+
+internal class ReplaceParameters(Dictionary<YExpression, YExpression> replacers) : YExpressionMapVisitor
 {
-    internal class ReplaceParameters: YExpressionMapVisitor
+    public override YExpression VisitIn(YExpression exp)
     {
-        private readonly Dictionary<YExpression, YExpression> replacers;
-
-        public ReplaceParameters(Dictionary<YExpression, YExpression> replacers)
+        if (exp == null)
         {
-            this.replacers = replacers;
+            return null;
         }
-
-        public override YExpression VisitIn(YExpression exp)
+        if(replacers.TryGetValue(exp,out var replaced))
         {
-            if (exp == null)
-            {
-                return null;
-            }
-            if(replacers.TryGetValue(exp,out var replaced))
-            {
-                exp = replaced;
-            }
-            return base.VisitIn(exp);
+            exp = replaced;
         }
-
-
+        return base.VisitIn(exp);
     }
+
+
 }

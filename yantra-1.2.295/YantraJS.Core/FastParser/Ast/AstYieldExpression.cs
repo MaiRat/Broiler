@@ -1,15 +1,7 @@
-﻿namespace YantraJS.Core.FastParser
-{
-    public class AstYieldExpression : AstExpression
-    {
-        public readonly AstExpression Argument;
-        public readonly bool Delegate;
+﻿namespace YantraJS.Core.FastParser;
 
-        public AstYieldExpression(FastToken token, FastToken previousToken, AstExpression target, bool @delegate = false)
-            : base(token, FastNodeType.YieldExpression, previousToken)
-        {
-            this.Argument = target;
-            this.Delegate = @delegate;
-        }
-    }
+public class AstYieldExpression(FastToken token, FastToken previousToken, AstExpression target, bool @delegate = false) : AstExpression(token, FastNodeType.YieldExpression, previousToken)
+{
+    public readonly AstExpression Argument = target;
+    public readonly bool Delegate = @delegate;
 }

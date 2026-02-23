@@ -1,11 +1,10 @@
 ﻿#nullable enable
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public enum YUnaryOperator
 {
-    public enum YUnaryOperator
-    {
-        Not,
-        Negative,
-        OnesComplement
-    }
+    Not,
+    Negative,
+    OnesComplement
 }

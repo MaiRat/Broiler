@@ -1,171 +1,139 @@
-using System;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Image.Utilities;
 
-namespace TheArtOfDev.HtmlRenderer.Image.Adapters
+namespace TheArtOfDev.HtmlRenderer.Image.Adapters;
+
+internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool dispose = false) : RGraphics(SkiaImageAdapter.Instance, initialClip)
 {
-    internal sealed class GraphicsAdapter : RGraphics
+    public override void PopClip()
     {
-        private readonly SKCanvas _canvas;
-        private readonly bool _dispose;
+        canvas.Restore();
+        _clipStack.Pop();
+    }
 
-        public GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool dispose = false)
-            : base(SkiaImageAdapter.Instance, initialClip)
+    public override void PushClip(RRect rect)
+    {
+        _clipStack.Push(rect);
+        canvas.Save();
+        canvas.ClipRect(Utils.Convert(rect));
+    }
+
+    public override void PushClipExclude(RRect rect)
+    {
+        _clipStack.Push(_clipStack.Peek());
+        canvas.Save();
+        canvas.ClipRect(Utils.Convert(rect), SKClipOperation.Difference);
+    }
+
+    public override object SetAntiAliasSmoothingMode() =>
+        // SkiaSharp uses antialiasing by default in paint objects
+        null;
+
+    public override void ReturnPreviousSmoothingMode(object prevMode)
+    {
+        // No-op for SkiaSharp
+    }
+
+    public override RSize MeasureString(string str, RFont font)
+    {
+        var fontAdapter = (FontAdapter)font;
+        var skFont = fontAdapter.Font;
+        var width = skFont.MeasureText(str);
+        return new RSize(width, font.Height);
+    }
+
+    public override void MeasureString(string str, RFont font, double maxWidth, out int charFit, out double charFitWidth)
+    {
+        charFit = 0;
+        charFitWidth = 0;
+
+        var fontAdapter = (FontAdapter)font;
+        var skFont = fontAdapter.Font;
+
+        // Measure character by character to find how many fit
+        for (int i = 1; i <= str.Length; i++)
         {
-            _canvas = canvas;
-            _dispose = dispose;
+            var substr = str.Substring(0, i);
+            var w = skFont.MeasureText(substr);
+            if (w > maxWidth)
+                break;
+            charFit = i;
+            charFitWidth = w;
         }
+    }
 
-        public override void PopClip()
-        {
-            _canvas.Restore();
-            _clipStack.Pop();
-        }
+    public override void DrawString(string str, RFont font, RColor color, RPoint point, RSize size, bool rtl)
+    {
+        var fontAdapter = (FontAdapter)font;
+        using var paint = new SKPaint();
+        paint.Color = Utils.Convert(color);
+        paint.IsAntialias = true;
 
-        public override void PushClip(RRect rect)
-        {
-            _clipStack.Push(rect);
-            _canvas.Save();
-            _canvas.ClipRect(Utils.Convert(rect));
-        }
+        // SkiaSharp draws text from baseline, so we need to offset by ascent
+        var metrics = fontAdapter.Font.Metrics;
+        float y = (float)point.Y - metrics.Ascent;
+        float x = (float)point.X;
 
-        public override void PushClipExclude(RRect rect)
-        {
-            _clipStack.Push(_clipStack.Peek());
-            _canvas.Save();
-            _canvas.ClipRect(Utils.Convert(rect), SKClipOperation.Difference);
-        }
+        canvas.DrawText(str, x, y, fontAdapter.Font, paint);
+    }
 
-        public override object SetAntiAliasSmoothingMode()
-        {
-            // SkiaSharp uses antialiasing by default in paint objects
-            return null;
-        }
+    public override RBrush GetTextureBrush(RImage image, RRect dstRect, RPoint translateTransformLocation)
+    {
+        var imgAdapter = (ImageAdapter)image;
+        var paint = new SKPaint();
+        var shader = SKShader.CreateBitmap(
+            imgAdapter.Bitmap,
+            SKShaderTileMode.Repeat,
+            SKShaderTileMode.Repeat,
+            SKMatrix.CreateTranslation((float)translateTransformLocation.X, (float)translateTransformLocation.Y));
+        paint.Shader = shader;
+        return new BrushAdapter(paint, true);
+    }
 
-        public override void ReturnPreviousSmoothingMode(object prevMode)
-        {
-            // No-op for SkiaSharp
-        }
+    public override RGraphicsPath GetGraphicsPath() => new GraphicsPathAdapter();
 
-        public override RSize MeasureString(string str, RFont font)
-        {
-            var fontAdapter = (FontAdapter)font;
-            var skFont = fontAdapter.Font;
-            var width = skFont.MeasureText(str);
-            return new RSize(width, font.Height);
-        }
+    public override void DrawLine(RPen pen, double x1, double y1, double x2, double y2) => canvas.DrawLine((float)x1, (float)y1, (float)x2, (float)y2, ((PenAdapter)pen).Paint);
 
-        public override void MeasureString(string str, RFont font, double maxWidth, out int charFit, out double charFitWidth)
-        {
-            charFit = 0;
-            charFitWidth = 0;
+    public override void DrawRectangle(RPen pen, double x, double y, double width, double height) => canvas.DrawRect(SKRect.Create((float)x, (float)y, (float)width, (float)height), ((PenAdapter)pen).Paint);
 
-            var fontAdapter = (FontAdapter)font;
-            var skFont = fontAdapter.Font;
+    public override void DrawRectangle(RBrush brush, double x, double y, double width, double height) => canvas.DrawRect(SKRect.Create((float)x, (float)y, (float)width, (float)height), ((BrushAdapter)brush).Paint);
 
-            // Measure character by character to find how many fit
-            for (int i = 1; i <= str.Length; i++)
-            {
-                var substr = str.Substring(0, i);
-                var w = skFont.MeasureText(substr);
-                if (w > maxWidth)
-                    break;
-                charFit = i;
-                charFitWidth = w;
-            }
-        }
+    public override void DrawImage(RImage image, RRect destRect, RRect srcRect)
+    {
+        var imgAdapter = (ImageAdapter)image;
+        canvas.DrawBitmap(imgAdapter.Bitmap, Utils.Convert(srcRect), Utils.Convert(destRect));
+    }
 
-        public override void DrawString(string str, RFont font, RColor color, RPoint point, RSize size, bool rtl)
-        {
-            var fontAdapter = (FontAdapter)font;
-            using var paint = new SKPaint();
-            paint.Color = Utils.Convert(color);
-            paint.IsAntialias = true;
+    public override void DrawImage(RImage image, RRect destRect)
+    {
+        var imgAdapter = (ImageAdapter)image;
+        canvas.DrawBitmap(imgAdapter.Bitmap, Utils.Convert(destRect));
+    }
 
-            // SkiaSharp draws text from baseline, so we need to offset by ascent
-            var metrics = fontAdapter.Font.Metrics;
-            float y = (float)point.Y - metrics.Ascent;
-            float x = (float)point.X;
+    public override void DrawPath(RPen pen, RGraphicsPath path) => canvas.DrawPath(((GraphicsPathAdapter)path).Path, ((PenAdapter)pen).Paint);
 
-            _canvas.DrawText(str, x, y, fontAdapter.Font, paint);
-        }
+    public override void DrawPath(RBrush brush, RGraphicsPath path) => canvas.DrawPath(((GraphicsPathAdapter)path).Path, ((BrushAdapter)brush).Paint);
 
-        public override RBrush GetTextureBrush(RImage image, RRect dstRect, RPoint translateTransformLocation)
-        {
-            var imgAdapter = (ImageAdapter)image;
-            var paint = new SKPaint();
-            var shader = SKShader.CreateBitmap(
-                imgAdapter.Bitmap,
-                SKShaderTileMode.Repeat,
-                SKShaderTileMode.Repeat,
-                SKMatrix.CreateTranslation((float)translateTransformLocation.X, (float)translateTransformLocation.Y));
-            paint.Shader = shader;
-            return new BrushAdapter(paint, true);
-        }
+    public override void DrawPolygon(RBrush brush, RPoint[] points)
+    {
+        if (points == null || points.Length == 0)
+            return;
 
-        public override RGraphicsPath GetGraphicsPath()
-        {
-            return new GraphicsPathAdapter();
-        }
+        using var path = new SKPath();
+        path.MoveTo(Utils.Convert(points[0]));
 
-        public override void DrawLine(RPen pen, double x1, double y1, double x2, double y2)
-        {
-            _canvas.DrawLine((float)x1, (float)y1, (float)x2, (float)y2, ((PenAdapter)pen).Paint);
-        }
+        for (int i = 1; i < points.Length; i++)
+            path.LineTo(Utils.Convert(points[i]));
 
-        public override void DrawRectangle(RPen pen, double x, double y, double width, double height)
-        {
-            _canvas.DrawRect(SKRect.Create((float)x, (float)y, (float)width, (float)height), ((PenAdapter)pen).Paint);
-        }
+        path.Close();
+        canvas.DrawPath(path, ((BrushAdapter)brush).Paint);
+    }
 
-        public override void DrawRectangle(RBrush brush, double x, double y, double width, double height)
-        {
-            _canvas.DrawRect(SKRect.Create((float)x, (float)y, (float)width, (float)height), ((BrushAdapter)brush).Paint);
-        }
-
-        public override void DrawImage(RImage image, RRect destRect, RRect srcRect)
-        {
-            var imgAdapter = (ImageAdapter)image;
-            _canvas.DrawBitmap(imgAdapter.Bitmap, Utils.Convert(srcRect), Utils.Convert(destRect));
-        }
-
-        public override void DrawImage(RImage image, RRect destRect)
-        {
-            var imgAdapter = (ImageAdapter)image;
-            _canvas.DrawBitmap(imgAdapter.Bitmap, Utils.Convert(destRect));
-        }
-
-        public override void DrawPath(RPen pen, RGraphicsPath path)
-        {
-            _canvas.DrawPath(((GraphicsPathAdapter)path).Path, ((PenAdapter)pen).Paint);
-        }
-
-        public override void DrawPath(RBrush brush, RGraphicsPath path)
-        {
-            _canvas.DrawPath(((GraphicsPathAdapter)path).Path, ((BrushAdapter)brush).Paint);
-        }
-
-        public override void DrawPolygon(RBrush brush, RPoint[] points)
-        {
-            if (points != null && points.Length > 0)
-            {
-                using var path = new SKPath();
-                path.MoveTo(Utils.Convert(points[0]));
-                for (int i = 1; i < points.Length; i++)
-                    path.LineTo(Utils.Convert(points[i]));
-                path.Close();
-                _canvas.DrawPath(path, ((BrushAdapter)brush).Paint);
-            }
-        }
-
-        public override void Dispose()
-        {
-            if (_dispose)
-            {
-                _canvas.Dispose();
-            }
-        }
+    public override void Dispose()
+    {
+        if (dispose)
+            canvas.Dispose();
     }
 }

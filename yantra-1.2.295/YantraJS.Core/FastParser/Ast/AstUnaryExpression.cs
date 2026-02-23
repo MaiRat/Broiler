@@ -1,40 +1,39 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstUnaryExpression : AstExpression
 {
-    public class AstUnaryExpression : AstExpression
+    public readonly AstExpression Argument;
+    public readonly UnaryOperator Operator;
+    public readonly bool Prefix;
+
+    public AstUnaryExpression(FastToken token, AstExpression argument, UnaryOperator tokenType, bool prefix = true)
+        : base(token, FastNodeType.UnaryExpression, argument.End)
     {
-        public readonly AstExpression Argument;
-        public readonly UnaryOperator Operator;
-        public readonly bool Prefix;
-
-        public AstUnaryExpression(FastToken token, AstExpression argument, UnaryOperator tokenType, bool prefix = true)
-            : base(token, FastNodeType.UnaryExpression, argument.End)
+        switch (tokenType)
         {
-            switch (tokenType)
-            {
-                case UnaryOperator.Increment:
-                case UnaryOperator.Decrement:
-                    switch (argument.Type)
-                    {
-                        case FastNodeType.Identifier:
-                        case FastNodeType.MemberExpression:
-                            break;
-                        default:
-                            throw new FastParseException(token, $"Invalid expression for update");
-                    }
-                    break;
-            }
-            this.Argument = argument;
-            this.Operator = tokenType;
-            this.Prefix = prefix;
+            case UnaryOperator.Increment:
+            case UnaryOperator.Decrement:
+                switch (argument.Type)
+                {
+                    case FastNodeType.Identifier:
+                    case FastNodeType.MemberExpression:
+                        break;
+                    default:
+                        throw new FastParseException(token, $"Invalid expression for update");
+                }
+                break;
         }
+        Argument = argument;
+        Operator = tokenType;
+        Prefix = prefix;
+    }
 
-        public override string ToString()
+    public override string ToString()
+    {
+        if (Prefix)
         {
-            if (Prefix)
-            {
-                return $"{Operator} {Argument}";
-            }
-            return $"{Argument} {Operator}";
+            return $"{Operator} {Argument}";
         }
+        return $"{Argument} {Operator}";
     }
 }

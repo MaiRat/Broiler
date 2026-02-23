@@ -5,24 +5,23 @@ using YantraJS.Core;
 using YantraJS.Core.Core.Storage;
 using YantraJS.Runtime;
 
-namespace YantraJS.Emit
+namespace YantraJS.Emit;
+
+public class DictionaryCodeCache : ICodeCache
 {
-    public class DictionaryCodeCache : ICodeCache
+    private static ConcurrentStringMap<JSFunctionDelegate> cache
+        = ConcurrentStringMap<JSFunctionDelegate>.Create();
+
+    public static ICodeCache Current = new DictionaryCodeCache();
+
+    public JSFunctionDelegate GetOrCreate(in JSCode code)
     {
-        private static ConcurrentStringMap<JSFunctionDelegate> cache
-            = ConcurrentStringMap<JSFunctionDelegate>.Create();
-
-        public static ICodeCache Current = new DictionaryCodeCache();
-
-        public JSFunctionDelegate GetOrCreate(in JSCode code)
-        {
-            var compiler = code.Compiler;
-            return cache.GetOrCreate(code.Key, (k) => {
-                var  exp = compiler();
-                return exp.CompileWithNestedLambdas();
-                // return exp.CompileDynamic();
-            });
-        }
-
+        var compiler = code.Compiler;
+        return cache.GetOrCreate(code.Key, (k) => {
+            var  exp = compiler();
+            return exp.CompileWithNestedLambdas();
+            // return exp.CompileDynamic();
+        });
     }
+
 }

@@ -181,7 +181,7 @@ public class Milestone4RuntimeTests
     public void ExecuteDetailed_ValidScripts_ReturnsSuccess()
     {
         var engine = new ScriptEngine();
-        var result = engine.ExecuteDetailed(new[] { "var x = 1 + 2;" });
+        var result = engine.ExecuteDetailed(["var x = 1 + 2;"]);
 
         Assert.True(result.Success);
         Assert.Empty(result.Errors);
@@ -191,7 +191,7 @@ public class Milestone4RuntimeTests
     public void ExecuteDetailed_InvalidScript_ReturnsErrors()
     {
         var engine = new ScriptEngine();
-        var result = engine.ExecuteDetailed(new[] { "throw new Error('boom');" });
+        var result = engine.ExecuteDetailed(["throw new Error('boom');"]);
 
         Assert.False(result.Success);
         Assert.Single(result.Errors);
@@ -203,7 +203,7 @@ public class Milestone4RuntimeTests
     public void ExecuteDetailed_ErrorIncludesStackTrace()
     {
         var engine = new ScriptEngine();
-        var result = engine.ExecuteDetailed(new[] { "throw new Error('trace-test');" });
+        var result = engine.ExecuteDetailed(["throw new Error('trace-test');"]);
 
         Assert.False(result.Success);
         Assert.NotEmpty(result.Errors[0].StackTrace);
@@ -227,7 +227,7 @@ public class Milestone4RuntimeTests
         engine.StrictModeEnabled = true;
 
         // In strict mode, assigning to an undeclared variable should throw.
-        var result = engine.Execute(new[] { "undeclaredVar = 42;" });
+        var result = engine.Execute(["undeclaredVar = 42;"]);
         Assert.False(result);
     }
 
@@ -238,7 +238,7 @@ public class Milestone4RuntimeTests
         engine.StrictModeEnabled = false;
 
         // Without strict mode, this should succeed (implicitly creates global).
-        var result = engine.Execute(new[] { "undeclaredVar = 42;" });
+        var result = engine.Execute(["undeclaredVar = 42;"]);
         Assert.True(result);
     }
 
@@ -253,7 +253,7 @@ public class Milestone4RuntimeTests
         engine.Csp = csp;
 
         // eval() should be replaced by a throwing function
-        var result = engine.Execute(new[] { "eval('1 + 1');" });
+        var result = engine.Execute(["eval('1 + 1');"]);
         Assert.False(result);
     }
 
@@ -265,7 +265,7 @@ public class Milestone4RuntimeTests
         csp.Parse("script-src 'self' 'unsafe-eval'");
         engine.Csp = csp;
 
-        var result = engine.Execute(new[] { "var x = eval('1 + 1');" });
+        var result = engine.Execute(["var x = eval('1 + 1');"]);
         Assert.True(result);
     }
 
@@ -278,7 +278,7 @@ public class Milestone4RuntimeTests
         var profiler = new ScriptProfilingHook();
         engine.Profiler = profiler;
 
-        engine.Execute(new[] { "var a = 1;", "var b = 2;" });
+        engine.Execute(["var a = 1;", "var b = 2;"]);
         Assert.Equal(2, profiler.Entries.Count);
     }
 
@@ -289,7 +289,7 @@ public class Milestone4RuntimeTests
     {
         var engine = new ScriptEngine();
         // queueMicrotask should be defined and callable
-        var result = engine.Execute(new[] { "queueMicrotask(function() {});" });
+        var result = engine.Execute(["queueMicrotask(function() {});"]);
         Assert.True(result);
     }
 
@@ -349,7 +349,7 @@ public class Milestone4RuntimeTests
     public void WeakRef_IsAvailableInContext()
     {
         var engine = new ScriptEngine();
-        var result = engine.Execute(new[] { "var ref = new WeakRef({}); ref.deref();" });
+        var result = engine.Execute(["var ref = new WeakRef({}); ref.deref();"]);
         Assert.True(result);
     }
 
@@ -359,9 +359,9 @@ public class Milestone4RuntimeTests
     public void FinalizationRegistry_IsAvailableInContext()
     {
         var engine = new ScriptEngine();
-        var result = engine.Execute(new[] {
+        var result = engine.Execute([
             "var registry = new FinalizationRegistry(function(v) {}); registry.register({}, 'held');"
-        });
+        ]);
         Assert.True(result);
     }
 }

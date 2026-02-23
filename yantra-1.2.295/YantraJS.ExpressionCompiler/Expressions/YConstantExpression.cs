@@ -1,40 +1,30 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YConstantExpression(object value, Type type) : YExpression(YExpressionType.Constant, type)
 {
-    public class YConstantExpression : YExpression
+    public readonly object Value = value;
+
+    public override void Print(IndentedTextWriter writer)
     {
-        public readonly object Value;
-
-        public YConstantExpression(object value, Type type)
-            : base(YExpressionType.Constant, type)
+        if (Value == null)
         {
-            this.Value = value;
+            writer.Write("null");
+            return;
         }
-
-        public override void Print(IndentedTextWriter writer)
+        if(Type == typeof(string))
         {
-            if (Value == null)
-            {
-                writer.Write("null");
-                return;
-            }
-            if(Type == typeof(string))
-            {
-                writer.Write($"\"{Escape(Value.ToString())}\"");
-                return;
-            }
-            writer.Write(Value);
+            writer.Write($"\"{Escape(Value.ToString())}\"");
+            return;
         }
-
-        private string Escape(string text)
-        {
-            return text
-                .Replace("\n", "\\n")
-                .Replace("\r", "\\r")
-                .Replace("\t", "\\t")
-                .Replace("\"", "\\\"");
-        }
+        writer.Write(Value);
     }
+
+    private string Escape(string text) => text
+            .Replace("\n", "\\n")
+            .Replace("\r", "\\r")
+            .Replace("\t", "\\t")
+            .Replace("\"", "\\\"");
 }

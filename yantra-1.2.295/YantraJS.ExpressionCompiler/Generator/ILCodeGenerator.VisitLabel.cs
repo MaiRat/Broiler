@@ -1,27 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection.Emit;
-using System.Text;
-using YantraJS.Expressions;
+﻿using YantraJS.Expressions;
 
-namespace YantraJS.Generator
+namespace YantraJS.Generator;
+
+public partial class ILCodeGenerator
 {
-    public partial class ILCodeGenerator
+    protected override CodeInfo VisitLabel(YLabelExpression yLabelExpression)
     {
-        protected override CodeInfo VisitLabel(YLabelExpression yLabelExpression)
+        var l = labels[yLabelExpression.Target];
+
+        if(yLabelExpression.Default != null)
         {
-            var l = labels[yLabelExpression.Target];
-
-            if(yLabelExpression.Default != null)
-            {
-                Visit(yLabelExpression.Default);
-                il.MarkLabel(l);
-                return true;
-            }
-
+            Visit(yLabelExpression.Default);
             il.MarkLabel(l);
             return true;
         }
+
+        il.MarkLabel(l);
+        return true;
     }
 }

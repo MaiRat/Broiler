@@ -5,114 +5,107 @@ using System.Collections.Generic;
 using System.Linq;
 using YantraJS.Core;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YBlockExpression: YExpression
 {
-    public class YBlockExpression: YExpression
+    public readonly IFastEnumerable<YParameterExpression> Variables;
+    public readonly IFastEnumerable<YExpression> Expressions;
+
+    public YBlockExpression(IFastEnumerable<YParameterExpression>? variables,
+        IFastEnumerable<YExpression> expressions)
+        :base(YExpressionType.Block, expressions.Last().Type)
     {
-        public readonly IFastEnumerable<YParameterExpression> Variables;
-        public readonly IFastEnumerable<YExpression> Expressions;
+        Variables = variables ?? Sequence<YParameterExpression>.Empty;
+        if (Variables.Any(v => v == null))
+            throw new ArgumentNullException();
+        Expressions = expressions;
+    }
 
-        public YBlockExpression(IFastEnumerable<YParameterExpression>? variables,
-            IFastEnumerable<YExpression> expressions)
-            :base(YExpressionType.Block, expressions.Last().Type)
+    public override void Print(IndentedTextWriter writer)
+    {
+        writer.WriteLine("{");
+        writer.Indent++;
         {
-            this.Variables = variables ?? Sequence<YParameterExpression>.Empty;
-            if (this.Variables.Any(v => v == null))
-                throw new ArgumentNullException();
-            this.Expressions = expressions;
+            var en = Variables.GetFastEnumerator();
+            while(en.MoveNext(out var v))
+                writer.WriteLine($"{v.Type.GetFriendlyName()} {v.Name};");
         }
-
-        public override void Print(IndentedTextWriter writer)
         {
-            writer.WriteLine("{");
-            writer.Indent++;
+            var en = Expressions.GetFastEnumerator();
+            while(en.MoveNext(out var exp))
             {
-                var en = Variables.GetFastEnumerator();
-                while(en.MoveNext(out var v))
-                    writer.WriteLine($"{v.Type.GetFriendlyName()} {v.Name};");
+                exp.Print(writer);
+                writer.WriteLine(";");
             }
-            {
-                var en = Expressions.GetFastEnumerator();
-                while(en.MoveNext(out var exp))
-                {
-                    exp.Print(writer);
-                    writer.WriteLine(";");
-                }
-            }
-            writer.Indent--;
-            writer.WriteLine("}");
         }
+        writer.Indent--;
+        writer.WriteLine("}");
+    }
 
-        public IEnumerable<YParameterExpression> FlattenVariables
+    public IEnumerable<YParameterExpression> FlattenVariables
+    {
+        get
         {
-            get
+            var ve = Variables.GetFastEnumerator();
+            while(ve.MoveNext(out var v))
+                yield return v;
+            var ee = Expressions.GetFastEnumerator();
+            while(ee.MoveNext(out var s))
             {
-                var ve = Variables.GetFastEnumerator();
-                while(ve.MoveNext(out var v))
-                    yield return v;
-                var ee = Expressions.GetFastEnumerator();
-                while(ee.MoveNext(out var s))
+                if(s.NodeType == YExpressionType.Block && s is YBlockExpression b)
                 {
-                    if(s.NodeType == YExpressionType.Block && s is YBlockExpression b)
-                    {
-                        foreach (var v in b.FlattenVariables)
-                            yield return v;
-                    }
+                    foreach (var v in b.FlattenVariables)
+                        yield return v;
                 }
             }
         }
+    }
 
-        public IEnumerable<(YExpression expression, bool isLast)> FlattenExpressions
+    public IEnumerable<(YExpression expression, bool isLast)> FlattenExpressions
+    {
+        get
         {
-            get
+            var l = Expressions.Count - 1;
+            var en = Expressions.GetFastEnumerator();
+            while (en.MoveNext(out var e, out var i))
             {
-                var l = Expressions.Count - 1;
-                var en = Expressions.GetFastEnumerator();
-                while (en.MoveNext(out var e, out var i))
-                {
-                    bool last = i == l;
-                    // var e = Expressions[i];
-                    if (e.NodeType == YExpressionType.Block && e is YBlockExpression b) {
-                        foreach (var (item, isLast) in b.FlattenExpressions)
-                            yield return (item, isLast && last);
-                        continue;
-                    }
-
-                    yield return (e, last);
+                bool last = i == l;
+                // var e = Expressions[i];
+                if (e.NodeType == YExpressionType.Block && e is YBlockExpression b) {
+                    foreach (var (item, isLast) in b.FlattenExpressions)
+                        yield return (item, isLast && last);
+                    continue;
                 }
+
+                yield return (e, last);
             }
         }
+    }
 
-        public Enumerator Enumerate() => new Enumerator(this.Expressions);
+    public Enumerator Enumerate() => new(Expressions);
 
-        public ref struct Enumerator
+    public ref struct Enumerator(IFastEnumerable<YExpression> expressions)
+    {
+        private IFastEnumerator<YExpression> expressions = expressions.GetFastEnumerator();
+        private int last = expressions.Count - 1;
+
+        public readonly bool MoveNext(out YExpression? exp, out bool isLast)
         {
-            private IFastEnumerator<YExpression> expressions;
-            private int last;
-
-            public Enumerator(IFastEnumerable<YExpression> expressions)
+            if(expressions.MoveNext(out exp, out var index))
             {
-                this.expressions = expressions.GetFastEnumerator();
-                this.last = expressions.Count - 1;
+                isLast = index == last;
+                return true;
             }
-
-            public bool MoveNext(out YExpression? exp, out bool isLast)
-            {
-                if(expressions.MoveNext(out exp, out var index))
-                {
-                    isLast = index == last;
-                    return true;
-                }
-                //if((this.index++)<= last)
-                //{
-                //    isLast = last == this.index;
-                //    exp = expressions[index];
-                //    return true;
-                //}
-                isLast = false;
-                exp = default;
-                return false;
-            }
+            //if((this.index++)<= last)
+            //{
+            //    isLast = last == this.index;
+            //    exp = expressions[index];
+            //    return true;
+            //}
+            isLast = false;
+            exp = default;
+            return false;
         }
     }
 }

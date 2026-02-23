@@ -1,13 +1,6 @@
-﻿namespace YantraJS.Core.FastParser
-{
-    public class AstTemplateExpression : AstExpression
-    {
-        public readonly IFastEnumerable<AstExpression> Parts;
+﻿namespace YantraJS.Core.FastParser;
 
-        public AstTemplateExpression(FastToken token, FastToken previousToken, IFastEnumerable<AstExpression> astExpressions)
-            : base(token, FastNodeType.TemplateExpression, previousToken)
-        {
-            this.Parts = astExpressions;
-        }
-    }
+public class AstTemplateExpression(FastToken token, FastToken previousToken, IFastEnumerable<AstExpression> astExpressions) : AstExpression(token, FastNodeType.TemplateExpression, previousToken)
+{
+    public readonly IFastEnumerable<AstExpression> Parts = astExpressions;
 }

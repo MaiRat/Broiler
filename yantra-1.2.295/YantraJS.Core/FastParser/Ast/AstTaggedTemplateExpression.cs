@@ -1,16 +1,8 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstTaggedTemplateExpression(AstExpression tag, IFastEnumerable<AstExpression> arguments) : AstExpression(arguments.FirstOrDefault().Start, FastNodeType.TaggedTemplateExpression, arguments.LastOrDefault().End)
 {
-    public class AstTaggedTemplateExpression : AstExpression
-    {
-        public readonly AstExpression Tag;
+    public readonly AstExpression Tag = tag;
 
-        public readonly IFastEnumerable<AstExpression> Arguments;
-
-        public AstTaggedTemplateExpression(AstExpression tag, IFastEnumerable<AstExpression> arguments)
-            : base(arguments.FirstOrDefault().Start, FastNodeType.TaggedTemplateExpression, arguments.LastOrDefault().End)
-        {
-            this.Arguments = arguments;
-            this.Tag = tag;
-        }
-    }
+    public readonly IFastEnumerable<AstExpression> Arguments = arguments;
 }

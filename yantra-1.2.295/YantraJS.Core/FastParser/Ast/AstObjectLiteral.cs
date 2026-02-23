@@ -1,16 +1,9 @@
-﻿namespace YantraJS.Core.FastParser
-{
-    public class AstObjectLiteral : AstExpression
-    {
-        public readonly IFastEnumerable<AstNode> Properties;
+﻿namespace YantraJS.Core.FastParser;
 
-        public AstObjectLiteral(
-            FastToken token, 
-            FastToken previousToken,
-            IFastEnumerable<AstNode> objectProperties)
-            : base (token, FastNodeType.ObjectLiteral, previousToken)
-        {
-            this.Properties = objectProperties;
-        }
-    }
+public class AstObjectLiteral(
+    FastToken token,
+    FastToken previousToken,
+    IFastEnumerable<AstNode> objectProperties) : AstExpression(token, FastNodeType.ObjectLiteral, previousToken)
+{
+    public readonly IFastEnumerable<AstNode> Properties = objectProperties;
 }

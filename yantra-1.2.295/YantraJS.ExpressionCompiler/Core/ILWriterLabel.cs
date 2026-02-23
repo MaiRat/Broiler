@@ -1,28 +1,17 @@
 ﻿using System.Reflection.Emit;
 using System.Threading;
 
-namespace YantraJS.Core
+namespace YantraJS.Core;
+
+public class ILWriterLabel(Label value, string label, ILTryBlock tryBlock)
 {
-    public class ILWriterLabel
-    {
-        public readonly Label Value;
-        public readonly ILTryBlock TryBlock;
-        public readonly string ID;
+    public readonly Label Value = value;
+    public readonly ILTryBlock TryBlock = tryBlock;
+    public readonly string ID = $"{label ?? "LABEL"}_{Interlocked.Increment(ref nextID)}";
 
-        public int Offset;
+    public int Offset;
 
-        private static int nextID = 1;
+    private static int nextID = 1;
 
-        public ILWriterLabel(Label value, string label, ILTryBlock tryBlock)
-        {
-            this.Value = value;
-            this.TryBlock = tryBlock;
-            this.ID = $"{label ?? "LABEL"}_{ Interlocked.Increment(ref nextID)}";
-        }
-
-        public override string ToString()
-        {
-            return ID;
-        }
-    }
+    public override string ToString() => ID;
 }

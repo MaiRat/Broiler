@@ -1,44 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace YantraJS.Core;
 
-namespace YantraJS.Core
+internal class JSConstants
 {
-    internal class JSConstants
-    {
-        public static readonly JSString Decimal =
-            new JSString("decimal");
+    public static readonly JSString Decimal =
+        new("decimal");
 
-        public static readonly JSString Arguments =
-            new JSString("arguments");
+    public static readonly JSString Arguments =
+        new("arguments");
 
-        public static readonly JSString BigInt =
-            new JSString("bigint");
+    public static readonly JSString BigInt =
+        new("bigint");
 
-        public static readonly JSString Undefined =
-            new JSString("undefined");
+    public static readonly JSString Undefined =
+        new("undefined");
 
-        public static readonly JSString Boolean =
-            new JSString("boolean");
+    public static readonly JSString Boolean =
+        new("boolean");
 
-        public static readonly JSString String =
-            new JSString("string");
+    public static readonly JSString String =
+        new("string");
 
-        public static readonly JSString Object =
-            new JSString("object");
+    public static readonly JSString Object =
+        new("object");
 
-        public static readonly JSString Number =
-            new JSString("number");
+    public static readonly JSString Number =
+        new("number");
 
-        public static readonly JSString Function =
-            new JSString("function");
+    public static readonly JSString Function =
+        new("function");
 
-        public static readonly JSString Symbol =
-            new JSString("symbol");
+    public static readonly JSString Symbol =
+        new("symbol");
 
-        public static readonly JSString Infinity =
-            new JSString("Infinity");
-        public static readonly JSString NegativeInfinity =
-            new JSString("-Infinity");
-    }
+    public static readonly JSString Infinity =
+        new("Infinity");
+    public static readonly JSString NegativeInfinity =
+        new("-Infinity");
 }

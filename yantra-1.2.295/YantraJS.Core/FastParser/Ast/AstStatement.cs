@@ -1,11 +1,6 @@
 ﻿#nullable enable
-namespace YantraJS.Core.FastParser
-{
-    public class AstStatement : AstNode
-    {
-        public AstStatement(FastToken start, FastNodeType type, FastToken end) : base(start, type, end, isStatement: true)
-        {
-        }
-    }
+namespace YantraJS.Core.FastParser;
 
+public class AstStatement(FastToken start, FastNodeType type, FastToken end) : AstNode(start, type, end, isStatement: true)
+{
 }

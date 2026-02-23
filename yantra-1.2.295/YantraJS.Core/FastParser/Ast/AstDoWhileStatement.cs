@@ -1,26 +1,15 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstDoWhileStatement(
+    FastToken start,
+    FastToken end,
+    AstExpression test,
+    AstStatement statement) : AstStatement(start, FastNodeType.DoWhileStatement, end)
 {
-    public class AstDoWhileStatement : AstStatement
-    {
-        public readonly AstExpression Test;
-        public readonly AstStatement Body;
+    public readonly AstExpression Test = test;
+    public readonly AstStatement Body = statement;
 
-        public AstDoWhileStatement(
-            FastToken start, 
-            FastToken end, 
-            AstExpression test, 
-            AstStatement statement) : base(start, FastNodeType.DoWhileStatement, end)
-        {
-            this.Test = test;
-            this.Body = statement;
-        }
-
-        public override string ToString()
-        {
-            return @$"do {{
+    public override string ToString() => @$"do {{
     {Body} 
 }} while ({Test})";
-        }
-    }
-
 }

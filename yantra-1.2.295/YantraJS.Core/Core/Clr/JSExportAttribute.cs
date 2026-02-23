@@ -1,25 +1,18 @@
 ﻿#nullable enable
 using System;
 
-namespace YantraJS.Core.Clr
-{
-    public class JSExportAttribute: Attribute {
+namespace YantraJS.Core.Clr;
 
-        public readonly string? Name;
+public class JSExportAttribute(
+    string? name = null) : Attribute {
 
-        public bool AsCamel = true;
+    public readonly string? Name = name;
 
-        public int Length { get; set; }
+    public bool AsCamel = true;
 
-        public bool Pure { get; set; }
+    public int Length { get; set; }
 
-        public bool IsConstructor { get; set; }
+    public bool Pure { get; set; }
 
-        public JSExportAttribute(
-            string? name = null)
-        {
-            this.Name = name;
-        }
-
-    }
+    public bool IsConstructor { get; set; }
 }

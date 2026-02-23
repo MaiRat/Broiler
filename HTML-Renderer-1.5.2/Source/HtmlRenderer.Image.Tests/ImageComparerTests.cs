@@ -7,15 +7,8 @@ namespace HtmlRenderer.Image.Tests;
 /// Tests for the ImageComparer utility class.
 /// </summary>
 [Collection("Rendering")]
-public class ImageComparerTests
+public class ImageComparerTests(RenderingFixture fixture)
 {
-    private readonly RenderingFixture _fixture;
-
-    public ImageComparerTests(RenderingFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public void Compare_IdenticalImages_ReturnsOne()
     {
@@ -99,8 +92,8 @@ public class ImageComparerTests
     public void Compare_RenderedHtmlWithSyntheticBitmap_ProducesMeaningfulResult()
     {
         using var synthetic = CreateSolidBitmap(100, 100, SKColors.Blue);
-        Assert.False(ImageComparer.AreIdentical(_fixture.RenderedForComparison, synthetic));
-        Assert.True(ImageComparer.AreIdentical(_fixture.RenderedForComparison, _fixture.RenderedForComparison));
+        Assert.False(ImageComparer.AreIdentical(fixture.RenderedForComparison, synthetic));
+        Assert.True(ImageComparer.AreIdentical(fixture.RenderedForComparison, fixture.RenderedForComparison));
     }
 
     private static SKBitmap CreateSolidBitmap(int width, int height, SKColor color)

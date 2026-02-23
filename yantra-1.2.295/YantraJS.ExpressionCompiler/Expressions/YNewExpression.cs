@@ -1,49 +1,44 @@
 ﻿using System;
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using YantraJS.Core;
 
-namespace YantraJS.Expressions
+namespace YantraJS.Expressions;
+
+public class YNewExpression: YExpression
 {
-    public class YNewExpression: YExpression
+    public readonly ConstructorInfo constructor;
+    public readonly IFastEnumerable<YExpression> args;
+
+    /// <summary>
+    /// Base class constructors must be called a a 'call' instruction and not 'new'
+    /// </summary>
+    public readonly bool AsCall;
+
+    public YNewExpression(ConstructorInfo constructor, IFastEnumerable<YExpression> args, bool asCall = false)
+        : base(YExpressionType.New, constructor.DeclaringType)
     {
-        public readonly ConstructorInfo constructor;
-        public readonly IFastEnumerable<YExpression> args;
+        this.constructor = constructor;
+        this.args = args;
+        if (args.Any(x => x == null))
+            throw new ArgumentNullException();
+        AsCall = asCall;
+    }
 
-        /// <summary>
-        /// Base class constructors must be called a a 'call' instruction and not 'new'
-        /// </summary>
-        public readonly bool AsCall;
+    public YNewExpression Update(ConstructorInfo constructor, IFastEnumerable<YExpression> args) => new(constructor, args, AsCall);
 
-        public YNewExpression(ConstructorInfo constructor, IFastEnumerable<YExpression> args, bool asCall = false)
-            : base(YExpressionType.New, constructor.DeclaringType)
+    public override void Print(IndentedTextWriter writer)
+    {
+        if (AsCall)
         {
-            this.constructor = constructor;
-            this.args = args;
-            if (args.Any(x => x == null))
-                throw new ArgumentNullException();
-            this.AsCall = asCall;
+            writer.Write($"call {constructor.DeclaringType.GetFriendlyName()}(");
         }
-
-        public YNewExpression Update(ConstructorInfo constructor, IFastEnumerable<YExpression> args)
+        else
         {
-            return new YNewExpression(constructor, args, AsCall);
+            writer.Write($"new {constructor.DeclaringType.GetFriendlyName()}(");
         }
-
-        public override void Print(IndentedTextWriter writer)
-        {
-            if (AsCall)
-            {
-                writer.Write($"call {constructor.DeclaringType.GetFriendlyName()}(");
-            }
-            else
-            {
-                writer.Write($"new {constructor.DeclaringType.GetFriendlyName()}(");
-            }
-            writer.PrintCSV(args);
-            writer.Write(")");
-        }
+        writer.PrintCSV(args);
+        writer.Write(")");
     }
 }

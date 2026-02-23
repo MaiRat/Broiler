@@ -2,53 +2,33 @@ using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
-namespace TheArtOfDev.HtmlRenderer.Image.Adapters
+namespace TheArtOfDev.HtmlRenderer.Image.Adapters;
+
+internal sealed class PenAdapter(SKPaint paint) : RPen
 {
-    internal sealed class PenAdapter : RPen
+    public SKPaint Paint { get; } = paint;
+
+    public override double Width
     {
-        private readonly SKPaint _paint;
+        get => Paint.StrokeWidth;
+        set => Paint.StrokeWidth = (float)value;
+    }
 
-        public PenAdapter(SKPaint paint)
+    public override RDashStyle DashStyle
+    {
+        set
         {
-            _paint = paint;
-        }
-
-        public SKPaint Paint => _paint;
-
-        public override double Width
-        {
-            get => _paint.StrokeWidth;
-            set => _paint.StrokeWidth = (float)value;
-        }
-
-        public override RDashStyle DashStyle
-        {
-            set
+            Paint.PathEffect = value switch
             {
-                switch (value)
-                {
-                    case RDashStyle.Solid:
-                        _paint.PathEffect = null;
-                        break;
-                    case RDashStyle.Dash:
-                        _paint.PathEffect = Width < 2
-                            ? SKPathEffect.CreateDash(new[] { 4f, 4f }, 0)
-                            : SKPathEffect.CreateDash(new[] { 4f * (float)Width, 2f * (float)Width }, 0);
-                        break;
-                    case RDashStyle.Dot:
-                        _paint.PathEffect = SKPathEffect.CreateDash(new[] { (float)Width, (float)Width }, 0);
-                        break;
-                    case RDashStyle.DashDot:
-                        _paint.PathEffect = SKPathEffect.CreateDash(new[] { 4f * (float)Width, 2f * (float)Width, (float)Width, 2f * (float)Width }, 0);
-                        break;
-                    case RDashStyle.DashDotDot:
-                        _paint.PathEffect = SKPathEffect.CreateDash(new[] { 4f * (float)Width, 2f * (float)Width, (float)Width, 2f * (float)Width, (float)Width, 2f * (float)Width }, 0);
-                        break;
-                    default:
-                        _paint.PathEffect = null;
-                        break;
-                }
-            }
+                RDashStyle.Solid => null,
+                RDashStyle.Dash => Width < 2
+                                        ? SKPathEffect.CreateDash([4f, 4f], 0)
+                                        : SKPathEffect.CreateDash([4f * (float)Width, 2f * (float)Width], 0),
+                RDashStyle.Dot => SKPathEffect.CreateDash([(float)Width, (float)Width], 0),
+                RDashStyle.DashDot => SKPathEffect.CreateDash([4f * (float)Width, 2f * (float)Width, (float)Width, 2f * (float)Width], 0),
+                RDashStyle.DashDotDot => SKPathEffect.CreateDash([4f * (float)Width, 2f * (float)Width, (float)Width, 2f * (float)Width, (float)Width, 2f * (float)Width], 0),
+                _ => null,
+            };
         }
     }
 }

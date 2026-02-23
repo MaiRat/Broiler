@@ -1,179 +1,177 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace YantraJS.JSClassGenerator
+namespace YantraJS.JSClassGenerator;
+
+public class JSTypeInfo
 {
-    public class JSTypeInfo
+    public readonly string ClrClassName;
+    public readonly string JSClassName;
+    public readonly string? BaseClrClassName;
+    public readonly string? BaseJSClassName;
+    public readonly ITypeSymbol Type;
+    public string Name => Type.Name;
+    public INamespaceSymbol ContainingNamespace => Type.ContainingNamespace;
+
+    public readonly bool InternalClass;
+
+    public readonly string? ConstructorLength;
+    public readonly string? ConstructorMethod;
+    public readonly bool GenerateClass;
+    public readonly List<JSExportInfo> Members;
+    public readonly bool Register = true;
+    public readonly bool Globals = false;
+
+    public JSTypeInfo(ITypeSymbol type)
     {
-        public readonly string ClrClassName;
-        public readonly string JSClassName;
-        public readonly string? BaseClrClassName;
-        public readonly string? BaseJSClassName;
-        public readonly ITypeSymbol Type;
-        public string Name => Type.Name;
-        public INamespaceSymbol ContainingNamespace => Type.ContainingNamespace;
+        Type = type;
+        ConstructorLength = null;
 
-        public readonly bool InternalClass;
+        var className = type.Name;
 
-        public readonly string? ConstructorLength;
-        public readonly string? ConstructorMethod;
-        public readonly bool GenerateClass;
-        public readonly List<JSExportInfo> Members;
-        public readonly bool Register = true;
-        public readonly bool Globals = false;
+        InternalClass = false;
 
-        public JSTypeInfo(ITypeSymbol type)
+        foreach(var attribute in type.GetAttributes())
         {
-            Type = type;
-            this.ConstructorLength = null;
-
-            var className = type.Name;
-
-            this.InternalClass = false;
-
-            foreach(var attribute in type.GetAttributes())
+            switch(attribute.AttributeClass?.Name)
             {
-                switch(attribute.AttributeClass?.Name)
-                {
-                    case "JSClassGenerator":
-                    case "JSClassGeneratorAttribute":
-                        if(attribute.ConstructorArguments.Length > 0)
-                        {
-                            className = attribute.ConstructorArguments[0].Value?.ToString() ?? className;
-                        }
-                        GenerateClass = true;
-                        break;
-                    case "JSFunctionGenerator":
-                    case "JSFunctionGeneratorAttribute":
-                        if (attribute.ConstructorArguments.Length > 0)
-                        {
-                            className = attribute.ConstructorArguments[0].Value?.ToString() ?? className;
-                        }
-                        if(attribute.NamedArguments.Length > 0)
-                        {
-                            var register = attribute.NamedArguments.FirstOrDefault(x => x.Key == "Register");
-                            if (register.Key == "Register")
-                            {
-                                Register = register.Value.ToCSharpString() != "false";
-                            }
-                            var globals = attribute.NamedArguments.FirstOrDefault(x => x.Key == "Globals");
-                            if (globals.Key == "Globals")
-                            {
-                                Globals = globals.Value.ToCSharpString() == "true";
-                            }
-                        }
-                        break;
-                    case "JSBaseClass":
-                    case "JSBaseClassAttribute":
-                        if(attribute.ConstructorArguments.Length > 0)
-                        {
-                            BaseJSClassName = attribute.ConstructorArguments[0].Value?.ToString();
-                        }
-                        break;
-                    case "JSInternalObject":
-                    case "JSInternalObjectAttribute":
-                        InternalClass = true;
-                        break;
-                }
-            }
-
-            this.ClrClassName = type.Name;
-            this.JSClassName = className;
-            var members = new List<JSExportInfo>();
-
-            foreach(var m in type.GetMembers())
-            {
-                var e = m.GetExportAttribute();
-                if (e != null)
-                {
-                    if (m is IMethodSymbol method)
+                case "JSClassGenerator":
+                case "JSClassGeneratorAttribute":
+                    if(attribute.ConstructorArguments.Length > 0)
                     {
-                        if (method.IsConstructor())
+                        className = attribute.ConstructorArguments[0].Value?.ToString() ?? className;
+                    }
+                    GenerateClass = true;
+                    break;
+                case "JSFunctionGenerator":
+                case "JSFunctionGeneratorAttribute":
+                    if (attribute.ConstructorArguments.Length > 0)
+                    {
+                        className = attribute.ConstructorArguments[0].Value?.ToString() ?? className;
+                    }
+                    if(attribute.NamedArguments.Length > 0)
+                    {
+                        var register = attribute.NamedArguments.FirstOrDefault(x => x.Key == "Register");
+                        if (register.Key == "Register")
                         {
-                            this.ConstructorLength = e.Length;
-                            continue;
+                            Register = register.Value.ToCSharpString() != "false";
                         }
-                        if (e.IsConstructor)
+                        var globals = attribute.NamedArguments.FirstOrDefault(x => x.Key == "Globals");
+                        if (globals.Key == "Globals")
                         {
-                            this.ConstructorLength = e.Length;
-                            this.ConstructorMethod = method.Name;
-                            continue;
+                            Globals = globals.Value.ToCSharpString() == "true";
                         }
                     }
-                    members.Add(e);
+                    break;
+                case "JSBaseClass":
+                case "JSBaseClassAttribute":
+                    if(attribute.ConstructorArguments.Length > 0)
+                    {
+                        BaseJSClassName = attribute.ConstructorArguments[0].Value?.ToString();
+                    }
+                    break;
+                case "JSInternalObject":
+                case "JSInternalObjectAttribute":
+                    InternalClass = true;
+                    break;
+            }
+        }
+
+        ClrClassName = type.Name;
+        JSClassName = className;
+        var members = new List<JSExportInfo>();
+
+        foreach(var m in type.GetMembers())
+        {
+            var e = m.GetExportAttribute();
+            if (e != null)
+            {
+                if (m is IMethodSymbol method)
+                {
+                    if (method.IsConstructor())
+                    {
+                        ConstructorLength = e.Length;
+                        continue;
+                    }
+                    if (e.IsConstructor)
+                    {
+                        ConstructorLength = e.Length;
+                        ConstructorMethod = method.Name;
+                        continue;
+                    }
                 }
+                members.Add(e);
             }
+        }
 
-            this.Members = members;
+        Members = members;
 
-            if (type.BaseType == null)
-            {
-                return;
-            }
+        if (type.BaseType == null)
+        {
+            return;
+        }
 
-            if (type.BaseType?.Name == "JSObject")
-            {
-                return;
-            }
+        if (type.BaseType?.Name == "JSObject")
+        {
+            return;
+        }
 
-            BaseClrClassName = type.BaseType!.Name;
-            if (string.IsNullOrWhiteSpace(BaseJSClassName))
-            {
-                BaseJSClassName = BaseClrClassName;
-            }
+        BaseClrClassName = type.BaseType!.Name;
+        if (string.IsNullOrWhiteSpace(BaseJSClassName))
+        {
+            BaseJSClassName = BaseClrClassName;
         }
     }
+}
 
-    public class JSGeneratorContext
+public class JSGeneratorContext
+{
+    public readonly List<string> Names = [];
+
+    public readonly List<JSTypeInfo> RegistrationOrder = [];
+
+    public List<JSTypeInfo> AssemblyTypes;
+
+    public JSGeneratorContext(List<(ITypeSymbol type, AttributeData attribute)> types)
     {
-        public readonly List<string> Names = new List<string>();
+        AssemblyTypes = types.Select((x) => {
+            return new JSTypeInfo(x.type);
+        }).ToList();
 
-        public readonly List<JSTypeInfo> RegistrationOrder = new List<JSTypeInfo>();
+        BuildOrder(AssemblyTypes.ToList());
+    }
 
-        public List<JSTypeInfo> AssemblyTypes;
-
-        public JSGeneratorContext(List<(ITypeSymbol type, AttributeData attribute)> types)
+    private void BuildOrder(List<JSTypeInfo> types)
+    {
+        while(types.Count > 0)
         {
-            this.AssemblyTypes = types.Select((x) => {
-                return new JSTypeInfo(x.type);
-            }).ToList();
-
-            BuildOrder(AssemblyTypes.ToList());
-        }
-
-        private void BuildOrder(List<JSTypeInfo> types)
-        {
-            while(types.Count > 0)
+            var all = types.ToList();
+            foreach(var item in all)
             {
-                var all = types.ToList();
-                foreach(var item in all)
+                if(item.BaseClrClassName == null)
                 {
-                    if(item.BaseClrClassName == null)
-                    {
-                        RegistrationOrder.Add(item);
-                        types.Remove(item);
-                        continue;
-                    }
-
-                    // if BaseJSClassName does not exist in AssmeblyTypes...
-                    if (AssemblyTypes.FindIndex((x) => x.ClrClassName == item.BaseClrClassName) == -1)
-                    {
-                        RegistrationOrder.Add(item);
-                        types.Remove(item);
-                        continue;
-                    }
-
-                    // check if BaseJSClassName exists...
-                    if (RegistrationOrder.FindIndex((x) => x.ClrClassName== item.BaseClrClassName) != -1)
-                    {
-                        RegistrationOrder.Add(item);
-                        types.Remove(item);
-                    }
-
+                    RegistrationOrder.Add(item);
+                    types.Remove(item);
+                    continue;
                 }
+
+                // if BaseJSClassName does not exist in AssmeblyTypes...
+                if (AssemblyTypes.FindIndex((x) => x.ClrClassName == item.BaseClrClassName) == -1)
+                {
+                    RegistrationOrder.Add(item);
+                    types.Remove(item);
+                    continue;
+                }
+
+                // check if BaseJSClassName exists...
+                if (RegistrationOrder.FindIndex((x) => x.ClrClassName== item.BaseClrClassName) != -1)
+                {
+                    RegistrationOrder.Add(item);
+                    types.Remove(item);
+                }
+
             }
         }
     }

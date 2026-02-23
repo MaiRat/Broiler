@@ -7,13 +7,8 @@ namespace HtmlRenderer.Image.Tests;
 /// Tests for the HtmlContainer class.
 /// </summary>
 [Collection("Rendering")]
-public class HtmlContainerTests
+public class HtmlContainerTests(RenderingFixture fixture)
 {
-    public HtmlContainerTests(RenderingFixture fixture)
-    {
-        // Required for collection fixture, but not used directly in these tests
-    }
-
     [Fact]
     public void HtmlContainer_SetHtmlAndProperties_WorkCorrectly()
     {

@@ -1,8 +1,7 @@
-﻿namespace YantraJS.Core.Debugger
+﻿namespace YantraJS.Core.Debugger;
+
+public partial class V8Debugger
 {
-    public partial class V8Debugger
-    {
-        public class SetAsyncCallStackDepthParams { 
-        }
+    public class SetAsyncCallStackDepthParams { 
     }
 }

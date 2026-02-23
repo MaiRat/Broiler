@@ -1,4 +1,3 @@
-using System.Text;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Image;
 

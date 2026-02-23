@@ -7,134 +7,129 @@ using Broiler.App.Rendering;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.WPF;
 
-namespace Broiler.App
+namespace Broiler.App;
+
+/// <summary>
+/// Main browser window with navigation bar and HTML rendering panel.
+/// Delegates page loading, script extraction, and JavaScript execution
+/// to the <see cref="RenderingPipeline"/>.
+/// </summary>
+public partial class MainWindow : Window
 {
-    /// <summary>
-    /// Main browser window with navigation bar and HTML rendering panel.
-    /// Delegates page loading, script extraction, and JavaScript execution
-    /// to the <see cref="RenderingPipeline"/>.
-    /// </summary>
-    public partial class MainWindow : Window
+    private readonly List<string> _history = [];
+    private int _historyIndex = -1;
+    private readonly RenderingPipeline _pipeline;
+
+    public MainWindow()
     {
-        private readonly List<string> _history = new();
-        private int _historyIndex = -1;
-        private readonly RenderingPipeline _pipeline;
+        InitializeComponent();
 
-        public MainWindow()
+        _pipeline = new RenderingPipeline(
+            new PageLoader(new HttpClient()),
+            new ScriptExtractor(),
+            new ScriptEngine());
+
+        Closed += (_, _) => _pipeline.Dispose();
+        NavigateTo("about:blank");
+    }
+
+    private void BackButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_historyIndex > 0)
         {
-            InitializeComponent();
-
-            _pipeline = new RenderingPipeline(
-                new PageLoader(new HttpClient()),
-                new ScriptExtractor(),
-                new ScriptEngine());
-
-            Closed += (_, _) => _pipeline.Dispose();
-            NavigateTo("about:blank");
+            _historyIndex--;
+            LoadUrl(_history[_historyIndex]);
         }
+    }
 
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+    private void ForwardButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_historyIndex < _history.Count - 1)
         {
-            if (_historyIndex > 0)
-            {
-                _historyIndex--;
-                LoadUrl(_history[_historyIndex]);
-            }
+            _historyIndex++;
+            LoadUrl(_history[_historyIndex]);
         }
+    }
 
-        private void ForwardButton_Click(object sender, RoutedEventArgs e)
+    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_historyIndex >= 0 && _historyIndex < _history.Count)
         {
-            if (_historyIndex < _history.Count - 1)
-            {
-                _historyIndex++;
-                LoadUrl(_history[_historyIndex]);
-            }
+            LoadUrl(_history[_historyIndex]);
         }
+    }
 
-        private void RefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_historyIndex >= 0 && _historyIndex < _history.Count)
-            {
-                LoadUrl(_history[_historyIndex]);
-            }
-        }
+    private void GoButton_Click(object sender, RoutedEventArgs e) => NavigateTo(UrlTextBox.Text);
 
-        private void GoButton_Click(object sender, RoutedEventArgs e)
+    private void UrlTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
         {
             NavigateTo(UrlTextBox.Text);
         }
+    }
 
-        private void UrlTextBox_KeyDown(object sender, KeyEventArgs e)
+    private void HtmlPanel_LinkClicked(object sender, RoutedEventArgs<HtmlLinkClickedEventArgs> e)
+    {
+        e.Handled = true;
+        NavigateTo(e.Data.Link);
+    }
+
+    /// <summary>
+    /// Navigate to a URL, adding it to the history stack.
+    /// </summary>
+    public void NavigateTo(string url)
+    {
+        // Remove forward history when navigating to a new URL
+        if (_historyIndex < _history.Count - 1)
         {
-            if (e.Key == Key.Enter)
-            {
-                NavigateTo(UrlTextBox.Text);
-            }
+            _history.RemoveRange(_historyIndex + 1, _history.Count - _historyIndex - 1);
         }
 
-        private void HtmlPanel_LinkClicked(object sender, RoutedEventArgs<HtmlLinkClickedEventArgs> e)
+        _history.Add(url);
+        _historyIndex = _history.Count - 1;
+        LoadUrl(url);
+    }
+
+    private async void LoadUrl(string url)
+    {
+        UrlTextBox.Text = url;
+        UpdateNavigationButtons();
+
+        if (url == "about:blank")
         {
-            e.Handled = true;
-            NavigateTo(e.Data.Link);
+            HtmlPanel.Text = GetWelcomePage();
+            StatusText.Text = "Ready";
+            return;
         }
 
-        /// <summary>
-        /// Navigate to a URL, adding it to the history stack.
-        /// </summary>
-        public void NavigateTo(string url)
+        try
         {
-            // Remove forward history when navigating to a new URL
-            if (_historyIndex < _history.Count - 1)
-            {
-                _history.RemoveRange(_historyIndex + 1, _history.Count - _historyIndex - 1);
-            }
+            StatusText.Text = $"Loading {url}...";
 
-            _history.Add(url);
-            _historyIndex = _history.Count - 1;
-            LoadUrl(url);
+            var (normalisedUrl, content) = await _pipeline.LoadPageAsync(url);
+            UrlTextBox.Text = normalisedUrl;
+
+            // Render the HTML, then execute any inline scripts
+            HtmlPanel.Text = content.Html;
+            _pipeline.ExecuteScripts(content);
+
+            StatusText.Text = "Done";
         }
-
-        private async void LoadUrl(string url)
+        catch (Exception ex)
         {
-            UrlTextBox.Text = url;
-            UpdateNavigationButtons();
-
-            if (url == "about:blank")
-            {
-                HtmlPanel.Text = GetWelcomePage();
-                StatusText.Text = "Ready";
-                return;
-            }
-
-            try
-            {
-                StatusText.Text = $"Loading {url}...";
-
-                var (normalisedUrl, content) = await _pipeline.LoadPageAsync(url);
-                UrlTextBox.Text = normalisedUrl;
-
-                // Render the HTML, then execute any inline scripts
-                HtmlPanel.Text = content.Html;
-                _pipeline.ExecuteScripts(content);
-
-                StatusText.Text = "Done";
-            }
-            catch (Exception ex)
-            {
-                HtmlPanel.Text = $"<html><body><h1>Error</h1><p>{ex.Message}</p></body></html>";
-                StatusText.Text = "Error loading page";
-            }
+            HtmlPanel.Text = $"<html><body><h1>Error</h1><p>{ex.Message}</p></body></html>";
+            StatusText.Text = "Error loading page";
         }
+    }
 
-        private void UpdateNavigationButtons()
-        {
-            BackButton.IsEnabled = _historyIndex > 0;
-            ForwardButton.IsEnabled = _historyIndex < _history.Count - 1;
-        }
+    private void UpdateNavigationButtons()
+    {
+        BackButton.IsEnabled = _historyIndex > 0;
+        ForwardButton.IsEnabled = _historyIndex < _history.Count - 1;
+    }
 
-        private static string GetWelcomePage()
-        {
-            return @"
+    private static string GetWelcomePage() => @"
 <html>
 <head>
     <style>
@@ -159,6 +154,4 @@ namespace Broiler.App
     </div>
 </body>
 </html>";
-        }
-    }
 }

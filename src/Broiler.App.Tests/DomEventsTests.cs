@@ -11,7 +11,7 @@ public class DomEventsTests
     {
         var html = "<html><body><div id=\"target\">Click me</div></body></html>";
         var result = _engine.Execute(
-            new[] { @"
+            [ @"
                 var fired = false;
                 var el = document.getElementById('target');
                 el.addEventListener('click', function(e) { fired = true; });
@@ -19,7 +19,7 @@ public class DomEventsTests
                 evt.initEvent('click', true, true);
                 el.dispatchEvent(evt);
                 if (!fired) throw new Error('event not fired');
-            " }, html);
+            " ], html);
         Assert.True(result);
     }
 
@@ -28,7 +28,7 @@ public class DomEventsTests
     {
         var html = "<html><body><div id=\"target\">Test</div></body></html>";
         var result = _engine.Execute(
-            new[] { @"
+            [ @"
                 var receivedType = '';
                 var el = document.getElementById('target');
                 el.addEventListener('test', function(e) {
@@ -40,7 +40,7 @@ public class DomEventsTests
                 evt.initEvent('test', true, true);
                 el.dispatchEvent(evt);
                 if (receivedType !== 'test') throw new Error('wrong type: ' + receivedType);
-            " }, html);
+            " ], html);
         Assert.True(result);
     }
 
@@ -49,7 +49,7 @@ public class DomEventsTests
     {
         var html = "<html><body><div id=\"parent\"><span id=\"child\">Hi</span></div></body></html>";
         var result = _engine.Execute(
-            new[] { @"
+            [ @"
                 var parentFired = false;
                 var parent = document.getElementById('parent');
                 var child = document.getElementById('child');
@@ -59,7 +59,7 @@ public class DomEventsTests
                 evt.initEvent('click', true, true);
                 child.dispatchEvent(evt);
                 if (parentFired) throw new Error('parent should not have fired');
-            " }, html);
+            " ], html);
         Assert.True(result);
     }
 
@@ -68,14 +68,14 @@ public class DomEventsTests
     {
         var html = "<html><body><div id=\"target\">Test</div></body></html>";
         var result = _engine.Execute(
-            new[] { @"
+            [ @"
                 var el = document.getElementById('target');
                 el.addEventListener('click', function(e) { e.preventDefault(); });
                 var evt = document.createEvent('Event');
                 evt.initEvent('click', true, true);
                 el.dispatchEvent(evt);
                 if (!evt.defaultPrevented) throw new Error('defaultPrevented should be true');
-            " }, html);
+            " ], html);
         Assert.True(result);
     }
 
@@ -84,7 +84,7 @@ public class DomEventsTests
     {
         var html = "<html><body><div id=\"parent\"><span id=\"child\">Hi</span></div></body></html>";
         var result = _engine.Execute(
-            new[] { @"
+            [ @"
                 var parentFired = false;
                 var parent = document.getElementById('parent');
                 var child = document.getElementById('child');
@@ -93,7 +93,7 @@ public class DomEventsTests
                 evt.initEvent('click', true, true);
                 child.dispatchEvent(evt);
                 if (!parentFired) throw new Error('parent should have received bubbled event');
-            " }, html);
+            " ], html);
         Assert.True(result);
     }
 
@@ -102,13 +102,13 @@ public class DomEventsTests
     {
         var html = "<html><body></body></html>";
         var result = _engine.Execute(
-            new[] { @"
+            [ @"
                 var evt = document.createEvent('Event');
                 evt.initEvent('myevent', true, true);
                 if (evt.type !== 'myevent') throw new Error('wrong type');
                 if (evt.bubbles !== true) throw new Error('should bubble');
                 if (evt.cancelable !== true) throw new Error('should be cancelable');
-            " }, html);
+            " ], html);
         Assert.True(result);
     }
 
@@ -117,7 +117,7 @@ public class DomEventsTests
     {
         var html = "<html><body><div id=\"target\">Test</div></body></html>";
         var result = _engine.Execute(
-            new[] { @"
+            [ @"
                 var count = 0;
                 var el = document.getElementById('target');
                 var handler = function(e) { count++; };
@@ -127,7 +127,7 @@ public class DomEventsTests
                 evt.initEvent('click', true, true);
                 el.dispatchEvent(evt);
                 if (count !== 0) throw new Error('listener was not removed');
-            " }, html);
+            " ], html);
         Assert.True(result);
     }
 }

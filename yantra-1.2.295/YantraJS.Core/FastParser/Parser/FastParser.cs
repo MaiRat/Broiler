@@ -1,110 +1,92 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
-using System.Text;
+﻿using System.Runtime.CompilerServices;
 
-namespace YantraJS.Core.FastParser
+namespace YantraJS.Core.FastParser;
+
+
+public partial class FastParser(FastTokenStream stream)
 {
+    private readonly FastTokenStream stream = stream;
 
-    public partial class FastParser
+    // public readonly FastPool Pool;
+
+    public readonly FastScope variableScope = new FastScope();
+
+    /// <summary>
+    /// Disable this inside for brackets...
+    /// </summary>
+    private bool considerInOfAsOperators = true;
+
+
+    private bool isAsync = false;
+
+    public StreamLocation BeginUndo() => new(this, stream.Current);
+
+
+    public StreamLocation Location
     {
-        private readonly FastTokenStream stream;
-
-        // public readonly FastPool Pool;
-
-        public readonly FastScope variableScope;
-
-        /// <summary>
-        /// Disable this inside for brackets...
-        /// </summary>
-        private bool considerInOfAsOperators = true;
-
-
-        private bool isAsync = false;
-
-        public StreamLocation BeginUndo() => new StreamLocation(this, stream.Current);
-
-
-        public StreamLocation Location
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return new StreamLocation(this, stream.Current);
-            }
+            return new StreamLocation(this, stream.Current);
         }
+    }
 
-        public FastToken PreviousToken
+    public FastToken PreviousToken
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return stream.Previous;
-            }
+            return stream.Previous;
         }
+    }
 
-        public readonly struct StreamLocation
+    public readonly struct StreamLocation(FastParser parser, FastToken token)
+    {
+        public readonly FastToken Token = token;
+
+        public bool Reset()
         {
-            private readonly FastParser parser;
-            public readonly FastToken Token;
-
-            public StreamLocation(FastParser parser, FastToken token)
-            {
-                this.parser = parser;
-                this.Token = token;
-            }
-
-            public bool Reset()
-            {
-                parser.stream.Reset(Token);
-                return false;
-            }
+            parser.stream.Reset(Token);
+            return false;
         }
+    }
 
-        public FastParser(FastTokenStream stream)
+    public AstProgram ParseProgram()
+    {
+        if (Program(out var p))
+            return p;
+        throw stream.Unexpected();
+    }
+
+    bool EndOfLine()
+    {
+        var token = stream.Current;
+        if(token.Type == TokenTypes.LineTerminator)
         {
-            this.stream = stream;
-            // this.Pool = stream.Pool;
-            this.variableScope = new FastScope();
+            stream.Consume();
+            return true;
         }
+        return false;
+    }
 
-        public AstProgram ParseProgram()
+    bool EndOfStatement()
+    {
+        var token = stream.Current;
+        //if (token.LineTerminator)
+        //    return true;
+        switch (token.Type)
         {
-            if (Program(out var p))
-                return p;
-            throw stream.Unexpected();
-        }
-
-        bool EndOfLine()
-        {
-            var token = stream.Current;
-            if(token.Type == TokenTypes.LineTerminator)
-            {
+            case TokenTypes.SemiColon:
+            case TokenTypes.EOF:
+            case TokenTypes.LineTerminator:
                 stream.Consume();
                 return true;
-            }
-            return false;
+            // since Block will expect curly bracket
+            // to be present, we will not consume this..
+            case TokenTypes.CurlyBracketEnd:
+                return true;
         }
-
-        bool EndOfStatement()
-        {
-            var token = stream.Current;
-            //if (token.LineTerminator)
-            //    return true;
-            switch (token.Type)
-            {
-                case TokenTypes.SemiColon:
-                case TokenTypes.EOF:
-                case TokenTypes.LineTerminator:
-                    stream.Consume();
-                    return true;
-                // since Block will expect curly bracket
-                // to be present, we will not consume this..
-                case TokenTypes.CurlyBracketEnd:
-                    return true;
-            }
-            return false;
-        }
-
+        return false;
     }
+
 }

@@ -1,15 +1,11 @@
-﻿using System;
-using System.Linq;
+﻿namespace YantraJS;
 
-namespace YantraJS
+public struct ScriptLocation
 {
-    public struct ScriptLocation
-    {
-        public string Location { get; set; }
+    public string Location { get; set; }
 
-        public int LineNumber { get; set; }
+    public int LineNumber { get; set; }
 
-        public int ColumnNumber { get; set; }
+    public int ColumnNumber { get; set; }
 
-    }
 }

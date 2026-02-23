@@ -1,4 +1,3 @@
-using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Image;
 
 namespace HtmlRenderer.Image.Tests;
@@ -7,32 +6,25 @@ namespace HtmlRenderer.Image.Tests;
 /// Tests for rendering HTML to PNG format.
 /// </summary>
 [Collection("Rendering")]
-public class RenderToPngTests
+public class RenderToPngTests(RenderingFixture fixture)
 {
-    private readonly RenderingFixture _fixture;
-
-    public RenderToPngTests(RenderingFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public void RenderToPng_SimpleHtml_ReturnsValidPngWithCorrectMagicBytes()
     {
-        Assert.NotNull(_fixture.PngBytes);
-        Assert.True(_fixture.PngBytes.Length > 100);
+        Assert.NotNull(fixture.PngBytes);
+        Assert.True(fixture.PngBytes.Length > 100);
         // PNG magic bytes: 137 80 78 71 13 10 26 10
-        Assert.Equal(0x89, _fixture.PngBytes[0]);
-        Assert.Equal(0x50, _fixture.PngBytes[1]);
-        Assert.Equal(0x4E, _fixture.PngBytes[2]);
-        Assert.Equal(0x47, _fixture.PngBytes[3]);
+        Assert.Equal(0x89, fixture.PngBytes[0]);
+        Assert.Equal(0x50, fixture.PngBytes[1]);
+        Assert.Equal(0x4E, fixture.PngBytes[2]);
+        Assert.Equal(0x47, fixture.PngBytes[3]);
     }
 
     [Fact]
     public void RenderToPng_StyledHtml_ReturnsValidPng()
     {
-        Assert.NotNull(_fixture.PngStyledBytes);
-        Assert.True(_fixture.PngStyledBytes.Length > 100);
+        Assert.NotNull(fixture.PngStyledBytes);
+        Assert.True(fixture.PngStyledBytes.Length > 100);
     }
 
     [Fact]

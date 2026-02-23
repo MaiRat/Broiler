@@ -1,10 +1,5 @@
-﻿namespace YantraJS.Core.FastParser
-{
-    public class AstBindingPattern : AstExpression
-    {
-        public AstBindingPattern(FastToken start, FastNodeType type, FastToken end) : base(start, type, end, true)
-        {
-        }
-    }
+﻿namespace YantraJS.Core.FastParser;
 
+public class AstBindingPattern(FastToken start, FastNodeType type, FastToken end) : AstExpression(start, type, end, true)
+{
 }

@@ -1,10 +1,6 @@
-﻿namespace YantraJS.Core.Clr
+﻿namespace YantraJS.Core.Clr;
+
+public class JSExportSameNameAttribute : JSExportAttribute
 {
-    public class JSExportSameNameAttribute : JSExportAttribute
-    {
-        public JSExportSameNameAttribute()
-        {
-            this.AsCamel = false;
-        }
-    }
+    public JSExportSameNameAttribute() => AsCamel = false;
 }

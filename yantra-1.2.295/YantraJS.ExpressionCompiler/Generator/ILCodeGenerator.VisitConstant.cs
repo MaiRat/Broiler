@@ -1,21 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection.Emit;
-using System.Text;
-using YantraJS.Expressions;
+﻿using YantraJS.Expressions;
 
-namespace YantraJS.Generator
+namespace YantraJS.Generator;
+
+
+public partial class ILCodeGenerator
 {
 
-    public partial class ILCodeGenerator
+    protected override CodeInfo VisitConstant(YConstantExpression yConstantExpression)
     {
-
-        protected override CodeInfo VisitConstant(YConstantExpression yConstantExpression)
-        {
-            il.EmitConstant(yConstantExpression.Value, yConstantExpression.Type);
-            return true;
-        }
-
+        il.EmitConstant(yConstantExpression.Value, yConstantExpression.Type);
+        return true;
     }
+
 }

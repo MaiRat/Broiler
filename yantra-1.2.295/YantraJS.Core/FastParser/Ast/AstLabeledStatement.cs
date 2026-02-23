@@ -1,20 +1,9 @@
-﻿namespace YantraJS.Core.FastParser
+﻿namespace YantraJS.Core.FastParser;
+
+public class AstLabeledStatement(FastToken id, AstStatement statement) : AstStatement(id, FastNodeType.LabeledStatement, statement.End)
 {
-    public class AstLabeledStatement : AstStatement
-    {
-        public readonly FastToken Label;
-        public readonly AstStatement Body;
+    public readonly FastToken Label = id;
+    public readonly AstStatement Body = statement;
 
-        public AstLabeledStatement(FastToken id, AstStatement statement)
-            : base (id, FastNodeType.LabeledStatement, statement.End)
-        {
-            this.Label = id;
-            this.Body = statement;
-        }
-
-        public override string ToString()
-        {
-            return $"{Label}: {Body}";
-        }
-    }
+    public override string ToString() => $"{Label}: {Body}";
 }

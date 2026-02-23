@@ -1,23 +1,11 @@
 ﻿#nullable enable
-namespace YantraJS.Core.FastParser
+namespace YantraJS.Core.FastParser;
+
+public class AstConditionalExpression(AstExpression previous, AstExpression @true, AstExpression @false) : AstExpression(previous.Start, FastNodeType.ConditionalExpression, @false.End)
 {
-    public class AstConditionalExpression : AstExpression
-    {
-        public readonly AstExpression Test;
-        public readonly AstExpression True;
-        public readonly AstExpression False;
+    public readonly AstExpression Test = previous;
+    public readonly AstExpression True = @true;
+    public readonly AstExpression False = @false;
 
-        public AstConditionalExpression(AstExpression previous, AstExpression @true, AstExpression @false)
-            : base(previous.Start, FastNodeType.ConditionalExpression, @false.End)
-        {
-            this.Test = previous;
-            this.True = @true;
-            this.False = @false;
-        }
-
-        public override string ToString()
-        {
-            return $"{Test} ? {True} : {False}";
-        }
-    }
+    public override string ToString() => $"{Test} ? {True} : {False}";
 }

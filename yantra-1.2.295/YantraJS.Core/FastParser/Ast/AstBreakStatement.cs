@@ -1,21 +1,11 @@
 ﻿#nullable enable
-namespace YantraJS.Core.FastParser
+namespace YantraJS.Core.FastParser;
+
+public class AstBreakStatement(FastToken token, FastToken previousToken, AstIdentifier? label = null) : AstStatement(token, FastNodeType.BreakStatement, previousToken)
 {
-    public class AstBreakStatement : AstStatement
-    {
-        public readonly AstIdentifier? Label;
+    public readonly AstIdentifier? Label = label;
 
-        public AstBreakStatement(FastToken token, FastToken previousToken, AstIdentifier? label = null)
-            : base(token, FastNodeType.BreakStatement, previousToken)
-        {
-            this.Label = label;
-        }
-
-        public override string ToString()
-        {
-            return Label != null
-                ? $"break {Label};"
-                : $"break;";
-        }
-    }
+    public override string ToString() => Label != null
+            ? $"break {Label};"
+            : $"break;";
 }

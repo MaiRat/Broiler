@@ -1,25 +1,14 @@
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
 
-namespace TheArtOfDev.HtmlRenderer.Image.Adapters
+namespace TheArtOfDev.HtmlRenderer.Image.Adapters;
+
+internal sealed class ImageAdapter(SKBitmap bitmap) : RImage
 {
-    internal sealed class ImageAdapter : RImage
-    {
-        private readonly SKBitmap _bitmap;
+    public SKBitmap Bitmap { get; } = bitmap;
 
-        public ImageAdapter(SKBitmap bitmap)
-        {
-            _bitmap = bitmap;
-        }
+    public override double Width => Bitmap.Width;
+    public override double Height => Bitmap.Height;
 
-        public SKBitmap Bitmap => _bitmap;
-
-        public override double Width => _bitmap.Width;
-        public override double Height => _bitmap.Height;
-
-        public override void Dispose()
-        {
-            _bitmap.Dispose();
-        }
-    }
+    public override void Dispose() => Bitmap.Dispose();
 }
