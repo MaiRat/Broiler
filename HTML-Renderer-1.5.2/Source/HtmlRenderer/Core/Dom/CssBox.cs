@@ -677,8 +677,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
                         }
                         else if (Float == CssConstants.Right)
                         {
-                            // Position at the right edge of the containing block
-                            left = ContainingBlock.ClientLeft + ContainingBlock.AvailableWidth - Size.Width - ActualBorderLeftWidth - ActualBorderRightWidth;
+                            // Position at the right edge of the containing block.
+                            // Size.Width already includes padding and border, so only
+                            // subtract the right margin to align the margin edge.
+                            left = ContainingBlock.ClientLeft + ContainingBlock.AvailableWidth - Size.Width;
                         }
 
                         // Handle clear property
