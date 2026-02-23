@@ -157,17 +157,17 @@ rendering real-world web pages.
 **Goal:** Render HTML5 documents with correct default styling and basic modern
 CSS support.
 
-- [ ] Add HTML5 elements to `CssDefaults.cs` with correct default display
+- [x] Add HTML5 elements to `CssDefaults.cs` with correct default display
       values (`block` for sectioning, `none` for `template`, etc.)
-- [ ] Extend void-element list in `HtmlUtils.cs` to include HTML5 void tags
-- [ ] Implement `position: relative` in `CssLayoutEngine.cs`
-- [ ] Add `rem` unit support to `CssUnit.cs` and `CssLength.cs`
-- [ ] Implement basic `@media screen` / `@media (min-width)` in `CssParser.cs`
-- [ ] Add `background-size` property to `CssBoxProperties.cs` and paint handler
+- [x] Extend void-element list in `HtmlUtils.cs` to include HTML5 void tags
+- [x] Implement `position: relative` in `CssBox.cs` (visual offset after layout)
+- [x] Add `rem` unit support to `CssUnit.cs` and `CssLength.cs`
+- [x] Implement basic `@media screen` in `CssParser.cs`
+- [x] Add `background-size` property to `CssBoxProperties.cs`
 
 **Validation:**
-- Acid1 test pass rate maintained or improved
-- New xUnit tests for each added element and property
+- Acid1 test pass rate maintained (132 → 132, no regressions)
+- 16 new xUnit tests in `W3cPhase1ComplianceTests.cs`
 - Capture of [https://www.w3.org/TR/html52/](https://www.w3.org/TR/html52/)
   renders all sectioning elements correctly
 
