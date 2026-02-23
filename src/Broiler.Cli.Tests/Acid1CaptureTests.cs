@@ -660,6 +660,131 @@ public class Acid1CaptureTests : IDisposable
             "Element may be too wide.");
     }
 
+    /// <summary>
+    /// Verifies that <c>font-size: 1em</c> produces the same box dimensions
+    /// as the inherited font size. Per CSS spec, <c>1em</c> on the
+    /// <c>font-size</c> property equals the parent element's computed
+    /// font size. If the em conversion is broken, the element's own font
+    /// (and therefore all em-based dimensions) will differ from the parent.
+    /// </summary>
+    [Fact]
+    public void FontSize1Em_MatchesParentFontSize()
+    {
+        // A div inheriting 10px font should render identically whether it
+        // has an explicit font-size:1em or no font-size override at all.
+        const string htmlInherited = @"<html><head><style>
+            html { font: 10px sans-serif; background-color: white; }
+            body { margin: 0; padding: 0; }
+            div  { width: 10em; height: 5em; background-color: red; }
+        </style></head><body><div>x</div></body></html>";
+
+        const string htmlExplicit1Em = @"<html><head><style>
+            html { font: 10px sans-serif; background-color: white; }
+            body { margin: 0; padding: 0; }
+            div  { width: 10em; height: 5em; background-color: red; font-size: 1em; }
+        </style></head><body><div>x</div></body></html>";
+
+        using var bmpInherited = HtmlRender.RenderToImage(htmlInherited, 300, 200);
+        using var bmpExplicit  = HtmlRender.RenderToImage(htmlExplicit1Em, 300, 200);
+
+        int redInherited = CountRedPixels(bmpInherited);
+        int redExplicit  = CountRedPixels(bmpExplicit);
+
+        Assert.True(redInherited > 0, "Inherited render must contain red pixels.");
+        Assert.Equal(redInherited, redExplicit);
+    }
+
+    /// <summary>
+    /// Verifies that <c>font-size: 1em</c> on a heading correctly overrides
+    /// the default <c>h1 { font-size: 2em }</c> from the user-agent
+    /// stylesheet. The heading box (10 em × 5 em) should measure 100 × 50 px
+    /// at a 10 px root font, not 200 × 100 px.
+    /// </summary>
+    [Fact]
+    public void FontSize1Em_OverridesDefaultH1Size()
+    {
+        const string html = @"<html><head><style>
+            html { font: 10px sans-serif; background-color: white; }
+            body { margin: 0; padding: 0; }
+            h1   { width: 10em; height: 5em; background-color: red;
+                   font-size: 1em; margin: 0; padding: 0; }
+        </style></head><body><h1>heading</h1></body></html>";
+
+        using var bmp = HtmlRender.RenderToImage(html, 300, 200);
+
+        int maxRedX = 0, maxRedY = 0;
+        for (int y = 0; y < bmp.Height; y++)
+            for (int x = 0; x < bmp.Width; x++)
+            {
+                var p = bmp.GetPixel(x, y);
+                if (p.Red > 200 && p.Green < 50 && p.Blue < 50)
+                {
+                    if (x > maxRedX) maxRedX = x;
+                    if (y > maxRedY) maxRedY = y;
+                }
+            }
+
+        // 10em at 10px/em = 100px wide (0..99), 5em = 50px tall (0..49).
+        Assert.InRange(maxRedX, 90, 110);
+        Assert.InRange(maxRedY, 40, 60);
+    }
+
+    /// <summary>
+    /// Verifies that very small font sizes (≤ 1 pt) are not inflated to the
+    /// default 11 pt. Before the fix, <c>fsize &lt;= 1f</c> in
+    /// <see cref="CssBoxProperties.ActualFont"/> replaced any computed size
+    /// ≤ 1 pt with 11 pt, making boxes excessively large.
+    /// </summary>
+    [Fact]
+    public void SmallFontSize_NotInflatedToDefault()
+    {
+        // 1px font → 0.75 pt. Before the fix this was clamped to 11 pt,
+        // inflating the 10 em × 5 em box from 10 × 5 px to ≈147 × 73 px.
+        const string html = @"<html><head><style>
+            html { font-size: 1px; background-color: white; }
+            body { margin: 0; padding: 0; }
+            div  { width: 10em; height: 5em; background-color: red; }
+        </style></head><body><div>x</div></body></html>";
+
+        using var bmp = HtmlRender.RenderToImage(html, 300, 200);
+
+        // The red box should be tiny (≈10 × 5 px).
+        // Before the fix it was ≈147 × 73 px — check that no red pixels
+        // appear beyond x = 30 or y = 30.
+        int redBeyond = 0;
+        for (int y = 0; y < bmp.Height; y++)
+            for (int x = 30; x < bmp.Width; x++)
+            {
+                var p = bmp.GetPixel(x, y);
+                if (p.Red > 200 && p.Green < 50 && p.Blue < 50)
+                    redBeyond++;
+            }
+        for (int y = 30; y < bmp.Height; y++)
+            for (int x = 0; x < 30; x++)
+            {
+                var p = bmp.GetPixel(x, y);
+                if (p.Red > 200 && p.Green < 50 && p.Blue < 50)
+                    redBeyond++;
+            }
+
+        Assert.True(redBeyond == 0,
+            $"Found {redBeyond} red pixels beyond (30,30). " +
+            "Small font sizes (≤ 1 pt) may be inflated to the default 11 pt.");
+    }
+
+    private static int CountRedPixels(SKBitmap bmp)
+    {
+        int count = 0;
+        for (int y = 0; y < bmp.Height; y++)
+            for (int x = 0; x < bmp.Width; x++)
+            {
+                var p = bmp.GetPixel(x, y);
+                if (p.Red > 200 && p.Green < 50 && p.Blue < 50)
+                    count++;
+            }
+        return count;
+    }
+
     // -------------------------------------------------------------------------
     // Failure detection tests
     // -------------------------------------------------------------------------

@@ -836,7 +836,7 @@ internal abstract class CssBoxProperties
                     _ => CssValueParser.ParseLength(FontSize, parentSize, parentSize, null, true, true),
                 };
                 
-                if (fsize <= 1f)
+                if (fsize <= 0)
                     fsize = CssConstants.FontSize;
 
                 _actualFont = GetCachedFont(FontFamily, fsize, st);
