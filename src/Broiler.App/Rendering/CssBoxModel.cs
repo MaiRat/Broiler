@@ -170,7 +170,8 @@ namespace Broiler.App.Rendering
         private static readonly HashSet<string> BlockTags = new HashSet<string>(
             StringComparer.OrdinalIgnoreCase)
         { "div", "p", "h1", "h2", "h3", "h4", "h5", "h6",
-          "ul", "ol", "li", "section", "article", "header",
+          "ul", "ol", "li", "dl", "dt", "dd",
+          "section", "article", "header",
           "footer", "main", "nav", "aside", "blockquote", "form", "table" };
 
         /// <summary>Builds a layout tree from a DOM tree and performs layout.</summary>
