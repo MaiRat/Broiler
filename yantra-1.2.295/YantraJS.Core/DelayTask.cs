@@ -29,7 +29,7 @@ namespace YantraJS.Core
             {
                 timer.Dispose();
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[YantraJS] DelayTask timer dispose error: {ex.Message}"); }
         }
 
         public void OnTimer(object a)

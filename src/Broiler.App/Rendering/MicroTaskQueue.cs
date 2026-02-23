@@ -54,6 +54,7 @@ namespace Broiler.App.Rendering
                     }
                     catch (Exception ex)
                     {
+                        RenderLogger.LogError(LogCategory.JavaScript, "MicroTaskQueue.Drain", $"Microtask failed: {ex.Message}", ex);
                         errors.Add(ex);
                     }
                 }

@@ -182,9 +182,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Handlers
                     ? _adapter.CreateFont(fontFamily, size, style)
                     : _adapter.CreateFont(family, size, style);
             }
-            catch
+            catch (Exception ex)
             {
                 // handle possibility of no requested style exists for the font, use regular then
+                System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] FontsHandler.GetCachedFont style fallback for '{family}': {ex.Message}");
                 return _existingFontFamilies.TryGetValue(family, out fontFamily)
                     ? _adapter.CreateFont(fontFamily, size, RFontStyle.Regular)
                     : _adapter.CreateFont(family, size, RFontStyle.Regular);

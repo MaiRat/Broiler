@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using Broiler.App.Rendering;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Image;
@@ -312,7 +313,7 @@ public class CaptureService
                 catch (Exception ex)
                 {
                     // Script execution errors are non-fatal for capture
-                    System.Diagnostics.Debug.WriteLine($"Script execution error: {ex.Message}");
+                    RenderLogger.LogError(LogCategory.JavaScript, "CaptureService.ExecuteScripts", $"Script execution error: {ex.Message}", ex);
                 }
             }
         }

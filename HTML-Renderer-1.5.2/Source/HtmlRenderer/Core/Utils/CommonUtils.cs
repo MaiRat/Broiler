@@ -151,8 +151,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils
                     return new Uri(path, UriKind.RelativeOrAbsolute);
                 }
             }
-            catch
-            { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] CommonUtils.TryGetUri failed for path '{path}': {ex.Message}");
+            }
 
             return null;
         }
@@ -186,8 +188,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils
             {
                 return new FileInfo(path);
             }
-            catch
-            { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] CommonUtils.TryGetFileInfo failed for path '{path}': {ex.Message}");
+            }
 
             return null;
         }

@@ -447,8 +447,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom
 
                 HtmlContainer.RequestRefresh(IsLayoutRequired());
             }
-            catch
-            { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] CssBoxFrame.HandlePostApiCall cleanup error: {ex.Message}");
+            }
         }
 
         /// <summary>

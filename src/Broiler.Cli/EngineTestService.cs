@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Broiler.App.Rendering;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using YantraJS.Core;
 
@@ -71,6 +72,7 @@ public sealed class EngineTestService
         }
         catch (Exception ex)
         {
+            RenderLogger.LogError(LogCategory.HtmlRenderer, "EngineTestService.TestHtmlRenderer", $"Smoke test failed: {ex.Message}", ex);
             return new EngineTestResult { EngineName = "HTML-Renderer", Passed = false, Error = ex.Message };
         }
     }
@@ -93,6 +95,7 @@ public sealed class EngineTestService
         }
         catch (Exception ex)
         {
+            RenderLogger.LogError(LogCategory.JavaScript, "EngineTestService.TestYantraJS", $"Smoke test failed: {ex.Message}", ex);
             return new EngineTestResult { EngineName = "YantraJS", Passed = false, Error = ex.Message };
         }
     }
