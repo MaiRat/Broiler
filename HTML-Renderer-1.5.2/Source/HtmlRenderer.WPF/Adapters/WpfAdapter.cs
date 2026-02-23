@@ -67,8 +67,9 @@ namespace TheArtOfDev.HtmlRenderer.WPF.Adapters
 	            {
 	                AddFontFamily(new FontFamilyAdapter(family));
 	            }
-	            catch
+	            catch (Exception ex)
 	            {
+	                System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] WpfAdapter failed to add font family: {ex.Message}");
 	            }
             }
         }

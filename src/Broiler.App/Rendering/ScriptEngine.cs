@@ -51,7 +51,7 @@ namespace Broiler.App.Rendering
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"JavaScript execution error: {ex.Message}");
+                    RenderLogger.LogError(LogCategory.JavaScript, "ScriptEngine.Execute", $"Script inline-{i} failed: {ex.Message}", ex);
                     allSucceeded = false;
                 }
             }
@@ -87,7 +87,7 @@ namespace Broiler.App.Rendering
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"JavaScript execution error: {ex.Message}");
+                    RenderLogger.LogError(LogCategory.JavaScript, "ScriptEngine.Execute", $"Script inline-{i} failed: {ex.Message}", ex);
                     allSucceeded = false;
                 }
             }
@@ -121,7 +121,7 @@ namespace Broiler.App.Rendering
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"JavaScript execution error: {ex.Message}");
+                    RenderLogger.LogError(LogCategory.JavaScript, "ScriptEngine.ExecuteDetailed", $"Script inline-{i} failed: {ex.Message}", ex);
                     errors.Add(new ScriptError
                     {
                         ScriptIndex = i,
@@ -162,7 +162,7 @@ namespace Broiler.App.Rendering
                     _microTasks.Enqueue(() =>
                     {
                         try { fn.InvokeFunction(new Arguments(JSUndefined.Value)); }
-                        catch (Exception ex) { Debug.WriteLine($"[queueMicrotask] Error: {ex.Message}"); }
+                        catch (Exception ex) { RenderLogger.LogError(LogCategory.JavaScript, "ScriptEngine.queueMicrotask", $"Callback error: {ex.Message}", ex); }
                     });
                 }
                 return JSUndefined.Value;
@@ -199,7 +199,7 @@ namespace Broiler.App.Rendering
                 if (existing is JSString s && s.ToString() != "undefined")
                     return;
             }
-            catch { /* not present — install polyfill */ }
+            catch (Exception ex) { RenderLogger.LogDebug(LogCategory.JavaScript, "ScriptEngine.WeakRefPolyfill", $"WeakRef not present, installing polyfill: {ex.Message}"); }
 
             var weakRefCtor = new JSFunction((in Arguments args) =>
             {
@@ -234,7 +234,7 @@ namespace Broiler.App.Rendering
                 if (existing is JSString s && s.ToString() != "undefined")
                     return;
             }
-            catch { /* not present — install polyfill */ }
+            catch (Exception ex) { RenderLogger.LogDebug(LogCategory.JavaScript, "ScriptEngine.FinalizationRegistryPolyfill", $"FinalizationRegistry not present, installing polyfill: {ex.Message}"); }
 
             var registryCtor = new JSFunction((in Arguments args) =>
             {

@@ -12,6 +12,10 @@
     <InternalsVisibleTo Include="Broiler.Cli.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Broiler.App\Rendering\RenderLogger.cs" Link="RenderLogger.cs" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="..\..\HTML-Renderer-1.5.2\Source\HtmlRenderer\HtmlRenderer.csproj" />

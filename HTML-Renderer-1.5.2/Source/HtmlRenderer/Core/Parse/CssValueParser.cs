@@ -324,8 +324,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Parse
                     }
                 }
             }
-            catch
-            { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] CssValueParser.TryGetColor failed: {ex.Message}");
+            }
             color = RColor.Black;
             return false;
         }

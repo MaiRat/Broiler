@@ -362,8 +362,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Handlers
                 _currentRect = null;
                 _currentLink = null;
             }
-            catch
-            { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] ContextMenuHandler.DisposeContextMenu error: {ex.Message}");
+            }
         }
 
         /// <summary>

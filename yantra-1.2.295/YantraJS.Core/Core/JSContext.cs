@@ -443,7 +443,7 @@ namespace YantraJS.Core
         {
             if(timeouts.TryRemove(n, out var timer))
             {
-                try { timer.Dispose(); } catch { }
+                try { timer.Dispose(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[YantraJS] ClearTimeout dispose error: {ex.Message}"); }
             }
             if (timers.Count == 0 && timeouts.Count == 0)
             {
@@ -455,7 +455,7 @@ namespace YantraJS.Core
         {
             if (timers.TryRemove(n, out var timer))
             {
-                try { timer.Dispose(); } catch { }
+                try { timer.Dispose(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[YantraJS] ClearInterval dispose error: {ex.Message}"); }
             }
             if (timers.Count == 0 && timeouts.Count == 0)
             {

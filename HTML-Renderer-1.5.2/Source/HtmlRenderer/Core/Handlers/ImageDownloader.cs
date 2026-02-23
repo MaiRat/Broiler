@@ -214,8 +214,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Handlers
                     {
                         cachedFileCallback(source, filePath, error, cancelled);
                     }
-                    catch
-                    { }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] ImageDownloader callback error: {ex.Message}");
+                    }
                 }
             }
         }
@@ -235,8 +237,10 @@ namespace TheArtOfDev.HtmlRenderer.Core.Handlers
                     client.Dispose();
                     _clients.RemoveAt(0);
                 }
-                catch
-                { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] ImageDownloader.ReleaseObjects error: {ex.Message}");
+                }
             }
         }
 

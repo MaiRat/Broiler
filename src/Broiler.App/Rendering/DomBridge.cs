@@ -1011,7 +1011,7 @@ namespace Broiler.App.Rendering
                     if (a.Length > 0 && a[0] is JSFunction fn)
                     {
                         try { fn.InvokeFunction(new Arguments(JSUndefined.Value)); }
-                        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[setTimeout] Callback error: {ex.Message}"); }
+                        catch (Exception ex) { RenderLogger.LogError(LogCategory.JavaScript, "DomBridge.setTimeout", $"Callback error: {ex.Message}", ex); }
                     }
                     return new JSNumber(id);
                 }, "setTimeout", 2),
@@ -1032,7 +1032,7 @@ namespace Broiler.App.Rendering
                     if (a.Length > 0 && a[0] is JSFunction fn)
                     {
                         try { fn.InvokeFunction(new Arguments(JSUndefined.Value)); }
-                        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[setInterval] Callback error: {ex.Message}"); }
+                        catch (Exception ex) { RenderLogger.LogError(LogCategory.JavaScript, "DomBridge.setInterval", $"Callback error: {ex.Message}", ex); }
                     }
                     return new JSNumber(id);
                 }, "setInterval", 2),
@@ -1050,7 +1050,7 @@ namespace Broiler.App.Rendering
                 new JSFunction((in Arguments a) =>
                 {
                     var msg = a.Length > 0 ? a[0].ToString() : string.Empty;
-                    System.Diagnostics.Debug.WriteLine($"[alert] {msg}");
+                    RenderLogger.LogDebug(LogCategory.JavaScript, "DomBridge.alert", msg);
                     return JSUndefined.Value;
                 }, "alert", 1),
                 JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1090,7 +1090,7 @@ namespace Broiler.App.Rendering
                             if (thenArgs.Length > 0 && thenArgs[0] is JSFunction cb)
                             {
                                 try { cb.InvokeFunction(new Arguments(cb, new JSString(body))); }
-                                catch { /* swallow */ }
+                                catch (Exception ex) { RenderLogger.LogWarning(LogCategory.JavaScript, "DomBridge.fetch.text", $"Callback error: {ex.Message}", ex); }
                             }
                             return thenable;
                         }, "then", 1), JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1118,7 +1118,7 @@ namespace Broiler.App.Rendering
                                     var parsed = context.Eval($"JSON.parse(\"{escaped}\")");
                                     cb.InvokeFunction(new Arguments(cb, parsed));
                                 }
-                                catch { /* swallow parse errors */ }
+                                catch (Exception ex) { RenderLogger.LogWarning(LogCategory.JavaScript, "DomBridge.fetch.json", $"JSON parse error: {ex.Message}", ex); }
                             }
                             return thenable;
                         }, "then", 1), JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1127,7 +1127,7 @@ namespace Broiler.App.Rendering
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[fetch] Error: {ex.Message}");
+                    RenderLogger.LogError(LogCategory.JavaScript, "DomBridge.fetch", $"Fetch error: {ex.Message}", ex);
                     responseObj.FastAddValue((KeyString)"ok", JSBoolean.False, JSPropertyAttributes.EnumerableConfigurableValue);
                     responseObj.FastAddValue((KeyString)"status", new JSNumber(0), JSPropertyAttributes.EnumerableConfigurableValue);
                     responseObj.FastAddValue((KeyString)"statusText", new JSString(ex.Message), JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1140,7 +1140,7 @@ namespace Broiler.App.Rendering
                     if (thenArgs.Length > 0 && thenArgs[0] is JSFunction cb)
                     {
                         try { cb.InvokeFunction(new Arguments(cb, responseObj)); }
-                        catch { /* swallow */ }
+                        catch (Exception ex) { RenderLogger.LogWarning(LogCategory.JavaScript, "DomBridge.fetch.then", $"Callback error: {ex.Message}", ex); }
                     }
                     return promise;
                 }, "then", 1), JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1230,7 +1230,7 @@ namespace Broiler.App.Rendering
                     var parts = new List<string>();
                     for (var i = 0; i < a.Length; i++)
                         parts.Add(a[i]?.ToString() ?? "undefined");
-                    System.Diagnostics.Debug.WriteLine($"[console.log] {string.Join(" ", parts)}");
+                    RenderLogger.LogDebug(LogCategory.JavaScript, "console.log", string.Join(" ", parts));
                     return JSUndefined.Value;
                 }, "log"),
                 JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1242,7 +1242,7 @@ namespace Broiler.App.Rendering
                     var parts = new List<string>();
                     for (var i = 0; i < a.Length; i++)
                         parts.Add(a[i]?.ToString() ?? "undefined");
-                    System.Diagnostics.Debug.WriteLine($"[console.warn] {string.Join(" ", parts)}");
+                    RenderLogger.Log(LogCategory.JavaScript, LogLevel.Warning, "console.warn", string.Join(" ", parts));
                     return JSUndefined.Value;
                 }, "warn"),
                 JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1254,7 +1254,7 @@ namespace Broiler.App.Rendering
                     var parts = new List<string>();
                     for (var i = 0; i < a.Length; i++)
                         parts.Add(a[i]?.ToString() ?? "undefined");
-                    System.Diagnostics.Debug.WriteLine($"[console.error] {string.Join(" ", parts)}");
+                    RenderLogger.Log(LogCategory.JavaScript, LogLevel.Error, "console.error", string.Join(" ", parts));
                     return JSUndefined.Value;
                 }, "error"),
                 JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1266,7 +1266,7 @@ namespace Broiler.App.Rendering
                     var parts = new List<string>();
                     for (var i = 0; i < a.Length; i++)
                         parts.Add(a[i]?.ToString() ?? "undefined");
-                    System.Diagnostics.Debug.WriteLine($"[console.info] {string.Join(" ", parts)}");
+                    RenderLogger.LogDebug(LogCategory.JavaScript, "console.info", string.Join(" ", parts));
                     return JSUndefined.Value;
                 }, "info"),
                 JSPropertyAttributes.EnumerableConfigurableValue);
@@ -1675,7 +1675,7 @@ namespace Broiler.App.Rendering
                                 if (listener is JSFunction fn)
                                 {
                                     try { fn.InvokeFunction(new Arguments(fn, submitEvt)); }
-                                    catch { /* swallow */ }
+                                    catch (Exception ex) { RenderLogger.LogWarning(LogCategory.JavaScript, "DomBridge.submit", $"Submit listener error: {ex.Message}", ex); }
                                 }
                             }
                         }
@@ -1683,7 +1683,7 @@ namespace Broiler.App.Rendering
                         // If preventDefault was called, do not proceed with default action
                         if (prevented)
                         {
-                            System.Diagnostics.Debug.WriteLine("[submit] Default action prevented");
+                            RenderLogger.LogDebug(LogCategory.JavaScript, "DomBridge.submit", "Default action prevented");
                         }
                     }
                     return JSUndefined.Value;
@@ -1907,7 +1907,7 @@ namespace Broiler.App.Rendering
                 if (listener is JSFunction fn)
                 {
                     try { fn.InvokeFunction(new Arguments(fn, evt)); }
-                    catch { /* swallow */ }
+                    catch (Exception ex) { RenderLogger.LogWarning(LogCategory.JavaScript, "DomBridge.dispatchEvent", $"Event listener error: {ex.Message}", ex); }
                 }
             }
         }
