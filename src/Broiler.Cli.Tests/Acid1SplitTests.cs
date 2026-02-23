@@ -235,6 +235,45 @@ public class Acid1SplitTests : IDisposable
             "The dd (float:right) may not render alongside the dt (float:left).");
     }
 
+    /// <summary>
+    /// Verifies relative placement: the red <c>dt</c> float must stay in the
+    /// left half, and the black <c>dd</c> border must stay in the right half.
+    /// This catches regressions where floats collapse or swap sides.
+    /// </summary>
+    [Fact]
+    public void Section3_DdFloatRight_DtLeft_DdRight()
+    {
+        var html = ReadSplitHtml("section3-dd-float-right.html");
+        using var bitmap = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
+
+        int halfWidth = bitmap.Width / 2;
+
+        int redMaxX = 0;
+        int blackMaxX = 0;
+        int blackMinX = bitmap.Width;
+
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                var p = bitmap.GetPixel(x, y);
+                if (IsRed(p) && x > redMaxX) redMaxX = x;
+                if (IsBlack(p))
+                {
+                    if (x > blackMaxX) blackMaxX = x;
+                    if (x < blackMinX) blackMinX = x;
+                }
+            }
+        }
+
+        Assert.True(redMaxX < bitmap.Width * 0.4,
+            $"Expected dt (red) to remain in the left 40% (maxX={redMaxX}). Float:left may not be honored.");
+        Assert.True(blackMaxX > bitmap.Width * 0.7,
+            $"Expected dd border to extend into the right 30% (maxX={blackMaxX}). Float:right may not be honored.");
+        Assert.True(blackMinX < bitmap.Width * 0.6,
+            $"Expected dd border to span much of the right half (minX={blackMinX}). Border may have collapsed.");
+    }
+
     // -------------------------------------------------------------------------
     // Section 4: LI float:left with gold backgrounds
     // -------------------------------------------------------------------------

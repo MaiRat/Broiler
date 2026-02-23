@@ -55,6 +55,14 @@ These remaining issues are in the third-party HTML-Renderer engine and require
 deeper changes to the float-layout algorithm. The split tests document the
 current state and will detect regressions if any section deteriorates.
 
+### Additional diagnostics
+
+- **Section 3 (dt + dd floats):** New test `Section3_DdFloatRight_DtLeft_DdRight`
+  asserts that `dt` remains in the left half and `dd` stays on the right.
+  Failures here indicate float side-swapping or collapsed floats.
+- **Section 4 (li floats):** Existing horizontal stacking tests remain the
+  quickest signal for nested-float regressions inside the `dd` container.
+
 ## Test Infrastructure
 
 - **Test class:** `src/Broiler.Cli.Tests/Acid1SplitTests.cs`
