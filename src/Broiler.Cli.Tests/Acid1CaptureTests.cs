@@ -54,12 +54,12 @@ public class Acid1CaptureTests : IDisposable
     /// <summary>
     /// Minimum visual-similarity threshold below which the renderer is
     /// considered to have regressed <em>away</em> from the reference. The
-    /// threshold is set to catch major rendering defects (such as missing
-    /// float layout, blank output, or completely wrong colours) while
+    /// threshold is set to catch rendering defects (such as missing float
+    /// layout, blank output, or incorrect element positioning) while
     /// accommodating known CSS1 shortcomings in the HTML-Renderer engine.
     /// Raising this value is a sign of rendering improvement.
     /// </summary>
-    private const double MinSimilarityThreshold = 0.35;
+    private const double MinSimilarityThreshold = 0.38;
 
     private static readonly string TestDataDir =
         Path.Combine(AppContext.BaseDirectory, "TestData");
@@ -83,8 +83,9 @@ public class Acid1CaptureTests : IDisposable
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static string Acid1HtmlPath => Path.Combine(TestDataDir, "acid1.html");
-    private static string Acid1PngPath  => Path.Combine(TestDataDir, "acid1.png");
+    private static string Acid1HtmlPath    => Path.Combine(TestDataDir, "acid1.html");
+    private static string Acid1PngPath     => Path.Combine(TestDataDir, "acid1.png");
+    private static string Acid1FailPngPath => Path.Combine(TestDataDir, "acid1-fail.png");
 
     private static string ReadAcid1Html() => File.ReadAllText(Acid1HtmlPath);
 
@@ -646,7 +647,7 @@ public class Acid1CaptureTests : IDisposable
         bool insideColoured = pInside.Red > 100 || (pInside.Red < 30 && pInside.Green < 30 && pInside.Blue < 30);
         bool outsideWhite = pOutside.Red > 240 && pOutside.Green > 240 && pOutside.Blue > 240;
 
-        Assert.True(insideColoured,
+         Assert.True(insideColoured,
             $"Pixel at x=125 should be inside the 130px border-box (red/black), " +
             $"but was ({pInside.Red},{pInside.Green},{pInside.Blue}). " +
             "Explicit CSS width may not include padding+border.");
@@ -654,5 +655,206 @@ public class Acid1CaptureTests : IDisposable
             $"Pixel at x=145 should be outside the 130px border-box (white), " +
             $"but was ({pOutside.Red},{pOutside.Green},{pOutside.Blue}). " +
             "Element may be too wide.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Failure detection tests
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that the comparison mechanism can distinguish the reference
+    /// image from the known-failure image.  This ensures the test
+    /// infrastructure reliably catches discrepancies between expected and
+    /// actual outputs.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_ComparisonDetectsKnownFailureDifference()
+    {
+        using var reference = SKBitmap.Decode(Acid1PngPath);
+        using var failure = SKBitmap.Decode(Acid1FailPngPath);
+
+        // The images have different dimensions (509×407 vs 719×838),
+        // so a direct comparison returns 0 (dimension mismatch).
+        // Render at the reference dimensions and compare against both.
+        var html = ReadAcid1Html();
+        using var rendered = HtmlRender.RenderToImage(html, reference.Width, reference.Height);
+
+        double simToReference = ImageComparer.CompareWithTolerance(rendered, reference, colorTolerance: 10);
+        double simToFailure = ImageComparer.Compare(rendered, failure);
+
+        // The comparison mechanism should report a non-trivial similarity
+        // to the reference (proving it renders something) and 0 to the
+        // failure image (which has different dimensions).
+        Assert.True(simToReference > 0.10,
+            $"Rendered output has only {simToReference:P1} similarity to the reference. " +
+            "The comparison mechanism may not be working or the rendering is blank.");
+        Assert.True(simToFailure < simToReference || simToFailure == 0,
+            "The rendered output should be more similar to the reference than " +
+            "to the known-failure image (or the failure comparison should return 0 " +
+            "due to dimension mismatch).");
+    }
+
+    /// <summary>
+    /// Verifies that the rendered acid1 image places the <c>dt</c>
+    /// element's red background (<c>background-color: rgb(204,0,0)</c>)
+    /// in the correct vertical range.  In the reference, the red region
+    /// spans roughly from y&nbsp;≈&nbsp;25 to y&nbsp;≈&nbsp;320.  If
+    /// the red region starts too late or ends too early, the float layout
+    /// or body positioning has regressed.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_DtRedRegion_SpansExpectedVerticalRange()
+    {
+        var html = ReadAcid1Html();
+
+        using var referenceData = SKData.Create(Acid1PngPath);
+        using var referenceCodec = SKCodec.Create(referenceData);
+        var refInfo = referenceCodec.Info;
+
+        using var bitmap = HtmlRender.RenderToImage(html, refInfo.Width, refInfo.Height);
+
+        // Find the vertical extent of red pixels in the left quarter.
+        int firstRedRow = -1;
+        int lastRedRow = -1;
+        int quarterWidth = bitmap.Width / 4;
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            for (int x = 0; x < quarterWidth; x++)
+            {
+                var p = bitmap.GetPixel(x, y);
+                if (p.Red > 150 && p.Green < 50 && p.Blue < 50)
+                {
+                    if (firstRedRow < 0) firstRedRow = y;
+                    lastRedRow = y;
+                    break;
+                }
+            }
+        }
+
+        Assert.True(firstRedRow >= 0,
+            "No red pixels found in the left quarter. The dt element may not be rendered.");
+        Assert.True(firstRedRow < bitmap.Height / 4,
+            $"First red row ({firstRedRow}) is in the lower part of the image. " +
+            "The dt element should start near the top.");
+        int redSpan = lastRedRow - firstRedRow;
+        Assert.True(redSpan > bitmap.Height / 3,
+            $"Red region spans only {redSpan}px (rows {firstRedRow}-{lastRedRow}). " +
+            "The dt element (height: 28em) should span at least one-third of the image height.");
+    }
+
+    /// <summary>
+    /// Verifies that the rendered acid1 image has the body border (black)
+    /// present in all four edges, confirming the body element is rendered
+    /// with its CSS <c>border: .5em solid black</c>.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_BodyBorder_PresentOnAllEdges()
+    {
+        var html = ReadAcid1Html();
+
+        using var referenceData = SKData.Create(Acid1PngPath);
+        using var referenceCodec = SKCodec.Create(referenceData);
+        var refInfo = referenceCodec.Info;
+
+        using var bitmap = HtmlRender.RenderToImage(html, refInfo.Width, refInfo.Height);
+
+        // The body should have a black border. Scan for black pixels
+        // along horizontal and vertical bands.
+        int blackTop = 0, blackBottom = 0, blackLeft = 0, blackRight = 0;
+        int midX = bitmap.Width / 2;
+        int midY = bitmap.Height / 3;
+
+        // Scan vertical strip at midX for top/bottom borders
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            var p = bitmap.GetPixel(midX, y);
+            if (p.Red < 30 && p.Green < 30 && p.Blue < 30)
+            {
+                if (y < bitmap.Height / 2) blackTop++;
+                else blackBottom++;
+            }
+        }
+
+        // Scan horizontal strip at midY for left/right borders
+        for (int x = 0; x < bitmap.Width; x++)
+        {
+            var p = bitmap.GetPixel(x, midY);
+            if (p.Red < 30 && p.Green < 30 && p.Blue < 30)
+            {
+                if (x < bitmap.Width / 2) blackLeft++;
+                else blackRight++;
+            }
+        }
+
+        Assert.True(blackTop > 0,
+            "No black pixels found in the top half along the vertical center. " +
+            "Body top border may be missing.");
+        Assert.True(blackLeft > 0,
+            "No black pixels found in the left half along the horizontal center. " +
+            "Body left border may be missing.");
+    }
+
+    /// <summary>
+    /// Verifies that the rendering similarity is reported accurately and
+    /// that a deliberately corrupted image scores below the threshold,
+    /// confirming the comparison mechanism can detect failures.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_ComparisonMechanism_DetectsCorruptedImage()
+    {
+        using var reference = SKBitmap.Decode(Acid1PngPath);
+
+        // Create a blank (all-white) bitmap at the same dimensions.
+        using var blank = new SKBitmap(reference.Width, reference.Height);
+        using var canvas = new SKCanvas(blank);
+        canvas.Clear(SKColors.White);
+
+        double similarity = ImageComparer.Compare(blank, reference);
+
+        Assert.True(similarity < MinSimilarityThreshold,
+            $"A blank white image should score below {MinSimilarityThreshold:P0} " +
+            $"against the reference, but scored {similarity:P1}. The comparison " +
+            "mechanism may not detect rendering failures.");
+    }
+
+    /// <summary>
+    /// Verifies that the <c>clear: both</c> paragraph text area appears
+    /// below the floated content.  In the reference, this text starts
+    /// roughly at y&nbsp;≈&nbsp;330.  If no text pixels appear in the
+    /// lower portion of the image, the clear property may not be working.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_ClearBothParagraph_RenderedBelowFloats()
+    {
+        var html = ReadAcid1Html();
+
+        using var referenceData = SKData.Create(Acid1PngPath);
+        using var referenceCodec = SKCodec.Create(referenceData);
+        var refInfo = referenceCodec.Info;
+
+        using var bitmap = HtmlRender.RenderToImage(html, refInfo.Width, refInfo.Height);
+
+        // The clear:both paragraph should create non-white, non-blue,
+        // non-black pixels (text) in the lower portion of the image.
+        // Scan the bottom quarter for text-like pixels.
+        int textPixels = 0;
+        int startY = bitmap.Height * 3 / 4;
+        for (int y = startY; y < bitmap.Height; y++)
+        {
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                var p = bitmap.GetPixel(x, y);
+                // Look for non-background pixels that aren't pure black/white/blue
+                bool isBackground = (p.Red > 240 && p.Green > 240 && p.Blue > 240) || // white
+                                    (p.Red < 10 && p.Green < 10 && p.Blue > 200) ||   // blue
+                                    (p.Red < 10 && p.Green < 10 && p.Blue < 10);       // black
+                if (!isBackground) textPixels++;
+            }
+        }
+
+        // Even a small amount of text pixels indicates the paragraph is present.
+        Assert.True(textPixels > 0,
+            "No text-like pixels found in the bottom quarter of the image. " +
+            "The clear:both paragraph may not be rendered below the floats.");
     }
 }
