@@ -104,7 +104,7 @@ Covers Phase 1 HTML5/CSS features:
 - `background-size` property acceptance
 - `@media screen` rule application
 
-#### W3cPhase2ComplianceTests (22 tests)
+#### W3cPhase2ComplianceTests (24 tests)
 Covers Phase 2 CSS specifications:
 - **Box Model** (3 tests): margin spacing, padding expansion, border
   rendering
@@ -118,6 +118,8 @@ Covers Phase 2 CSS specifications:
 - **Visibility** (1 test): visibility:hidden preserves layout space
 - **Font-size Keywords** (1 test): small vs large produce different sizes
 - **Multiple Classes** (1 test): both classes applied to element
+- **CSS Value Parsing** (1 test): rgb() in border-color shorthand
+- **Media Queries** (1 test): @media print vs @media screen coexistence
 
 ### 3. Rendering Analytics Tests (11 tests)
 
@@ -152,10 +154,6 @@ request. The CI workflow (`.github/workflows/build.yml`) includes:
 
 ## Known Limitations
 
-- `Float_LeftFloats_WrapWhenContainerFull` is a pre-existing test failure
-  documenting a known float layout limitation in HTML-Renderer.
-- `@media print` rules leak into screen rendering due to `ParseStyleBlocks`
-  not skipping `@media` blocks (documented in Phase 1 tests).
 - Border colors rendered through `solid` style may be adjusted by
   HTML-Renderer's 3D border styling, so border tests use non-white pixel
   detection rather than exact color matching.
