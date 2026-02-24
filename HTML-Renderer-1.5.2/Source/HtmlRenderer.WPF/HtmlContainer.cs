@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
@@ -17,7 +18,7 @@ public sealed class HtmlContainer : IDisposable
 {
     public HtmlContainer()
     {
-        HtmlContainerInt = new HtmlContainerInt(WpfAdapter.Instance);
+        HtmlContainerInt = new HtmlContainerInt(WpfAdapter.Instance, HandlerFactory.Instance);
         HtmlContainerInt.PageSize = new RSize(99999, 99999);
     }
 

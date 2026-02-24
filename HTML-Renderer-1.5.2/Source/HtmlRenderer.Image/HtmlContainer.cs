@@ -1,5 +1,6 @@
 using System;
 using SkiaSharp;
+using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
@@ -11,7 +12,7 @@ public sealed class HtmlContainer : IDisposable
 {
     public HtmlContainer()
     {
-        HtmlContainerInt = new HtmlContainerInt(SkiaImageAdapter.Instance);
+        HtmlContainerInt = new HtmlContainerInt(SkiaImageAdapter.Instance, HandlerFactory.Instance);
         HtmlContainerInt.SetMargins(0);
         HtmlContainerInt.PageSize = new RSize(99999, 99999);
     }

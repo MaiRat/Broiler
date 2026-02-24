@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 2 Accepted (Dom extraction complete)
+Phase 3 Accepted (Orchestration extraction complete)
 
 ## Context
 
@@ -18,7 +18,8 @@ assemblies:
 | 5 | HtmlRenderer.CSS         | L3    | CssParser, CssValueParser, RegexParser             |
 | 6 | HtmlRenderer.Rendering   | L3a   | Decoupled handlers (borders, images, fonts)        |
 | 7 | HtmlRenderer.Dom         | L4a   | DOM tree, layout, heavy utilities, HtmlParser      |
-| 8 | HtmlRenderer             | L4    | Orchestration, selection, context menu (façade)    |
+| 8 | HtmlRenderer.Orchestration | L5  | HtmlContainerInt, DomParser, HtmlRendererUtils     |
+| 9 | HtmlRenderer             | L6    | SelectionHandler, ContextMenuHandler (thin façade) |
 
 The L4 façade still bundles four logically distinct subsystems:
 
@@ -424,3 +425,58 @@ validate the design and eliminate risk.
   a validated logical separation, minimising the risk of rework.
 - Future contributors can identify which phase each component belongs to using
   this ADR as a reference map.
+
+## Phase 3 Implementation Notes
+
+Phase 3 extracted orchestration code into `HtmlRenderer.Orchestration` (L5):
+
+### New Interfaces in HtmlRenderer.Core
+
+1. **`IAdapter`** — Abstracts `RAdapter` for orchestration use. Extends
+   `IColorResolver` and adds `DefaultCssData`, `GetFont`, `ConvertImage`,
+   `ImageFromStream`, `GetLoadingImage`, `GetLoadingFailedImage`. `RAdapter`
+   implements this interface.
+
+2. **`ISelectionHandler`** — Container-level selection handling interface.
+   Distinct from `Dom.ISelectionHandler` (which handles word-level selection
+   offsets for `CssRect`). Uses `object` for parent parameters because
+   `RControl` resides in the façade assembly.
+
+3. **`IHandlerFactory`** — Factory for creating handler instances. Uses `object`
+   for the root parameter because `CssBox` resides in `HtmlRenderer.Dom`.
+
+### Extracted to HtmlRenderer.Orchestration
+
+- `HtmlContainerInt` — Uses `IAdapter` instead of `RAdapter`, `ISelectionHandler`
+  instead of `SelectionHandler`, `IHandlerFactory` for handler construction.
+  Constructor changed to `internal` (accepting internal interface types).
+  Mouse/keyboard methods changed from `RControl` to `object` parent parameters.
+- `DomParser` — Moved unchanged (already uses `IStylesheetLoader` interface).
+- `HtmlRendererUtils` — Moved unchanged.
+- `StylesheetLoadHandler` — Moved unchanged (depends on `HtmlContainerInt`).
+
+### Remaining in HtmlRenderer (Thin Façade)
+
+- `RAdapter` — Implements `IAdapter`, `IColorResolver`, `IResourceFactory`,
+  `IFontCreator`
+- `RControl` — Abstract control (references `RAdapter`)
+- `RContextMenu` — Abstract context menu
+- `SelectionHandler` — Implements `ISelectionHandler` (explicit interface
+  implementation for `object` → `RControl` casts). Casts `IAdapter` to
+  `RAdapter` for clipboard operations.
+- `ContextMenuHandler` — Casts `IAdapter` to `RAdapter` for context menu and
+  clipboard operations.
+- `HandlerFactory` — Implements `IHandlerFactory`, wires concrete handlers.
+
+### Design Decisions
+
+- **`IContextMenuHandler` deferred**: Both `SelectionHandler` and
+  `ContextMenuHandler` must remain in the same assembly due to mutual
+  dependencies. Defining `IContextMenuHandler` in Core would require Dom types
+  (`CssRect`, `CssBox`) that Core cannot reference. Since both handlers stay
+  together, this interface is not needed for physical extraction.
+
+- **`object` parameter types**: `RControl` and `CssBox` reside in higher-layer
+  assemblies that Core cannot reference. Following the established pattern
+  (e.g., `IHtmlContainerInt.AddHoverBox(object box, …)`), `object` is used
+  with casts in implementing classes.
