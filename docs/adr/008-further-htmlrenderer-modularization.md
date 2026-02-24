@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 Accepted (Rendering extraction complete)
+Phase 2 Accepted (Dom extraction complete)
 
 ## Context
 
@@ -16,7 +16,9 @@ assemblies:
 | 3 | HtmlRenderer.Adapters    | L2a   | Abstract adapters (RBrush, RPen, RImage, …)        |
 | 4 | HtmlRenderer.Core        | L2b   | Entities, CssData, CssDefaults, interfaces         |
 | 5 | HtmlRenderer.CSS         | L3    | CssParser, CssValueParser, RegexParser             |
-| 6 | HtmlRenderer             | L4    | DOM, handlers, orchestration (façade)              |
+| 6 | HtmlRenderer.Rendering   | L3a   | Decoupled handlers (borders, images, fonts)        |
+| 7 | HtmlRenderer.Dom         | L4a   | DOM tree, layout, heavy utilities, HtmlParser      |
+| 8 | HtmlRenderer             | L4    | Orchestration, selection, context menu (façade)    |
 
 The L4 façade still bundles four logically distinct subsystems:
 

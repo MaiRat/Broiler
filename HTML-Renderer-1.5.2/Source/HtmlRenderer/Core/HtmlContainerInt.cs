@@ -127,7 +127,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         _loadComplete = false;
         _cssData = baseCssData ?? Adapter.DefaultCssData;
 
-        DomParser parser = new(CssParser);
+        DomParser parser = new(CssParser, new StylesheetLoadHandler(this));
         Root = parser.GenerateCssTree(htmlSource, this, ref _cssData);
 
         if (Root == null)
@@ -504,6 +504,19 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     void IHtmlContainerInt.DownloadImage(Uri uri, string filePath, bool async, Action<Uri, string, Exception, bool> callback)
         => _imageDownloader?.DownloadImage(uri, filePath, async, (imageUri, fp, error, canceled) => callback(imageUri, fp, error, canceled));
+
+    IImageLoadHandler IHtmlContainerInt.CreateImageLoadHandler(ActionInt<RImage, RRect, bool> loadCompleteCallback)
+        => new ImageLoadHandler(this, loadCompleteCallback);
+
+    void IHtmlContainerInt.AddHoverBox(object box, CssBlock block)
+        => AddHoverBox((CssBox)box, block);
+
+    CssData IHtmlContainerInt.CssData => _cssData;
+
+    CssData IHtmlContainerInt.DefaultCssData => Adapter.DefaultCssData;
+
+    CssBlock IHtmlContainerInt.ParseCssBlock(string className, string blockSource)
+        => CssParser.ParseCssBlock(className, blockSource);
 
     #endregion
 

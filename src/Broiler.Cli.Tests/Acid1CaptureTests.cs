@@ -744,9 +744,9 @@ public class Acid1CaptureTests : IDisposable
         // Internal layout types are not exposed to tests, and we avoid changing
         // the upstream HtmlRenderer assembly metadata. Reflection builds a
         // minimal box tree to verify that font-size changes invalidate em caches.
-        var rendererAssembly = typeof(TheArtOfDev.HtmlRenderer.Core.HtmlContainerInt).Assembly;
-        var htmlTagType = rendererAssembly.GetType("TheArtOfDev.HtmlRenderer.Core.Dom.HtmlTag", throwOnError: true)!;
-        var cssBoxType = rendererAssembly.GetType("TheArtOfDev.HtmlRenderer.Core.Dom.CssBox", throwOnError: true)!;
+        var domAssembly = System.Reflection.Assembly.Load("HtmlRenderer.Dom");
+        var htmlTagType = domAssembly.GetType("TheArtOfDev.HtmlRenderer.Core.Dom.HtmlTag", throwOnError: true)!;
+        var cssBoxType = domAssembly.GetType("TheArtOfDev.HtmlRenderer.Core.Dom.CssBox", throwOnError: true)!;
 
         using var container = new HtmlContainer();
         var htmlContainerInt = typeof(HtmlContainer)
@@ -759,12 +759,12 @@ public class Acid1CaptureTests : IDisposable
         var parentTag = tagCtor.Invoke(new object[] { "div", false, emptyAttributes });
         // First constructor argument is the parent box; null creates the root.
         var parentBox = Activator.CreateInstance(cssBoxType, new[] { null, parentTag })!;
-        cssBoxType.GetProperty("HtmlContainer")!.SetValue(parentBox, htmlContainerInt);
+        cssBoxType.GetProperty("ContainerInt", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(parentBox, htmlContainerInt);
         cssBoxType.GetProperty("FontSize")!.SetValue(parentBox, "10px");
 
         var childTag = tagCtor.Invoke(new object[] { "div", false, emptyAttributes });
         var childBox = Activator.CreateInstance(cssBoxType, new[] { parentBox, childTag })!;
-        cssBoxType.GetProperty("HtmlContainer")!.SetValue(childBox, htmlContainerInt);
+        cssBoxType.GetProperty("ContainerInt", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(childBox, htmlContainerInt);
         cssBoxType.GetProperty("Width")!.SetValue(childBox, "10em");
 
         var fontSizeProp = cssBoxType.GetProperty("FontSize")!;

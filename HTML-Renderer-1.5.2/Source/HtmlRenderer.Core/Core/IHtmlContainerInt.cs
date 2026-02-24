@@ -3,6 +3,7 @@ using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
+using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
 
@@ -117,4 +118,36 @@ internal interface IHtmlContainerInt
     /// Downloads an image from a URI.
     /// </summary>
     void DownloadImage(Uri uri, string filePath, bool async, Action<Uri, string, Exception, bool> callback);
+
+    /// <summary>
+    /// Creates a new <see cref="IImageLoadHandler"/> for loading images with
+    /// the specified completion callback.
+    /// </summary>
+    /// <remarks>
+    /// See ADR-008, Phase 2 prerequisites, item 3.
+    /// </remarks>
+    IImageLoadHandler CreateImageLoadHandler(ActionInt<RImage, RRect, bool> loadCompleteCallback);
+
+    /// <summary>
+    /// Registers a hover box/block pair for hover-state CSS handling.
+    /// </summary>
+    /// <remarks>
+    /// See ADR-008, Phase 2 prerequisites, item 2.
+    /// </remarks>
+    void AddHoverBox(object box, CssBlock block);
+
+    /// <summary>
+    /// The current CSS data for the rendered document.
+    /// </summary>
+    CssData CssData { get; }
+
+    /// <summary>
+    /// The default CSS data from the adapter.
+    /// </summary>
+    CssData DefaultCssData { get; }
+
+    /// <summary>
+    /// Parses a CSS block from inline style text.
+    /// </summary>
+    CssBlock ParseCssBlock(string className, string blockSource);
 }

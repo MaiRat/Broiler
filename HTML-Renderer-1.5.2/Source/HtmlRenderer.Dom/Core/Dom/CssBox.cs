@@ -20,7 +20,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
     protected bool _wordsSizeMeasured;
     private CssBox _listItemBox;
-    private ImageLoadHandler _imageLoadHandler;
+    private IImageLoadHandler _imageLoadHandler;
 
     public CssBox(CssBox parentBox, HtmlTag tag)
     {
@@ -40,16 +40,6 @@ internal class CssBox : CssBoxProperties, IDisposable
     internal IHtmlContainerInt ContainerInt
     {
         get { return _htmlContainer ??= _parentBox?.ContainerInt; }
-    }
-
-    /// <summary>
-    /// The concrete container for L4 orchestration code. Returns null if the
-    /// backing <see cref="IHtmlContainerInt"/> is not an <see cref="HtmlContainerInt"/>.
-    /// Setter accepts any <see cref="IHtmlContainerInt"/> for decoupled assignment.
-    /// </summary>
-    public HtmlContainerInt HtmlContainer
-    {
-        get { return ContainerInt as HtmlContainerInt; }
         set { _htmlContainer = value; }
     }
 
@@ -458,7 +448,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         if (BackgroundImage != CssConstants.None && _imageLoadHandler == null)
         {
-            _imageLoadHandler = new ImageLoadHandler(ContainerInt, OnImageLoadComplete);
+            _imageLoadHandler = ContainerInt.CreateImageLoadHandler(OnImageLoadComplete);
             _imageLoadHandler.LoadImage(BackgroundImage, HtmlTag != null ? HtmlTag.Attributes : null);
         }
 

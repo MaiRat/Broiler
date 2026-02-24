@@ -264,7 +264,7 @@ internal sealed class ContextMenuHandler : IDisposable
     {
         try
         {
-            _currentLink.HtmlContainer.HandleLinkClicked(_parentControl, _parentControl.MouseLocation, _currentLink);
+            _htmlContainer.HandleLinkClicked(_parentControl, _parentControl.MouseLocation, _currentLink);
         }
         catch (HtmlLinkClickedException)
         {
