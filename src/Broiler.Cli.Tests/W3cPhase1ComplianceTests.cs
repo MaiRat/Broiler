@@ -407,13 +407,12 @@ public class W3cPhase1ComplianceTests
     }
 
     /// <summary>
-    /// Documents the known limitation that <c>@media print</c> rules are
-    /// also parsed by the general style block parser, causing them to be
-    /// applied to screen rendering.  This is a pre-existing behavior in
-    /// HTML-Renderer's <c>ParseStyleBlocks</c>.
+    /// Verifies that <c>@media print</c> rules are NOT applied to screen
+    /// rendering.  <c>ParseStyleBlocks</c> now strips at-rule blocks before
+    /// processing top-level declarations.
     /// </summary>
     [Fact]
-    public void MediaPrint_RulesAlsoAppliedToScreen_KnownLimitation()
+    public void MediaPrint_RulesNotAppliedToScreen()
     {
         const string html = @"<html><head><style type='text/css'>
             body { margin: 0; padding: 0; }
@@ -427,9 +426,8 @@ public class W3cPhase1ComplianceTests
 
         using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
         int redPixels = CountPixels(bitmap, IsRed);
-        // Known limitation: ParseStyleBlocks does not skip @media blocks,
-        // so print rules leak into the "all" media bucket.
-        Assert.True(redPixels > 0,
-            "Documents known limitation: @media print rules leak into screen rendering.");
+        // @media print rules should no longer leak into screen rendering.
+        Assert.True(redPixels == 0,
+            $"@media print rules should not be applied to screen rendering, but found {redPixels} red pixels.");
     }
 }

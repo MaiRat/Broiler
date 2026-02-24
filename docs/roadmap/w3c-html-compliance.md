@@ -75,7 +75,7 @@ receive no special rendering or semantic treatment:
 | Flexbox | ⚠️ Properties exist, minimal layout | Full single/multi-axis flex |
 | Grid | ❌ None | `grid-*` properties |
 | Custom properties | ❌ None | `var()`, `--*` |
-| Media queries | ⚠️ `@media print` only | `@media screen`, width/height queries |
+| Media queries | ⚠️ `@media screen` and `@media print` filtering | `min-width`/`max-width` queries |
 | `calc()` | ❌ Not supported | CSS Values Level 3 |
 
 ### CSS Units
@@ -163,6 +163,7 @@ CSS support.
 - [x] Implement `position: relative` in `CssBox.cs` (visual offset after layout)
 - [x] Add `rem` unit support to `CssUnit.cs` and `CssLength.cs`
 - [x] Implement basic `@media screen` in `CssParser.cs`
+- [x] Fix `@media print` leaking into screen rendering (`StripAtRules`)
 - [x] Add `background-size` property to `CssBoxProperties.cs`
 
 **Validation:**
