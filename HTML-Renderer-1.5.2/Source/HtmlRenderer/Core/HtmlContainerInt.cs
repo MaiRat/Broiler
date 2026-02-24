@@ -19,10 +19,6 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     private ImageDownloader _imageDownloader;
     private CssData _cssData;
     private bool _loadComplete;
-    private RPoint _location;
-    private RSize _maxSize;
-    private RPoint _scrollOffset;
-    private RSize _actualSize;
     private int _marginTop;
     private int _marginBottom;
     private int _marginLeft;
@@ -60,29 +56,13 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public bool IsContextMenuEnabled { get; set; } = true;
 
-    public RPoint ScrollOffset
-    {
-        get { return _scrollOffset; }
-        set { _scrollOffset = value; }
-    }
+    public RPoint ScrollOffset { get; set; }
 
-    public RPoint Location
-    {
-        get { return _location; }
-        set { _location = value; }
-    }
+    public RPoint Location { get; set; }
 
-    public RSize MaxSize
-    {
-        get { return _maxSize; }
-        set { _maxSize = value; }
-    }
+    public RSize MaxSize { get; set; }
 
-    public RSize ActualSize
-    {
-        get { return _actualSize; }
-        set { _actualSize = value; }
-    }
+    public RSize ActualSize { get; set; }
 
     public RSize PageSize { get; set; }
 
@@ -224,20 +204,20 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     {
         ArgChecker.AssertArgNotNull(g, "g");
 
-        _actualSize = RSize.Empty;
+        ActualSize = RSize.Empty;
         if (Root == null)
             return;
 
         // if width is not restricted we set it to large value to get the actual later
-        Root.Size = new RSize(_maxSize.Width > 0 ? _maxSize.Width : 99999, 0);
-        Root.Location = _location;
+        Root.Size = new RSize(MaxSize.Width > 0 ? MaxSize.Width : 99999, 0);
+        Root.Location = Location;
         Root.PerformLayout(g);
 
-        if (_maxSize.Width <= 0.1)
+        if (MaxSize.Width <= 0.1)
         {
             // in case the width is not restricted we need to double layout, first will find the width so second can layout by it (center alignment)
-            Root.Size = new RSize((int)Math.Ceiling(_actualSize.Width), 0);
-            _actualSize = RSize.Empty;
+            Root.Size = new RSize((int)Math.Ceiling(ActualSize.Width), 0);
+            ActualSize = RSize.Empty;
             Root.PerformLayout(g);
         }
 
@@ -254,7 +234,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
         if (MaxSize.Height > 0)
         {
-            g.PushClip(new RRect(_location.X, _location.Y, Math.Min(_maxSize.Width, PageSize.Width), Math.Min(_maxSize.Height, PageSize.Height)));
+            g.PushClip(new RRect(Location.X, Location.Y, Math.Min(MaxSize.Width, PageSize.Width), Math.Min(MaxSize.Height, PageSize.Height)));
         }
         else
         {
@@ -534,10 +514,10 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     private bool IsMouseInContainer(RPoint location)
     {
-        return location.X >= _location.X
-            && location.X <= _location.X + _actualSize.Width
-            && location.Y >= _location.Y + ScrollOffset.Y
-            && location.Y <= _location.Y + ScrollOffset.Y + _actualSize.Height;
+        return location.X >= Location.X
+            && location.X <= Location.X + ActualSize.Width
+            && location.Y >= Location.Y + ScrollOffset.Y
+            && location.Y <= Location.Y + ScrollOffset.Y + ActualSize.Height;
     }
 
     private void Dispose(bool all)
@@ -554,10 +534,10 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
             }
 
             _cssData = null;
-            
+
             Root?.Dispose();
             Root = null;
-            
+
             _selectionHandler?.Dispose();
             _selectionHandler = null;
         }
