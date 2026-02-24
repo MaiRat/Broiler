@@ -39,7 +39,7 @@ internal sealed class CssParser
         {
             stylesheet = RemoveStylesheetComments(stylesheet);
 
-            ParseStyleBlocks(cssData, stylesheet);
+            ParseStyleBlocks(cssData, StripAtRules(stylesheet));
             ParseMediaStyleBlocks(cssData, stylesheet);
         }
     }
@@ -75,6 +75,53 @@ internal sealed class CssParser
         }
 
         return sb != null ? sb.ToString() : stylesheet;
+    }
+
+    /// <summary>
+    /// Remove @-rule blocks (e.g. <c>@media</c>) from the stylesheet so that
+    /// <see cref="ParseStyleBlocks"/> does not treat rules inside them as
+    /// top-level declarations.  The original stylesheet (with @-rules) is
+    /// still passed to <see cref="ParseMediaStyleBlocks"/>.
+    /// </summary>
+    private static string StripAtRules(string stylesheet)
+    {
+        int nextAt = stylesheet.IndexOf('@');
+        if (nextAt < 0)
+            return stylesheet;
+
+        var sb = new StringBuilder(stylesheet.Length);
+        int pos = 0;
+
+        while (nextAt >= 0)
+        {
+            sb.Append(stylesheet, pos, nextAt - pos);
+
+            int braceStart = stylesheet.IndexOf('{', nextAt);
+            if (braceStart < 0)
+            {
+                pos = nextAt;
+                break;
+            }
+
+            int count = 1;
+            int endIdx = braceStart + 1;
+            while (count > 0 && endIdx < stylesheet.Length)
+            {
+                if (stylesheet[endIdx] == '{')
+                    count++;
+                else if (stylesheet[endIdx] == '}')
+                    count--;
+                endIdx++;
+            }
+
+            pos = endIdx;
+            nextAt = pos < stylesheet.Length ? stylesheet.IndexOf('@', pos) : -1;
+        }
+
+        if (pos < stylesheet.Length)
+            sb.Append(stylesheet, pos, stylesheet.Length - pos);
+
+        return sb.ToString();
     }
 
     private void ParseStyleBlocks(CssData cssData, string stylesheet)
@@ -656,25 +703,70 @@ internal sealed class CssParser
 
     private static string[] SplitValues(string value, char separator = ' ')
     {
-        //TODO: CRITICAL! Don't split values on parenthesis (like rgb(0, 0, 0)) or quotes ("strings")
+        if (string.IsNullOrEmpty(value))
+            return [];
 
-        if (!string.IsNullOrEmpty(value))
+        var result = new List<string>();
+        var current = new StringBuilder();
+        int parenDepth = 0;
+        bool inDoubleQuote = false;
+        bool inSingleQuote = false;
+
+        for (int i = 0; i < value.Length; i++)
         {
-            string[] values = value.Split(separator);
-            List<string> result = [];
+            char c = value[i];
 
-            foreach (string t in values)
+            if (inDoubleQuote)
             {
-                string val = t.Trim();
-
-                if (!string.IsNullOrEmpty(val))
-                    result.Add(val);
+                current.Append(c);
+                if (c == '"')
+                    inDoubleQuote = false;
             }
-
-            return result.ToArray();
+            else if (inSingleQuote)
+            {
+                current.Append(c);
+                if (c == '\'')
+                    inSingleQuote = false;
+            }
+            else if (c == '"')
+            {
+                current.Append(c);
+                inDoubleQuote = true;
+            }
+            else if (c == '\'')
+            {
+                current.Append(c);
+                inSingleQuote = true;
+            }
+            else if (c == '(')
+            {
+                current.Append(c);
+                parenDepth++;
+            }
+            else if (c == ')')
+            {
+                current.Append(c);
+                if (parenDepth > 0)
+                    parenDepth--;
+            }
+            else if (c == separator && parenDepth == 0)
+            {
+                var val = current.ToString().Trim();
+                if (val.Length > 0)
+                    result.Add(val);
+                current.Clear();
+            }
+            else
+            {
+                current.Append(c);
+            }
         }
 
-        return [];
+        var last = current.ToString().Trim();
+        if (last.Length > 0)
+            result.Add(last);
+
+        return result.ToArray();
     }
 
     public void ParseBorder(string value, out string width, out string style, out string color)

@@ -601,4 +601,65 @@ public class W3cPhase2ComplianceTests
         Assert.True(redPixels > 50,
             $"Child span should inherit red color from parent div (red pixels={redPixels})");
     }
+
+    // =================================================================
+    // 11. CSS value parsing — rgb() in shorthand properties
+    // =================================================================
+
+    /// <summary>
+    /// Verifies that CSS <c>border-color</c> with <c>rgb()</c> values is not
+    /// incorrectly split by the shorthand parser.  Before the fix, the
+    /// commas inside <c>rgb(255, 0, 0)</c> would cause <c>SplitValues</c>
+    /// to break the value into multiple incorrect tokens.
+    /// </summary>
+    [Fact]
+    public void CssColor_RgbInBorderColor_RendersCorrectly()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; }
+        </style></head><body>
+            <div style='width: 100px; height: 40px; border: 5px solid rgb(255, 0, 0);'>text</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 200, 60);
+        // The border should produce non-white pixels; exact red isn't
+        // guaranteed because 3-D border styling modifies the color.
+        bool hasNonWhite = false;
+        for (int y = 0; y < bitmap.Height && !hasNonWhite; y++)
+            for (int x = 0; x < bitmap.Width && !hasNonWhite; x++)
+            {
+                var p = bitmap.GetPixel(x, y);
+                if (p.Red < 240 || p.Green < 240 || p.Blue < 240)
+                    hasNonWhite = true;
+            }
+
+        Assert.True(hasNonWhite,
+            "Border with rgb() color should produce visible (non-white) border pixels.");
+    }
+
+    /// <summary>
+    /// Verifies that <c>@media print</c> and <c>@media screen</c> blocks
+    /// co-exist correctly: screen rules apply, print rules do not.
+    /// </summary>
+    [Fact]
+    public void MediaQuery_PrintAndScreen_OnlyScreenApplied()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; }
+            @media screen { .screen-only { background-color: red; width: 100px; height: 30px; } }
+            @media print  { .print-only  { background-color: blue; width: 100px; height: 30px; } }
+        </style></head><body>
+            <div class='screen-only'>screen</div>
+            <div class='print-only'>print</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
+        int redPixels = CountPixels(bitmap, IsRed);
+        int bluePixels = CountPixels(bitmap, IsBlue);
+
+        Assert.True(redPixels > 100,
+            $"@media screen rules should be applied (red pixels={redPixels}).");
+        Assert.True(bluePixels == 0,
+            $"@media print rules should NOT be applied to screen rendering (blue pixels={bluePixels}).");
+    }
 }

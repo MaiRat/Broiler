@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace HtmlRenderer.Parse;
@@ -10,7 +10,7 @@ internal static class RegexParserHelper
     /// WARNING: Blocks will include blocks inside at-rules.
     public const string CssBlocks = @"[^\{\}]*\{[^\{\}]*\}";
     public const string CssNumber = @"([0-9]+|[0-9]*\.[0-9]+)";
-    public const string CssPercentage = @"([0-9]+|[0-9]*\.[0-9]+)\%"; //TODO: Check if works fine
+    public const string CssPercentage = @"([0-9]+|[0-9]*\.[0-9]+)\%";
     public const string CssLength = @"([0-9]+|[0-9]*\.[0-9]+)(em|ex|px|in|cm|mm|pt|pc)";
     public const string CssColors = @"(#\S{6}|#\S{3}|rgb\(\s*[0-9]{1,3}\%?\s*\,\s*[0-9]{1,3}\%?\s*\,\s*[0-9]{1,3}\%?\s*\)|maroon|red|orange|yellow|olive|purple|fuchsia|white|lime|green|navy|blue|aqua|teal|black|silver|gray)";
     public const string CssLineHeight = "(normal|" + CssNumber + "|" + CssLength + "|" + CssPercentage + ")";
@@ -24,7 +24,7 @@ internal static class RegexParserHelper
     public const string CssFontSizeAndLineHeight = CssFontSize + @"(\/" + CssLineHeight + @")?(\s|$)";
     public const string HtmlTag = @"<[^<>]*>";
     public const string HmlTagAttributes = "(?<name>\\b\\w+\\b)\\s*=\\s*(?<value>\"[^\"]*\"|'[^']*'|[^\"'<>\\s]+)";
-    private static readonly Dictionary<string, Regex> _regexes = [];
+    private static readonly ConcurrentDictionary<string, Regex> _regexes = new();
 
     public static string GetCssAtRules(string stylesheet, ref int startIdx)
     {
@@ -85,14 +85,5 @@ internal static class RegexParserHelper
         return null;
     }
 
-    private static Regex GetRegex(string regex)
-    {
-        if (_regexes.TryGetValue(regex, out Regex r))
-            return r;
-
-        r = new Regex(regex, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        _regexes[regex] = r;
-
-        return r;
-    }
+    private static Regex GetRegex(string regex) => _regexes.GetOrAdd(regex, r => new Regex(r, RegexOptions.IgnoreCase | RegexOptions.Singleline));
 }
