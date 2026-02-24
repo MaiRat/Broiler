@@ -1,6 +1,5 @@
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Handlers;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
@@ -56,7 +55,7 @@ internal abstract class CssRect(CssBox owner)
         set { Height = value - Top; }
     }
 
-    public SelectionHandler Selection { get; set; }
+    public ISelectionHandler Selection { get; set; }
 
     public virtual bool HasSpaceBefore => false;
 

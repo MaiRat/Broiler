@@ -25,6 +25,7 @@ For existing implementations see: HtmlRenderer.WinForms, HtmlRenderer.WPF and Ht
     <ProjectReference Include="..\HtmlRenderer.CSS\HtmlRenderer.CSS.csproj" />
     <ProjectReference Include="..\HtmlRenderer.Adapters\HtmlRenderer.Adapters.csproj" />
     <ProjectReference Include="..\HtmlRenderer.Rendering\HtmlRenderer.Rendering.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Dom\HtmlRenderer.Dom.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\SharedAssemblyInfo.cs">

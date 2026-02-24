@@ -7,7 +7,7 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
-internal sealed class SelectionHandler : IDisposable
+internal sealed class SelectionHandler : IDisposable, Dom.ISelectionHandler
 {
     private readonly CssBox _root;
     private readonly HtmlContainerInt _htmlContainer;
