@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>TheArtOfDev.HtmlRenderer</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Core\Utils\ImageError.png" />
+    <EmbeddedResource Include="Core\Utils\ImageLoad.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs">
+      <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HtmlRenderer.Primitives\HtmlRenderer.Primitives.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Utils\HtmlRenderer.Utils.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Adapters\HtmlRenderer.Adapters.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Core\HtmlRenderer.Core.csproj" />
+  </ItemGroup>
+</Project>
