@@ -12,6 +12,7 @@
     <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.Adapters/HtmlRenderer.Adapters.csproj" />
     <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.Rendering/HtmlRenderer.Rendering.csproj" />
     <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.Dom/HtmlRenderer.Dom.csproj" />
+    <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.Orchestration/HtmlRenderer.Orchestration.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Broiler.App/Broiler.App.csproj" />

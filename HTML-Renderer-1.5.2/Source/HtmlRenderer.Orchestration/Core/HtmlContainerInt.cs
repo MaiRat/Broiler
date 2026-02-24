@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -15,7 +15,7 @@ namespace TheArtOfDev.HtmlRenderer.Core;
 public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 {
     private List<HoverBoxBlock> _hoverBoxes;
-    private SelectionHandler _selectionHandler;
+    private ISelectionHandler _selectionHandler;
     private ImageDownloader _imageDownloader;
     private CssData _cssData;
     private bool _loadComplete;
@@ -23,16 +23,19 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     private int _marginBottom;
     private int _marginLeft;
     private int _marginRight;
+    private readonly IHandlerFactory _handlerFactory;
 
-    public HtmlContainerInt(RAdapter adapter)
+    internal HtmlContainerInt(IAdapter adapter, IHandlerFactory handlerFactory)
     {
         ArgChecker.AssertArgNotNull(adapter, "global");
+        ArgChecker.AssertArgNotNull(handlerFactory, "handlerFactory");
 
         Adapter = adapter;
+        _handlerFactory = handlerFactory;
         CssParser = new CssParser(adapter);
     }
 
-    internal RAdapter Adapter { get; }
+    internal IAdapter Adapter { get; }
 
     internal CssParser CssParser { get; }
 
@@ -133,7 +136,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         if (Root == null)
             return;
 
-        _selectionHandler = new SelectionHandler(Root);
+        _selectionHandler = _handlerFactory.CreateSelectionHandler(Root);
         _imageDownloader = new ImageDownloader();
     }
 
@@ -167,7 +170,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public string GetAttributeAt(RPoint location, string attribute)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(attribute, "attribute");
+        ArgChecker.AssertArgNotNull(attribute, "attribute");
 
         var cssBox = DomUtils.GetCssBox(Root, OffsetByScroll(location));
         return cssBox != null ? DomUtils.GetAttribute(cssBox, attribute) : null;
@@ -246,7 +249,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         g.PopClip();
     }
 
-    public void HandleMouseDown(RControl parent, RPoint location)
+    public void HandleMouseDown(object parent, RPoint location)
     {
         ArgChecker.AssertArgNotNull(parent, "parent");
 
@@ -260,7 +263,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         }
     }
 
-    public void HandleMouseUp(RControl parent, RPoint location, RMouseEvent e)
+    public void HandleMouseUp(object parent, RPoint location, RMouseEvent e)
     {
         ArgChecker.AssertArgNotNull(parent, "parent");
 
@@ -288,7 +291,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         }
     }
 
-    public void HandleMouseDoubleClick(RControl parent, RPoint location)
+    public void HandleMouseDoubleClick(object parent, RPoint location)
     {
         ArgChecker.AssertArgNotNull(parent, "parent");
 
@@ -303,7 +306,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         }
     }
 
-    public void HandleMouseMove(RControl parent, RPoint location)
+    public void HandleMouseMove(object parent, RPoint location)
     {
         ArgChecker.AssertArgNotNull(parent, "parent");
 
@@ -340,7 +343,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         }
     }
 
-    public void HandleMouseLeave(RControl parent)
+    public void HandleMouseLeave(object parent)
     {
         ArgChecker.AssertArgNotNull(parent, "parent");
 
@@ -354,7 +357,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         }
     }
 
-    public void HandleKeyDown(RControl parent, RKeyEvent e)
+    public void HandleKeyDown(object parent, RKeyEvent e)
     {
         ArgChecker.AssertArgNotNull(parent, "parent");
         ArgChecker.AssertArgNotNull(e, "e");
@@ -424,7 +427,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         { }
     }
 
-    internal void HandleLinkClicked(RControl parent, RPoint location, CssBox link)
+    internal void HandleLinkClicked(object parent, RPoint location, CssBox link)
     {
         EventHandler<HtmlLinkClickedEventArgs> clickHandler = LinkClicked;
         if (clickHandler != null)

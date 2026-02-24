@@ -7,10 +7,11 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
-internal sealed class SelectionHandler : IDisposable, Dom.ISelectionHandler
+internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandler
 {
     private readonly CssBox _root;
     private readonly HtmlContainerInt _htmlContainer;
+    private readonly RAdapter _adapter;
     private readonly ContextMenuHandler _contextMenuHandler;
     private RPoint _selectionStartPoint;
     private CssRect _selectionStart;
@@ -34,8 +35,31 @@ internal sealed class SelectionHandler : IDisposable, Dom.ISelectionHandler
 
         _root = root;
         _htmlContainer = (HtmlContainerInt)root.ContainerInt;
+        _adapter = (RAdapter)_htmlContainer.Adapter;
         _contextMenuHandler = new ContextMenuHandler(this, _htmlContainer);
     }
+
+    #region ISelectionHandler explicit implementation
+
+    void ISelectionHandler.HandleMouseDown(object parent, RPoint loc, bool isMouseInContainer)
+        => HandleMouseDown((RControl)parent, loc, isMouseInContainer);
+
+    bool ISelectionHandler.HandleMouseUp(object parent, bool leftMouseButton)
+        => HandleMouseUp((RControl)parent, leftMouseButton);
+
+    void ISelectionHandler.HandleMouseMove(object parent, RPoint loc)
+        => HandleMouseMove((RControl)parent, loc);
+
+    void ISelectionHandler.HandleMouseLeave(object parent)
+        => HandleMouseLeave((RControl)parent);
+
+    void ISelectionHandler.SelectWord(object parent, RPoint loc)
+        => SelectWord((RControl)parent, loc);
+
+    void ISelectionHandler.SelectAll(object parent)
+        => SelectAll((RControl)parent);
+
+    #endregion
 
     public void SelectAll(RControl control)
     {
@@ -188,7 +212,7 @@ internal sealed class SelectionHandler : IDisposable, Dom.ISelectionHandler
         var plainText = DomUtils.GetSelectedPlainText(_root);
 
         if (!string.IsNullOrEmpty(plainText))
-            _htmlContainer.Adapter.SetToClipboard(html, plainText);
+            _adapter.SetToClipboard(html, plainText);
     }
 
     public string GetSelectedText() => _htmlContainer.IsSelectionEnabled ? DomUtils.GetSelectedPlainText(_root) : null;

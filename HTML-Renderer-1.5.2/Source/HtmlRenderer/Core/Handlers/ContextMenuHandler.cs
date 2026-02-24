@@ -22,6 +22,7 @@ internal sealed class ContextMenuHandler : IDisposable
     private static readonly string _copyVideoUrl;
     private readonly SelectionHandler _selectionHandler;
     private readonly HtmlContainerInt _htmlContainer;
+    private readonly RAdapter _adapter;
     private RContextMenu _contextMenu;
     private RControl _parentControl;
     private CssRect _currentRect;
@@ -182,6 +183,7 @@ internal sealed class ContextMenuHandler : IDisposable
 
         _selectionHandler = selectionHandler;
         _htmlContainer = htmlContainer;
+        _adapter = (RAdapter)htmlContainer.Adapter;
     }
 
     public void ShowContextMenu(RControl parent, CssRect rect, CssBox link)
@@ -193,7 +195,7 @@ internal sealed class ContextMenuHandler : IDisposable
             _parentControl = parent;
             _currentRect = rect;
             _currentLink = link;
-            _contextMenu = _htmlContainer.Adapter.GetContextMenu();
+            _contextMenu = _adapter.GetContextMenu();
 
             if (rect != null)
             {
@@ -284,7 +286,7 @@ internal sealed class ContextMenuHandler : IDisposable
     {
         try
         {
-            _htmlContainer.Adapter.SetToClipboard(_currentLink.HrefLink);
+            _adapter.SetToClipboard(_currentLink.HrefLink);
         }
         catch (Exception ex)
         {
@@ -301,7 +303,7 @@ internal sealed class ContextMenuHandler : IDisposable
         try
         {
             var imageSrc = _currentRect.OwnerBox.GetAttribute("src");
-            _htmlContainer.Adapter.SaveToFile(_currentRect.Image, Path.GetFileName(imageSrc) ?? "image", Path.GetExtension(imageSrc) ?? "png");
+            _adapter.SaveToFile(_currentRect.Image, Path.GetFileName(imageSrc) ?? "image", Path.GetExtension(imageSrc) ?? "png");
         }
         catch (Exception ex)
         {
@@ -317,7 +319,7 @@ internal sealed class ContextMenuHandler : IDisposable
     {
         try
         {
-            _htmlContainer.Adapter.SetToClipboard(_currentRect.OwnerBox.GetAttribute("src"));
+            _adapter.SetToClipboard(_currentRect.OwnerBox.GetAttribute("src"));
         }
         catch (Exception ex)
         {
@@ -333,7 +335,7 @@ internal sealed class ContextMenuHandler : IDisposable
     {
         try
         {
-            _htmlContainer.Adapter.SetToClipboard(_currentRect.Image);
+            _adapter.SetToClipboard(_currentRect.Image);
         }
         catch (Exception ex)
         {

@@ -7,5 +7,6 @@ using System.Runtime.CompilerServices;
 // Future modules (see ADR-007)
 [assembly: InternalsVisibleTo("HtmlRenderer.Dom")]
 [assembly: InternalsVisibleTo("HtmlRenderer.Rendering")]
+[assembly: InternalsVisibleTo("HtmlRenderer.Orchestration")]
 [assembly: InternalsVisibleTo("HtmlRenderer.Image")]
 [assembly: InternalsVisibleTo("HtmlRenderer.Image.Tests")]

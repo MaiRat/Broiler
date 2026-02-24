@@ -8,7 +8,7 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
-public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator
+public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator, IAdapter
 {
     private readonly Dictionary<RColor, RBrush> _brushesCache = [];
     private readonly Dictionary<RColor, RPen> _penCache = [];
