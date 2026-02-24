@@ -624,12 +624,14 @@ public class W3cPhase2ComplianceTests
         using var bitmap = HtmlRender.RenderToImage(html, 200, 60);
         // The border should produce non-white pixels; exact red isn't
         // guaranteed because 3-D border styling modifies the color.
+        // Threshold 240: any channel below near-white counts as non-white.
+        const int whiteThreshold = 240;
         bool hasNonWhite = false;
         for (int y = 0; y < bitmap.Height && !hasNonWhite; y++)
             for (int x = 0; x < bitmap.Width && !hasNonWhite; x++)
             {
                 var p = bitmap.GetPixel(x, y);
-                if (p.Red < 240 || p.Green < 240 || p.Blue < 240)
+                if (p.Red < whiteThreshold || p.Green < whiteThreshold || p.Blue < whiteThreshold)
                     hasNonWhite = true;
             }
 

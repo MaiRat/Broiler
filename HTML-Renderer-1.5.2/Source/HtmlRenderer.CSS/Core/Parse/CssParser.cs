@@ -719,13 +719,21 @@ internal sealed class CssParser
             if (inDoubleQuote)
             {
                 current.Append(c);
-                if (c == '"')
+                if (c == '\\' && i + 1 < value.Length)
+                {
+                    current.Append(value[++i]);
+                }
+                else if (c == '"')
                     inDoubleQuote = false;
             }
             else if (inSingleQuote)
             {
                 current.Append(c);
-                if (c == '\'')
+                if (c == '\\' && i + 1 < value.Length)
+                {
+                    current.Append(value[++i]);
+                }
+                else if (c == '\'')
                     inSingleQuote = false;
             }
             else if (c == '"')
