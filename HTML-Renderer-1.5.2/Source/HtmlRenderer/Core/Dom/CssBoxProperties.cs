@@ -382,12 +382,14 @@ internal abstract class CssBoxProperties
 
                 _fontSize = computedValue;
             }
-            else
-            {
-                _fontSize = value;
+                else
+                {
+                    _fontSize = value;
+                }
+
+                InvalidateFontDependentValues();
             }
         }
-    }
 
     public string FontStyle { get; set; } = "normal";
     public string FontVariant { get; set; } = "normal";
@@ -1039,5 +1041,32 @@ internal abstract class CssBoxProperties
         FlexDirection = p.FlexDirection;
         JustifyContent = p.JustifyContent;
         AlignItems = p.AlignItems;
+    }
+
+    private void InvalidateFontDependentValues()
+    {
+        _actualFont = null;
+        _actualHeight = double.NaN;
+        _actualWidth = double.NaN;
+        _actualPaddingTop = double.NaN;
+        _actualPaddingBottom = double.NaN;
+        _actualPaddingRight = double.NaN;
+        _actualPaddingLeft = double.NaN;
+        _actualMarginTop = double.NaN;
+        _actualMarginBottom = double.NaN;
+        _actualMarginRight = double.NaN;
+        _actualMarginLeft = double.NaN;
+        _actualLineHeight = double.NaN;
+        _actualTextIndent = double.NaN;
+        _actualBorderTopWidth = double.NaN;
+        _actualBorderRightWidth = double.NaN;
+        _actualBorderBottomWidth = double.NaN;
+        _actualBorderLeftWidth = double.NaN;
+        _actualCornerNw = double.NaN;
+        _actualCornerNe = double.NaN;
+        _actualCornerSw = double.NaN;
+        _actualCornerSe = double.NaN;
+        _actualBorderSpacingHorizontal = double.NaN;
+        _actualBorderSpacingVertical = double.NaN;
     }
 }
