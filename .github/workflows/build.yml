@@ -32,6 +32,9 @@ jobs:
     - name: Test
       run: dotnet test Broiler.slnx --no-build --configuration Release --verbosity normal
 
+    - name: Image Capture Test
+      run: dotnet run --project src/Broiler.Cli --no-build --configuration Release -- --capture-image https://www.heise.de/ --output capture.png --timeout 60
+
     - name: Engine Smoke Test
       run: dotnet run --project src/Broiler.Cli --no-build --configuration Release -- --test-engines
 
@@ -43,5 +46,7 @@ jobs:
       if: always()
       with:
         name: website-capture
-        path: capture.html
+        path: |
+          capture.html
+          capture.png
         if-no-files-found: warn

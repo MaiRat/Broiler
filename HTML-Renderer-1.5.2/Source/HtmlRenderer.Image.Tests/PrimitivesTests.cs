@@ -1,0 +1,378 @@
+using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+
+namespace HtmlRenderer.Image.Tests;
+
+/// <summary>
+/// Unit tests for the HtmlRenderer primitive types:
+/// <see cref="RColor"/>, <see cref="RRect"/>, <see cref="RPoint"/>,
+/// and <see cref="RSize"/>.
+/// </summary>
+public class PrimitivesTests
+{
+    // =================================================================
+    // RColor
+    // =================================================================
+
+    [Fact]
+    public void RColor_FromArgb_Rgb_StoresChannels()
+    {
+        var c = RColor.FromArgb(100, 150, 200);
+        Assert.Equal(100, c.R);
+        Assert.Equal(150, c.G);
+        Assert.Equal(200, c.B);
+        Assert.Equal(255, c.A); // default alpha
+    }
+
+    [Fact]
+    public void RColor_FromArgb_Argb_StoresAlpha()
+    {
+        var c = RColor.FromArgb(128, 10, 20, 30);
+        Assert.Equal(128, c.A);
+        Assert.Equal(10, c.R);
+        Assert.Equal(20, c.G);
+        Assert.Equal(30, c.B);
+    }
+
+    [Fact]
+    public void RColor_Equality_SameValues_AreEqual()
+    {
+        var a = RColor.FromArgb(255, 0, 0);
+        var b = RColor.FromArgb(255, 0, 0);
+        Assert.True(a == b);
+        Assert.True(a.Equals(b));
+    }
+
+    [Fact]
+    public void RColor_Equality_DifferentValues_AreNotEqual()
+    {
+        var a = RColor.FromArgb(255, 0, 0);
+        var b = RColor.FromArgb(0, 255, 0);
+        Assert.True(a != b);
+        Assert.False(a.Equals(b));
+    }
+
+    [Fact]
+    public void RColor_PredefinedColors_HaveCorrectValues()
+    {
+        Assert.Equal(0, RColor.Black.R);
+        Assert.Equal(0, RColor.Black.G);
+        Assert.Equal(0, RColor.Black.B);
+
+        Assert.Equal(255, RColor.White.R);
+        Assert.Equal(255, RColor.White.G);
+        Assert.Equal(255, RColor.White.B);
+    }
+
+    [Fact]
+    public void RColor_Empty_IsEmpty()
+    {
+        Assert.True(RColor.Empty.IsEmpty);
+        Assert.False(RColor.Black.IsEmpty);
+    }
+
+    [Fact]
+    public void RColor_ToString_NonEmpty_ContainsChannels()
+    {
+        var c = RColor.FromArgb(255, 128, 64);
+        string s = c.ToString();
+        Assert.Contains("R=255", s);
+        Assert.Contains("G=128", s);
+        Assert.Contains("B=64", s);
+    }
+
+    [Fact]
+    public void RColor_ToString_Empty_ShowsEmpty()
+    {
+        string s = RColor.Empty.ToString();
+        Assert.Contains("Empty", s);
+    }
+
+    [Fact]
+    public void RColor_InvalidByte_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => RColor.FromArgb(256, 0, 0));
+        Assert.Throws<ArgumentException>(() => RColor.FromArgb(-1, 0, 0));
+    }
+
+    // =================================================================
+    // RRect
+    // =================================================================
+
+    [Fact]
+    public void RRect_Constructor_StoresValues()
+    {
+        var r = new RRect(10, 20, 100, 50);
+        Assert.Equal(10, r.X);
+        Assert.Equal(20, r.Y);
+        Assert.Equal(100, r.Width);
+        Assert.Equal(50, r.Height);
+    }
+
+    [Fact]
+    public void RRect_DerivedProperties_AreCorrect()
+    {
+        var r = new RRect(10, 20, 100, 50);
+        Assert.Equal(10, r.Left);
+        Assert.Equal(20, r.Top);
+        Assert.Equal(110, r.Right);
+        Assert.Equal(70, r.Bottom);
+    }
+
+    [Fact]
+    public void RRect_Contains_Point_InsideAndOutside()
+    {
+        var r = new RRect(0, 0, 100, 100);
+        Assert.True(r.Contains(50, 50));
+        Assert.False(r.Contains(150, 50));
+        Assert.False(r.Contains(-1, 50));
+    }
+
+    [Fact]
+    public void RRect_Contains_RPoint()
+    {
+        var r = new RRect(0, 0, 100, 100);
+        Assert.True(r.Contains(new RPoint(50, 50)));
+        Assert.False(r.Contains(new RPoint(200, 200)));
+    }
+
+    [Fact]
+    public void RRect_Contains_InnerRect()
+    {
+        var outer = new RRect(0, 0, 100, 100);
+        var inner = new RRect(10, 10, 50, 50);
+        var overlapping = new RRect(50, 50, 100, 100);
+
+        Assert.True(outer.Contains(inner));
+        Assert.False(outer.Contains(overlapping));
+    }
+
+    [Fact]
+    public void RRect_Intersect_OverlappingRects()
+    {
+        var a = new RRect(0, 0, 100, 100);
+        var b = new RRect(50, 50, 100, 100);
+        var result = RRect.Intersect(a, b);
+
+        Assert.Equal(50, result.X);
+        Assert.Equal(50, result.Y);
+        Assert.Equal(50, result.Width);
+        Assert.Equal(50, result.Height);
+    }
+
+    [Fact]
+    public void RRect_Intersect_NonOverlapping_ReturnsEmpty()
+    {
+        var a = new RRect(0, 0, 50, 50);
+        var b = new RRect(100, 100, 50, 50);
+        var result = RRect.Intersect(a, b);
+        Assert.True(result.IsEmpty);
+    }
+
+    [Fact]
+    public void RRect_Union_CombinesRects()
+    {
+        var a = new RRect(0, 0, 50, 50);
+        var b = new RRect(100, 100, 50, 50);
+        var result = RRect.Union(a, b);
+
+        Assert.Equal(0, result.X);
+        Assert.Equal(0, result.Y);
+        Assert.Equal(150, result.Width);
+        Assert.Equal(150, result.Height);
+    }
+
+    [Fact]
+    public void RRect_Equality_SameValues()
+    {
+        var a = new RRect(1, 2, 3, 4);
+        var b = new RRect(1, 2, 3, 4);
+        Assert.True(a == b);
+    }
+
+    [Fact]
+    public void RRect_Equality_DifferentValues()
+    {
+        var a = new RRect(1, 2, 3, 4);
+        var b = new RRect(5, 6, 7, 8);
+        Assert.True(a != b);
+    }
+
+    [Fact]
+    public void RRect_FromLTRB_CalculatesCorrectly()
+    {
+        var r = RRect.FromLTRB(10, 20, 110, 70);
+        Assert.Equal(10, r.X);
+        Assert.Equal(20, r.Y);
+        Assert.Equal(100, r.Width);
+        Assert.Equal(50, r.Height);
+    }
+
+    [Fact]
+    public void RRect_Inflate_ExpandsRect()
+    {
+        var r = new RRect(10, 10, 100, 100);
+        r.Inflate(5, 5);
+        Assert.Equal(5, r.X);
+        Assert.Equal(5, r.Y);
+        Assert.Equal(110, r.Width);
+        Assert.Equal(110, r.Height);
+    }
+
+    [Fact]
+    public void RRect_Offset_ShiftsRect()
+    {
+        var r = new RRect(10, 10, 100, 100);
+        r.Offset(5, 10);
+        Assert.Equal(15, r.X);
+        Assert.Equal(20, r.Y);
+    }
+
+    [Fact]
+    public void RRect_IntersectsWith_OverlappingRects()
+    {
+        var a = new RRect(0, 0, 100, 100);
+        var b = new RRect(50, 50, 100, 100);
+        Assert.True(a.IntersectsWith(b));
+    }
+
+    [Fact]
+    public void RRect_IntersectsWith_NonOverlapping()
+    {
+        var a = new RRect(0, 0, 50, 50);
+        var b = new RRect(100, 100, 50, 50);
+        Assert.False(a.IntersectsWith(b));
+    }
+
+    [Fact]
+    public void RRect_LocationAndSize_Properties()
+    {
+        var r = new RRect(10, 20, 100, 50);
+        Assert.Equal(new RPoint(10, 20), r.Location);
+        Assert.Equal(new RSize(100, 50), r.Size);
+    }
+
+    // =================================================================
+    // RPoint
+    // =================================================================
+
+    [Fact]
+    public void RPoint_Constructor_StoresValues()
+    {
+        var p = new RPoint(3.5, 7.2);
+        Assert.Equal(3.5, p.X);
+        Assert.Equal(7.2, p.Y);
+    }
+
+    [Fact]
+    public void RPoint_Add_WithSize()
+    {
+        var p = new RPoint(10, 20);
+        var s = new RSize(5, 10);
+        var result = p + s;
+        Assert.Equal(15, result.X);
+        Assert.Equal(30, result.Y);
+    }
+
+    [Fact]
+    public void RPoint_Subtract_WithSize()
+    {
+        var p = new RPoint(10, 20);
+        var s = new RSize(3, 7);
+        var result = p - s;
+        Assert.Equal(7, result.X);
+        Assert.Equal(13, result.Y);
+    }
+
+    [Fact]
+    public void RPoint_Empty_IsEmpty()
+    {
+        Assert.True(RPoint.Empty.IsEmpty);
+        Assert.False(new RPoint(1, 0).IsEmpty);
+    }
+
+    [Fact]
+    public void RPoint_Equality()
+    {
+        var a = new RPoint(5, 10);
+        var b = new RPoint(5, 10);
+        var c = new RPoint(1, 2);
+        Assert.True(a == b);
+        Assert.True(a != c);
+    }
+
+    // =================================================================
+    // RSize
+    // =================================================================
+
+    [Fact]
+    public void RSize_Constructor_StoresValues()
+    {
+        var s = new RSize(100, 200);
+        Assert.Equal(100, s.Width);
+        Assert.Equal(200, s.Height);
+    }
+
+    [Fact]
+    public void RSize_Add_TwoSizes()
+    {
+        var a = new RSize(10, 20);
+        var b = new RSize(30, 40);
+        var result = a + b;
+        Assert.Equal(40, result.Width);
+        Assert.Equal(60, result.Height);
+    }
+
+    [Fact]
+    public void RSize_Subtract_TwoSizes()
+    {
+        var a = new RSize(30, 40);
+        var b = new RSize(10, 15);
+        var result = a - b;
+        Assert.Equal(20, result.Width);
+        Assert.Equal(25, result.Height);
+    }
+
+    [Fact]
+    public void RSize_CopyConstructor()
+    {
+        var original = new RSize(50, 75);
+        var copy = new RSize(original);
+        Assert.Equal(original.Width, copy.Width);
+        Assert.Equal(original.Height, copy.Height);
+    }
+
+    [Fact]
+    public void RSize_FromPoint()
+    {
+        var p = new RPoint(10, 20);
+        var s = new RSize(p);
+        Assert.Equal(10, s.Width);
+        Assert.Equal(20, s.Height);
+    }
+
+    [Fact]
+    public void RSize_Empty_IsEmpty()
+    {
+        Assert.True(RSize.Empty.IsEmpty);
+        Assert.False(new RSize(1, 1).IsEmpty);
+    }
+
+    [Fact]
+    public void RSize_Equality()
+    {
+        var a = new RSize(10, 20);
+        var b = new RSize(10, 20);
+        var c = new RSize(30, 40);
+        Assert.True(a == b);
+        Assert.True(a != c);
+    }
+
+    [Fact]
+    public void RSize_ToPointF_Converts()
+    {
+        var s = new RSize(10, 20);
+        var p = s.ToPointF();
+        Assert.Equal(10, p.X);
+        Assert.Equal(20, p.Y);
+    }
+}

@@ -1,0 +1,172 @@
+# HTML-Renderer Testsuite Guide
+
+## Overview
+
+This document describes the comprehensive testsuite for Broiler's
+HTML-Renderer components. The suite is organized into four categories:
+
+1. **Unit Tests** — Verify individual functions and primitive types.
+2. **W3C Compliance Tests** — Validate HTML/CSS rendering against web standards.
+3. **Rendering Analytics Tests** — Measure performance, output quality, and
+   consistency.
+4. **CLI Output Validation Tests** — Verify CLI capture pipeline output
+   formats.
+
+## Test Projects
+
+| Project | Location | Focus |
+|---------|----------|-------|
+| `HtmlRenderer.Image.Tests` | `HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/` | Unit tests, rendering, analytics |
+| `Broiler.Cli.Tests` | `src/Broiler.Cli.Tests/` | W3C compliance, CLI validation, Acid1, integration |
+
+## Running Tests
+
+### Full Suite
+
+```bash
+dotnet test Broiler.slnx
+```
+
+### By Project
+
+```bash
+# HtmlRenderer unit & rendering tests (cross-platform)
+dotnet test HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/
+
+# CLI and W3C compliance tests (cross-platform)
+dotnet test src/Broiler.Cli.Tests/
+```
+
+### By Category
+
+```bash
+# Unit tests only (primitives, CSS parsing, utilities)
+dotnet test HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/ \
+  --filter "FullyQualifiedName~PrimitivesTests|FullyQualifiedName~CssLengthTests|FullyQualifiedName~SubStringTests"
+
+# W3C compliance tests only
+dotnet test src/Broiler.Cli.Tests/ \
+  --filter "FullyQualifiedName~W3cPhase1ComplianceTests|FullyQualifiedName~W3cPhase2ComplianceTests"
+
+# Rendering analytics
+dotnet test HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/ \
+  --filter "FullyQualifiedName~RenderingAnalyticsTests"
+
+# CLI output validation
+dotnet test src/Broiler.Cli.Tests/ \
+  --filter "FullyQualifiedName~CliOutputValidationTests"
+
+# Image comparison tests
+dotnet test HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/ \
+  --filter "FullyQualifiedName~ImageComparerTests"
+```
+
+## Test Categories
+
+### 1. Unit Tests
+
+#### CssLengthTests (23 tests)
+Tests the CSS length value parser (`CssLength`) covering:
+- Pixel, em, rem, percentage values
+- Absolute units: pt, cm, mm, in, pc, ex
+- Em-to-points and em-to-pixels conversion
+- Edge cases: zero, empty, null, bare numbers, invalid units
+- ToString round-trip formatting
+
+#### PrimitivesTests (30 tests)
+Tests for primitive rendering types:
+- **RColor**: ARGB construction, channel extraction, equality, predefined
+  colors, boundary validation, ToString formatting
+- **RRect**: Construction, derived properties (Left/Top/Right/Bottom),
+  Contains, Intersect, Union, Inflate, Offset, FromLTRB, equality
+- **RPoint**: Construction, Add/Subtract with RSize, IsEmpty, equality
+- **RSize**: Construction, Add/Subtract, copy constructor, ToPointF
+
+#### SubStringTests (17 tests)
+Tests for the lightweight `SubString` wrapper:
+- Full string and range construction
+- Character indexing and boundary checking
+- IsEmpty, IsWhitespace, IsEmptyOrWhitespace predicates
+- CutSubstring and Substring extraction
+- Error handling for invalid arguments
+
+#### CommonUtilsTests (9 tests — pre-existing)
+URI handling and utility function tests.
+
+### 2. W3C Compliance Tests
+
+#### W3cPhase1ComplianceTests (16 tests — pre-existing)
+Covers Phase 1 HTML5/CSS features:
+- HTML5 semantic elements default display values
+- Void elements (embed, source, wbr)
+- `rem` CSS unit resolution
+- `position: relative` offsets
+- `background-size` property acceptance
+- `@media screen` rule application
+
+#### W3cPhase2ComplianceTests (22 tests)
+Covers Phase 2 CSS specifications:
+- **Box Model** (3 tests): margin spacing, padding expansion, border
+  rendering
+- **CSS Colors** (3 tests): named colors, hex values, rgb() notation
+- **Text Properties** (4 tests): font-weight, font-style, text-decoration,
+  text-align
+- **Display Values** (3 tests): display:none, inline, inline-block
+- **Tables** (3 tests): basic rendering, border-collapse, th vs td
+- **Specificity & Cascade** (3 tests): inline > class, ID > class, later
+  rules > earlier
+- **Visibility** (1 test): visibility:hidden preserves layout space
+- **Font-size Keywords** (1 test): small vs large produce different sizes
+- **Multiple Classes** (1 test): both classes applied to element
+
+### 3. Rendering Analytics Tests (11 tests)
+
+- **Performance**: Simple and large document render timing
+- **Dimensions**: Auto-sized rendering respects maxWidth, wider content
+  produces wider output
+- **Pixel Coverage**: Colored elements produce significant non-white
+  coverage, empty HTML is mostly white
+- **Format Quality**: PNG preserves exact pixel data, JPEG quality affects
+  file size
+- **Consistency**: Same HTML produces identical output, different HTML
+  produces different output
+
+### 4. CLI Output Validation Tests (6 tests)
+
+- HTML capture preserves title and special characters
+- PNG capture produces valid PNG with correct magic bytes
+- JPEG capture produces valid JPEG with correct magic bytes
+- Larger dimensions produce larger image files
+
+## CI Pipeline
+
+All tests run automatically on every push to `main` and on every pull
+request. The CI workflow (`.github/workflows/build.yml`) includes:
+
+1. Build the full solution
+2. Run all tests (unit, W3C, analytics, CLI)
+3. Image capture test (captures heise.de as PNG)
+4. Engine smoke test
+5. Website HTML capture
+6. Upload capture artifacts
+
+## Known Limitations
+
+- `Float_LeftFloats_WrapWhenContainerFull` is a pre-existing test failure
+  documenting a known float layout limitation in HTML-Renderer.
+- `@media print` rules leak into screen rendering due to `ParseStyleBlocks`
+  not skipping `@media` blocks (documented in Phase 1 tests).
+- Border colors rendered through `solid` style may be adjusted by
+  HTML-Renderer's 3D border styling, so border tests use non-white pixel
+  detection rather than exact color matching.
+
+## Adding New Tests
+
+1. Place unit tests for HTML-Renderer internals in
+   `HtmlRenderer.Image.Tests` (has `InternalsVisibleTo` access).
+2. Place rendering/compliance tests in `Broiler.Cli.Tests`.
+3. Use the pixel-based helper methods (`CountPixels`, `GetColorBounds`,
+   `IsRed/IsGreen/IsBlue`) for visual rendering assertions.
+4. Follow existing test conventions: xUnit `[Fact]` attributes, XML doc
+   comments, descriptive assertion messages.
+5. Run `dotnet test` to verify before submitting.
