@@ -13,7 +13,7 @@ public abstract class RGraphics : IDisposable
 
     protected RGraphics(IResourceFactory adapter, RRect initialClip)
     {
-        ArgChecker.AssertArgNotNull(adapter, "global");
+        ArgChecker.AssertArgNotNull(adapter, "adapter");
 
         _adapter = adapter;
         _clipStack.Push(initialClip);

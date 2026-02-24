@@ -237,8 +237,9 @@ The following remain in the main HtmlRenderer assembly due to tight coupling:
                        ↑
               HtmlRenderer.Utils          (L1 — pure utilities)
                   ↑        ↑
-  HtmlRenderer.Adapters → HtmlRenderer.Core     (L2 — adapters & entities)
-          ↑                    ↑
+  HtmlRenderer.Adapters   HtmlRenderer.Core     (L2 — adapters & entities)
+          ↑       ↑            ↑
+          ↑       └────────────┘
           ↑             HtmlRenderer.CSS        (L3 — CSS parsing)
           ↑                    ↑
           └──── HtmlRenderer ──┘                (L4 — DOM, handlers, orchestration)

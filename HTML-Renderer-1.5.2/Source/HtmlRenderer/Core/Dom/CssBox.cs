@@ -43,8 +43,9 @@ internal class CssBox : CssBoxProperties, IDisposable
     }
 
     /// <summary>
-    /// The concrete container for L4 orchestration code.
-    /// Setter accepts <see cref="IHtmlContainerInt"/> for decoupled assignment.
+    /// The concrete container for L4 orchestration code. Returns null if the
+    /// backing <see cref="IHtmlContainerInt"/> is not an <see cref="HtmlContainerInt"/>.
+    /// Setter accepts any <see cref="IHtmlContainerInt"/> for decoupled assignment.
     /// </summary>
     public HtmlContainerInt HtmlContainer
     {

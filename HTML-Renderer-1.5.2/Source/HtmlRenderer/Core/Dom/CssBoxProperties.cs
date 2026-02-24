@@ -755,8 +755,8 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
     public bool IsRounded => ActualCornerNe > 0f || ActualCornerNw > 0f || ActualCornerSe > 0f || ActualCornerSw > 0f;
 
     /// <summary>
-    /// Whether geometry anti-aliasing should be avoided. Overridden in CssBox to
-    /// delegate to the container.
+    /// Whether geometry anti-aliasing should be avoided. Returns false by
+    /// default; subclasses may override to provide container-specific behavior.
     /// </summary>
     public virtual bool AvoidGeometryAntialias => false;
 
