@@ -382,14 +382,14 @@ internal abstract class CssBoxProperties
 
                 _fontSize = computedValue;
             }
-                else
-                {
-                    _fontSize = value;
-                }
-
-                InvalidateFontDependentValues();
+            else
+            {
+                _fontSize = value;
             }
+
+            InvalidateFontDependentValues();
         }
+    }
 
     public string FontStyle { get; set; } = "normal";
     public string FontVariant { get; set; } = "normal";
@@ -404,13 +404,15 @@ internal abstract class CssBoxProperties
 
     public RPoint Location
     {
-        get {
+        get
+        {
             if (_location.IsEmpty && Position == CssConstants.Fixed)
                 _location = GetActualLocation(Left, Top);
 
             return _location;
         }
-        set {
+        set
+        {
             _location = value;
         }
     }
@@ -818,12 +820,12 @@ internal abstract class CssBoxProperties
 
                 if (FontWeight != CssConstants.Normal && FontWeight != CssConstants.Lighter && !string.IsNullOrEmpty(FontWeight) && FontWeight != CssConstants.Inherit)
                     st |= RFontStyle.Bold;
-                
+
                 double parentSize = CssConstants.FontSize;
 
                 if (GetParent() != null)
                     parentSize = GetParent().ActualFont.Size;
-                
+
                 var fsize = FontSize switch
                 {
                     CssConstants.Medium => CssConstants.FontSize,
@@ -837,7 +839,7 @@ internal abstract class CssBoxProperties
                     CssConstants.Larger => parentSize + 2,
                     _ => CssValueParser.ParseLength(FontSize, parentSize, parentSize, null, true, true),
                 };
-                
+
                 if (fsize <= 0)
                     fsize = CssConstants.FontSize;
 

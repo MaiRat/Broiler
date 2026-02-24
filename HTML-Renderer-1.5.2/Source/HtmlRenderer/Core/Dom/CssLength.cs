@@ -169,7 +169,7 @@ internal sealed class CssLength
                     break;
             }
 
-            return $"{Number}{u}";
+            return $"{Number:0.0}{u}".Replace(',','.');
         }
     }
 }
