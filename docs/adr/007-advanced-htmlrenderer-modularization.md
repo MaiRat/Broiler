@@ -50,15 +50,22 @@ This phase adds three more assemblies, bringing the total to **six**:
 #### HtmlRenderer.Adapters (Layer 2a)
 
 Contains platform-independent abstract adapter base classes that depend only on
-Primitives:
+Primitives and Utils:
 
 - `Adapters/RBrush` — Abstract brush
 - `Adapters/RPen` — Abstract pen
 - `Adapters/RImage` — Abstract image with dispose semantics
 - `Adapters/RFontFamily` — Abstract font family
 - `Adapters/RGraphicsPath` — Abstract graphics path
+- `Adapters/RFont` — Abstract font (moved from HtmlRenderer)
+- `Adapters/RGraphics` — Abstract graphics context (moved from HtmlRenderer,
+  uses `IResourceFactory` instead of `RAdapter`)
+- `Adapters/IResourceFactory` — Interface for creating rendering resources
+  (pens, brushes); decouples `RGraphics` from `RAdapter`
+- `Adapters/IFontCreator` — Interface for creating fonts; decouples
+  `FontsHandler` from `RAdapter`
 
-Dependencies: **HtmlRenderer.Primitives** only.
+Dependencies: **HtmlRenderer.Primitives**, **HtmlRenderer.Utils**.
 
 These adapters are consumed by both the CSS layer (for colour resolution) and
 the main HtmlRenderer assembly (for concrete adapter implementations). Placing
@@ -78,8 +85,16 @@ Contains entities and shared type definitions:
 - `Core/CssDefaults` — Default CSS stylesheet constant
 - `Core/IColorResolver` — Interface breaking the CSS↔Adapter circular
   dependency
+- `Core/IHtmlContainerInt` — Interface breaking the CssBox↔HtmlContainerInt
+  bidirectional dependency
+- `Core/IImageLoadHandler` — Interface decoupling CssBox from ImageLoadHandler
+- `Core/IBordersDrawHandler` — Interface decoupling CssBox from
+  BordersDrawHandler (with `IBorderRenderData`)
+- `Core/IBackgroundImageDrawHandler` — Interface decoupling CssBox from
+  BackgroundImageDrawHandler (with `IBackgroundRenderData`)
 
-Dependencies: **HtmlRenderer.Primitives**, **HtmlRenderer.Utils**
+Dependencies: **HtmlRenderer.Primitives**, **HtmlRenderer.Utils**,
+**HtmlRenderer.Adapters**
 
 The critical design element is `IColorResolver`:
 
@@ -122,16 +137,16 @@ The following remain in the main HtmlRenderer assembly due to tight coupling:
 **Adapters** (depend on RAdapter which orchestrates everything):
 
 - `RAdapter` — Central adapter with FontsHandler, CssData caching; implements
-  `IColorResolver`
+  `IColorResolver`, `IResourceFactory`, `IFontCreator`
 - `RControl` — Abstract control (references RAdapter)
-- `RGraphics` — Abstract graphics context (references RAdapter)
-- `RFont` — Abstract font (references RGraphics)
 - `RContextMenu` — Abstract context menu (references RControl)
 
-**DOM & Layout** (depend on HtmlContainerInt):
+**DOM & Layout** (depend on IHtmlContainerInt):
 
-- `CssBox` and subclasses — DOM tree nodes
-- `CssBoxProperties` — CSS property bag
+- `CssBox` and subclasses — DOM tree nodes; uses `ContainerInt`
+  (`IHtmlContainerInt`) for all container access
+- `CssBoxProperties` — CSS property bag; implements `IBorderRenderData` and
+  `IBackgroundRenderData`
 - `CssLayoutEngine` — Layout computation
 - `HtmlTag`, `HoverBoxBlock` — Tag representation
 
@@ -170,57 +185,50 @@ The following remain in the main HtmlRenderer assembly due to tight coupling:
 
 ### Circular Dependencies Remaining (Future Work)
 
-3. **CssBox ↔ HtmlContainerInt**: `CssBox` stores `HtmlContainerInt` as a
+3. **CssBox ↔ HtmlContainerInt**: ~~`CssBox` stores `HtmlContainerInt` as a
    field (`protected HtmlContainerInt _htmlContainer`) and accesses ~15
-   members:
+   members.~~
 
-   | Member                          | Kind              |
-   |---------------------------------|-------------------|
-   | `ReportError(type, msg, ex)`    | Error reporting   |
-   | `ScrollOffset`                  | `RPoint` property |
-   | `Root`                          | `CssBox` property |
-   | `ActualSize` (get/set)          | `RSize` property  |
-   | `PageSize`                      | `RSize` property  |
-   | `AvoidGeometryAntialias`        | `bool` property   |
-   | `SelectionForeColor`            | `RColor` property |
-   | `SelectionBackColor`            | `RColor` property |
-   | `RequestRefresh(bool)`          | Method            |
-   | `Adapter.GetFont(…)`            | Font creation     |
-   | `CssParser.ParseColor(string)`  | Colour parsing    |
-   | `AvoidAsyncImagesLoading`       | `bool` property   |
-   | `AvoidImagesLateLoading`        | `bool` property   |
-   | `AddHoverBox(CssBox, CssBlock)` | Hover state       |
+   **Resolved**: Defined `IHtmlContainerInt` in Core with all members CssBox
+   needs (`ReportError`, `ScrollOffset`, `RootLocation`, `ActualSize`,
+   `PageSize`, `AvoidGeometryAntialias`, `SelectionForeColor`,
+   `SelectionBackColor`, `RequestRefresh`, `GetFont`, `ParseColor`,
+   `AvoidAsyncImagesLoading`, `AvoidImagesLateLoading`, `MarginTop`,
+   `ConvertImage`, `ImageFromStream`, `GetLoadingImage`,
+   `GetLoadingFailedImage`, `DownloadImage`, `RaiseHtmlImageLoadEvent`).
+   `CssBox` now stores `IHtmlContainerInt` and accesses it through
+   `ContainerInt`. The backward-compatible `HtmlContainer` property (concrete
+   type) remains for L4 orchestration code.
 
-   `HtmlContainerInt` in turn creates and manipulates `CssBox` trees, forming
-   a bidirectional dependency.
-
-   **Future resolution**: Define `IHtmlContainerInt` in Core with the members
-   listed above. `CssBox` would depend on the interface rather than the
-   concrete class. This would enable extracting `CssBox` and its subclasses
-   into a separate **HtmlRenderer.Dom** assembly at Layer 3.
-
-4. **CssBox ↔ Handlers**: `CssBox` directly instantiates `ImageLoadHandler`
+4. **CssBox ↔ Handlers**: ~~`CssBox` directly instantiates `ImageLoadHandler`
    and calls static methods on `BordersDrawHandler` and
-   `BackgroundImageDrawHandler`. Handlers in turn reference `CssBox`.
+   `BackgroundImageDrawHandler`. Handlers in turn reference `CssBox`.~~
 
-   **Future resolution**: Define handler interfaces (`IImageLoadHandler`,
-   `IBordersDrawHandler`, `IBackgroundImageDrawHandler`) in Core. Inject
-   implementations through `IHtmlContainerInt` or a factory pattern.
+   **Resolved**: Defined `IImageLoadHandler`, `IBordersDrawHandler` (with
+   `IBorderRenderData`), and `IBackgroundImageDrawHandler` (with
+   `IBackgroundRenderData`) in Core. `CssBoxProperties` implements
+   `IBorderRenderData` and `IBackgroundRenderData`. Handler classes implement
+   interfaces and no longer depend on `CssBox` directly (they accept
+   `IBorderRenderData`/`IBackgroundRenderData`/`IImageLoadHandler`).
+   `ImageLoadHandler` accepts `IHtmlContainerInt` instead of
+   `HtmlContainerInt`.
 
-5. **CssBox ↔ RAdapter/RGraphics/RFont**: `CssBox` painting methods accept
+5. **CssBox ↔ RAdapter/RGraphics/RFont**: ~~`CssBox` painting methods accept
    `RGraphics` and create `RFont` instances through `RAdapter`. These types
-   currently live in the main HtmlRenderer assembly.
+   currently live in the main HtmlRenderer assembly.~~
 
-   **Future resolution**: Move `RAdapter`, `RGraphics`, and `RFont` into
-   HtmlRenderer.Adapters (or a new HtmlRenderer.Adapters.Extended module)
-   once handler dependencies are broken. Alternatively, define
-   `IGraphicsContext` and `IFontFactory` interfaces in Adapters.
+   **Resolved**: Moved `RGraphics` and `RFont` into HtmlRenderer.Adapters.
+   `RGraphics` now uses `IResourceFactory` (pens/brushes factory) instead of
+   depending on `RAdapter` directly. `RAdapter` implements `IResourceFactory`.
+   `CssBox` accesses fonts through `IHtmlContainerInt.GetFont(…)` instead of
+   `Adapter.GetFont(…)`.
 
-6. **RAdapter ↔ FontsHandler**: `RAdapter` instantiates `FontsHandler` in its
-   constructor (`new FontsHandler(this)`).
+6. **RAdapter ↔ FontsHandler**: ~~`RAdapter` instantiates `FontsHandler` in its
+   constructor (`new FontsHandler(this)`).~~
 
-   **Future resolution**: Define `IFontCreator` interface in Adapters module.
+   **Resolved**: Defined `IFontCreator` interface in Adapters module.
    `FontsHandler` uses `IFontCreator` instead of `RAdapter` directly.
+   `RAdapter` implements `IFontCreator`.
 
 ## Dependency Graph
 
@@ -230,11 +238,15 @@ The following remain in the main HtmlRenderer assembly due to tight coupling:
               HtmlRenderer.Utils          (L1 — pure utilities)
                   ↑        ↑
   HtmlRenderer.Adapters   HtmlRenderer.Core     (L2 — adapters & entities)
-          ↑                    ↑
+          ↑       ↑            ↑
+          ↑       └────────────┘
           ↑             HtmlRenderer.CSS        (L3 — CSS parsing)
           ↑                    ↑
           └──── HtmlRenderer ──┘                (L4 — DOM, handlers, orchestration)
 ```
+
+> Note: HtmlRenderer.Core now depends on HtmlRenderer.Adapters so that
+> `IHtmlContainerInt` can reference `RFont`, `RImage`, and `RGraphics` types.
 
 ## Naming Convention
 

@@ -1,13 +1,14 @@
 ﻿using System;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Dom;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
-internal static class BackgroundImageDrawHandler
+internal sealed class BackgroundImageDrawHandler : IBackgroundImageDrawHandler
 {
-    public static void DrawBackgroundImage(RGraphics g, CssBox box, ImageLoadHandler imageLoadHandler, RRect rectangle)
+    public static readonly BackgroundImageDrawHandler Instance = new();
+
+    public static void DrawBackgroundImage(RGraphics g, IBackgroundRenderData box, IImageLoadHandler imageLoadHandler, RRect rectangle)
     {
         // image size depends if specific rectangle given in image loader
         var imgSize = new RSize(imageLoadHandler.Rectangle == RRect.Empty ? imageLoadHandler.Image.Width : imageLoadHandler.Rectangle.Width,
@@ -77,7 +78,7 @@ internal static class BackgroundImageDrawHandler
         return new RPoint(left, top);
     }
 
-    private static void DrawRepeatX(RGraphics g, ImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
+    private static void DrawRepeatX(RGraphics g, IImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
     {
         while (destRect.X > rectangle.X)
             destRect.X -= imgSize.Width;
@@ -86,7 +87,7 @@ internal static class BackgroundImageDrawHandler
         g.DrawRectangle(brush, rectangle.X, destRect.Y, rectangle.Width, srcRect.Height);
     }
 
-    private static void DrawRepeatY(RGraphics g, ImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
+    private static void DrawRepeatY(RGraphics g, IImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
     {
         while (destRect.Y > rectangle.Y)
             destRect.Y -= imgSize.Height;
@@ -95,7 +96,7 @@ internal static class BackgroundImageDrawHandler
         g.DrawRectangle(brush, destRect.X, rectangle.Y, srcRect.Width, rectangle.Height);
     }
 
-    private static void DrawRepeat(RGraphics g, ImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
+    private static void DrawRepeat(RGraphics g, IImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
     {
         while (destRect.X > rectangle.X)
             destRect.X -= imgSize.Width;
@@ -106,4 +107,7 @@ internal static class BackgroundImageDrawHandler
         using var brush = g.GetTextureBrush(imageLoadHandler.Image, srcRect, destRect.Location);
         g.DrawRectangle(brush, rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
     }
+
+    void IBackgroundImageDrawHandler.DrawBackgroundImage(RGraphics g, IBackgroundRenderData box, IImageLoadHandler imageHandler, RRect rectangle)
+        => DrawBackgroundImage(g, box, imageHandler, rectangle);
 }

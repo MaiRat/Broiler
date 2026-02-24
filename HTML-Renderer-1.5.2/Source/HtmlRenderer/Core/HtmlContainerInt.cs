@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -11,7 +12,7 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
 
-public sealed class HtmlContainerInt : IDisposable
+public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 {
     private List<HoverBoxBlock> _hoverBoxes;
     private SelectionHandler _selectionHandler;
@@ -494,6 +495,37 @@ public sealed class HtmlContainerInt : IDisposable
     }
 
     internal ImageDownloader GetImageDownloader() => _imageDownloader;
+
+    #region IHtmlContainerInt
+
+    void IHtmlContainerInt.ReportError(HtmlRenderErrorType type, string message, Exception exception)
+        => ReportError(type, message, exception);
+
+    RColor IHtmlContainerInt.SelectionForeColor => SelectionForeColor;
+
+    RColor IHtmlContainerInt.SelectionBackColor => SelectionBackColor;
+
+    void IHtmlContainerInt.RaiseHtmlImageLoadEvent(HtmlImageLoadEventArgs args)
+        => RaiseHtmlImageLoadEvent(args);
+
+    RPoint IHtmlContainerInt.RootLocation => Root?.Location ?? RPoint.Empty;
+
+    RFont IHtmlContainerInt.GetFont(string family, double size, RFontStyle style) => Adapter.GetFont(family, size, style);
+
+    RColor IHtmlContainerInt.ParseColor(string colorStr) => CssParser.ParseColor(colorStr);
+
+    RImage IHtmlContainerInt.ConvertImage(object image) => Adapter.ConvertImage(image);
+
+    RImage IHtmlContainerInt.ImageFromStream(Stream stream) => Adapter.ImageFromStream(stream);
+
+    RImage IHtmlContainerInt.GetLoadingImage() => Adapter.GetLoadingImage();
+
+    RImage IHtmlContainerInt.GetLoadingFailedImage() => Adapter.GetLoadingFailedImage();
+
+    void IHtmlContainerInt.DownloadImage(Uri uri, string filePath, bool async, Action<Uri, string, Exception, bool> callback)
+        => _imageDownloader?.DownloadImage(uri, filePath, async, (imageUri, fp, error, canceled) => callback(imageUri, fp, error, canceled));
+
+    #endregion
 
     public void Dispose() => Dispose(true);
 

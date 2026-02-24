@@ -82,7 +82,7 @@ internal abstract class CssRect(CssBox owner)
 
     public bool BreakPage()
     {
-        var container = OwnerBox.HtmlContainer;
+        var container = OwnerBox.ContainerInt;
 
         if (Height >= container.PageSize.Height)
             return false;

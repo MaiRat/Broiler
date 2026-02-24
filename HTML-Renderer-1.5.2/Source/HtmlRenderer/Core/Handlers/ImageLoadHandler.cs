@@ -10,9 +10,9 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
-internal sealed class ImageLoadHandler : IDisposable
+internal sealed class ImageLoadHandler : IImageLoadHandler
 {
-    private readonly HtmlContainerInt _htmlContainer;
+    private readonly IHtmlContainerInt _htmlContainer;
     private readonly ActionInt<RImage, RRect, bool> _loadCompleteCallback;
     private FileStream _imageFileStream;
     private RRect _imageRectangle;
@@ -20,7 +20,7 @@ internal sealed class ImageLoadHandler : IDisposable
     private bool _releaseImageObject;
     private bool _disposed;
 
-    public ImageLoadHandler(HtmlContainerInt htmlContainer, ActionInt<RImage, RRect, bool> loadCompleteCallback)
+    public ImageLoadHandler(IHtmlContainerInt htmlContainer, ActionInt<RImage, RRect, bool> loadCompleteCallback)
     {
         ArgChecker.AssertArgNotNull(htmlContainer, "htmlContainer");
         ArgChecker.AssertArgNotNull(loadCompleteCallback, "loadCompleteCallback");
@@ -82,7 +82,7 @@ internal sealed class ImageLoadHandler : IDisposable
 
         if (image != null)
         {
-            Image = _htmlContainer.Adapter.ConvertImage(image);
+            Image = _htmlContainer.ConvertImage(image);
             ImageLoadComplete(_asyncCallback);
         }
         else if (!string.IsNullOrEmpty(path))
@@ -129,7 +129,7 @@ internal sealed class ImageLoadHandler : IDisposable
             return null;
 
         byte[] imageData = base64PartsCount > 0 ? Convert.FromBase64String(s[1].Trim()) : new UTF8Encoding().GetBytes(Uri.UnescapeDataString(s[1].Trim()));
-        return _htmlContainer.Adapter.ImageFromStream(new MemoryStream(imageData));
+        return _htmlContainer.ImageFromStream(new MemoryStream(imageData));
     }
 
     private void SetImageFromPath(string path)
@@ -181,7 +181,7 @@ internal sealed class ImageLoadHandler : IDisposable
                 _imageFileStream = imageFileStream;
 
                 if (!_disposed)
-                    Image = _htmlContainer.Adapter.ImageFromStream(_imageFileStream);
+                    Image = _htmlContainer.ImageFromStream(_imageFileStream);
 
                 _releaseImageObject = true;
             }
@@ -204,7 +204,7 @@ internal sealed class ImageLoadHandler : IDisposable
         }
         else
         {
-            _htmlContainer.GetImageDownloader().DownloadImage(source, filePath.FullName, !_htmlContainer.AvoidAsyncImagesLoading, OnDownloadImageCompleted);
+            _htmlContainer.DownloadImage(source, filePath.FullName, !_htmlContainer.AvoidAsyncImagesLoading, OnDownloadImageCompleted);
         }
     }
 

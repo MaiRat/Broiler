@@ -1,0 +1,120 @@
+using System;
+using System.IO;
+using TheArtOfDev.HtmlRenderer.Adapters;
+using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using TheArtOfDev.HtmlRenderer.Core.Entities;
+
+namespace TheArtOfDev.HtmlRenderer.Core;
+
+/// <summary>
+/// Interface abstracting the HTML container for use by <c>CssBox</c> and related
+/// DOM types. Breaks the bidirectional dependency between <c>CssBox</c> and the
+/// concrete <c>HtmlContainerInt</c> class.
+/// </summary>
+/// <remarks>
+/// See ADR-007, section "Circular Dependencies Remaining (Future Work)", item 3.
+/// </remarks>
+internal interface IHtmlContainerInt
+{
+    /// <summary>
+    /// Reports an error during rendering.
+    /// </summary>
+    void ReportError(HtmlRenderErrorType type, string message, Exception exception = null);
+
+    /// <summary>
+    /// The scroll offset of the container.
+    /// </summary>
+    RPoint ScrollOffset { get; }
+
+    /// <summary>
+    /// The location of the root box.
+    /// </summary>
+    RPoint RootLocation { get; }
+
+    /// <summary>
+    /// The actual rendered size of the content (get/set).
+    /// </summary>
+    RSize ActualSize { get; set; }
+
+    /// <summary>
+    /// The page size used for paged rendering.
+    /// </summary>
+    RSize PageSize { get; }
+
+    /// <summary>
+    /// Whether to avoid geometry anti-aliasing.
+    /// </summary>
+    bool AvoidGeometryAntialias { get; }
+
+    /// <summary>
+    /// The selection foreground colour.
+    /// </summary>
+    RColor SelectionForeColor { get; }
+
+    /// <summary>
+    /// The selection background colour.
+    /// </summary>
+    RColor SelectionBackColor { get; }
+
+    /// <summary>
+    /// Requests the container to refresh/repaint.
+    /// </summary>
+    void RequestRefresh(bool layout);
+
+    /// <summary>
+    /// Whether asynchronous image loading should be avoided.
+    /// </summary>
+    bool AvoidAsyncImagesLoading { get; }
+
+    /// <summary>
+    /// Whether late (deferred) image loading should be avoided.
+    /// </summary>
+    bool AvoidImagesLateLoading { get; }
+
+    /// <summary>
+    /// The top margin of the container (used for page-break calculations).
+    /// </summary>
+    int MarginTop { get; }
+
+    /// <summary>
+    /// Gets a cached font for the specified family, size, and style.
+    /// Wraps the adapter's font creation/caching.
+    /// </summary>
+    RFont GetFont(string family, double size, RFontStyle style);
+
+    /// <summary>
+    /// Parses a colour string and returns the corresponding <see cref="RColor"/>.
+    /// Wraps the CSS parser's colour resolution.
+    /// </summary>
+    RColor ParseColor(string colorStr);
+
+    /// <summary>
+    /// Raises the image-load event on the container.
+    /// </summary>
+    void RaiseHtmlImageLoadEvent(HtmlImageLoadEventArgs args);
+
+    /// <summary>
+    /// Converts a platform-specific image object to an <see cref="RImage"/>.
+    /// </summary>
+    RImage ConvertImage(object image);
+
+    /// <summary>
+    /// Creates an <see cref="RImage"/> from a stream.
+    /// </summary>
+    RImage ImageFromStream(Stream stream);
+
+    /// <summary>
+    /// Gets the loading placeholder image.
+    /// </summary>
+    RImage GetLoadingImage();
+
+    /// <summary>
+    /// Gets the error placeholder image.
+    /// </summary>
+    RImage GetLoadingFailedImage();
+
+    /// <summary>
+    /// Downloads an image from a URI.
+    /// </summary>
+    void DownloadImage(Uri uri, string filePath, bool async, Action<Uri, string, Exception, bool> callback);
+}

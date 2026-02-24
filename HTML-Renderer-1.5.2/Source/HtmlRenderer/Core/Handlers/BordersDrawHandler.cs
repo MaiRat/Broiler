@@ -6,11 +6,13 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
-internal static class BordersDrawHandler
+internal sealed class BordersDrawHandler : IBordersDrawHandler
 {
+    public static readonly BordersDrawHandler Instance = new();
+
     private static readonly RPoint[] _borderPts = new RPoint[4];
 
-    public static void DrawBoxBorders(RGraphics g, CssBox box, RRect rect, bool isFirst, bool isLast)
+    public static void DrawBoxBorders(RGraphics g, IBorderRenderData box, RRect rect, bool isFirst, bool isLast)
     {
         if (rect.Width <= 0 || rect.Height <= 0)
             return;
@@ -28,13 +30,13 @@ internal static class BordersDrawHandler
             DrawBorder(Border.Right, box, g, rect, isFirst, true);
     }
 
-    public static void DrawBorder(Border border, RGraphics g, CssBox box, RBrush brush, RRect rectangle)
+    public static void DrawBorder(Border border, RGraphics g, IBorderRenderData box, RBrush brush, RRect rectangle)
     {
         SetInOutsetRectanglePoints(border, box, rectangle, true, true);
         g.DrawPolygon(brush, _borderPts);
     }
 
-    private static void DrawBorder(Border border, CssBox box, RGraphics g, RRect rect, bool isLineStart, bool isLineEnd)
+    private static void DrawBorder(Border border, IBorderRenderData box, RGraphics g, RRect rect, bool isLineStart, bool isLineEnd)
     {
         var style = GetStyle(border, box);
         var color = GetColor(border, box, style);
@@ -44,7 +46,7 @@ internal static class BordersDrawHandler
         {
             // rounded border need special path
             Object prevMode = null;
-            if (box.HtmlContainer != null && !box.HtmlContainer.AvoidGeometryAntialias && box.IsRounded)
+            if (!box.AvoidGeometryAntialias && box.IsRounded)
                 prevMode = g.SetAntiAliasSmoothingMode();
 
             var pen = GetPen(g, style, color, GetWidth(border, box));
@@ -85,7 +87,7 @@ internal static class BordersDrawHandler
         }
     }
 
-    private static void SetInOutsetRectanglePoints(Border border, CssBox b, RRect r, bool isLineStart, bool isLineEnd)
+    private static void SetInOutsetRectanglePoints(Border border, IBorderRenderData b, RRect r, bool isLineStart, bool isLineEnd)
     {
         switch (border)
         {
@@ -124,7 +126,7 @@ internal static class BordersDrawHandler
         }
     }
 
-    private static RGraphicsPath GetRoundedBorderPath(RGraphics g, Border border, CssBox b, RRect r)
+    private static RGraphicsPath GetRoundedBorderPath(RGraphics g, Border border, IBorderRenderData b, RRect r)
     {
         RGraphicsPath path = null;
         switch (border)
@@ -224,7 +226,7 @@ internal static class BordersDrawHandler
         return p;
     }
 
-    private static RColor GetColor(Border border, CssBoxProperties box, string style) => border switch
+    private static RColor GetColor(Border border, IBorderRenderData box, string style) => border switch
     {
         Border.Top => style == CssConstants.Inset ? Darken(box.ActualBorderTopColor) : box.ActualBorderTopColor,
         Border.Right => style == CssConstants.Outset ? Darken(box.ActualBorderRightColor) : box.ActualBorderRightColor,
@@ -233,7 +235,7 @@ internal static class BordersDrawHandler
         _ => throw new ArgumentOutOfRangeException(nameof(border)),
     };
 
-    private static double GetWidth(Border border, CssBoxProperties box) => border switch
+    private static double GetWidth(Border border, IBorderRenderData box) => border switch
     {
         Border.Top => box.ActualBorderTopWidth,
         Border.Right => box.ActualBorderRightWidth,
@@ -242,7 +244,7 @@ internal static class BordersDrawHandler
         _ => throw new ArgumentOutOfRangeException(nameof(border)),
     };
 
-    private static string GetStyle(Border border, CssBoxProperties box) => border switch
+    private static string GetStyle(Border border, IBorderRenderData box) => border switch
     {
         Border.Top => box.BorderTopStyle,
         Border.Right => box.BorderRightStyle,
@@ -252,4 +254,10 @@ internal static class BordersDrawHandler
     };
 
     private static RColor Darken(RColor c) => RColor.FromArgb(c.R / 2, c.G / 2, c.B / 2);
+
+    void IBordersDrawHandler.DrawBoxBorders(RGraphics g, IBorderRenderData box, RRect rect, bool isFirst, bool isLast)
+        => DrawBoxBorders(g, box, rect, isFirst, isLast);
+
+    void IBordersDrawHandler.DrawBorder(Border border, RGraphics g, IBorderRenderData box, RBrush brush, RRect rectangle)
+        => DrawBorder(border, g, box, brush, rectangle);
 }

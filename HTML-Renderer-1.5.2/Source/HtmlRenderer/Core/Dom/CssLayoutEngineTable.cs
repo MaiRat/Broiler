@@ -76,7 +76,7 @@ internal sealed class CssLayoutEngineTable
         }
         catch (Exception ex)
         {
-            tableBox.HtmlContainer.ReportError(HtmlRenderErrorType.Layout, "Failed table layout", ex);
+            tableBox.ContainerInt.ReportError(HtmlRenderErrorType.Layout, "Failed table layout", ex);
         }
     }
 

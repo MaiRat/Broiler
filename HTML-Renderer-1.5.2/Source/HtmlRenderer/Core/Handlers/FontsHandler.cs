@@ -8,16 +8,16 @@ namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
 internal sealed class FontsHandler
 {
-    private readonly RAdapter _adapter;
+    private readonly IFontCreator _fontCreator;
     private readonly Dictionary<string, string> _fontsMapping = new(StringComparer.InvariantCultureIgnoreCase);
     private readonly Dictionary<string, RFontFamily> _existingFontFamilies = new(StringComparer.InvariantCultureIgnoreCase);
     private readonly Dictionary<string, Dictionary<double, Dictionary<RFontStyle, RFont>>> _fontsCache = new(StringComparer.InvariantCultureIgnoreCase);
 
-    public FontsHandler(RAdapter adapter)
+    public FontsHandler(IFontCreator fontCreator)
     {
-        ArgChecker.AssertArgNotNull(adapter, "global");
+        ArgChecker.AssertArgNotNull(fontCreator, "fontCreator");
 
-        _adapter = adapter;
+        _fontCreator = fontCreator;
     }
 
     public bool IsFontExists(string family)
@@ -105,16 +105,16 @@ internal sealed class FontsHandler
         try
         {
             return _existingFontFamilies.TryGetValue(family, out fontFamily)
-                ? _adapter.CreateFont(fontFamily, size, style)
-                : _adapter.CreateFont(family, size, style);
+                ? _fontCreator.CreateFont(fontFamily, size, style)
+                : _fontCreator.CreateFont(family, size, style);
         }
         catch (Exception ex)
         {
             // handle possibility of no requested style exists for the font, use regular then
             System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] FontsHandler.GetCachedFont style fallback for '{family}': {ex.Message}");
             return _existingFontFamilies.TryGetValue(family, out fontFamily)
-                ? _adapter.CreateFont(fontFamily, size, RFontStyle.Regular)
-                : _adapter.CreateFont(family, size, RFontStyle.Regular);
+                ? _fontCreator.CreateFont(fontFamily, size, RFontStyle.Regular)
+                : _fontCreator.CreateFont(family, size, RFontStyle.Regular);
         }
     }
 }

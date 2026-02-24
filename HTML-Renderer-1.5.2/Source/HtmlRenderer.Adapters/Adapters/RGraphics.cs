@@ -7,13 +7,13 @@ namespace TheArtOfDev.HtmlRenderer.Adapters;
 
 public abstract class RGraphics : IDisposable
 {
-    protected readonly RAdapter _adapter;
+    protected readonly IResourceFactory _adapter;
     protected readonly Stack<RRect> _clipStack = new();
     private readonly Stack<RRect> _suspendedClips = new();
 
-    protected RGraphics(RAdapter adapter, RRect initialClip)
+    protected RGraphics(IResourceFactory adapter, RRect initialClip)
     {
-        ArgChecker.AssertArgNotNull(adapter, "global");
+        ArgChecker.AssertArgNotNull(adapter, "adapter");
 
         _adapter = adapter;
         _clipStack.Push(initialClip);

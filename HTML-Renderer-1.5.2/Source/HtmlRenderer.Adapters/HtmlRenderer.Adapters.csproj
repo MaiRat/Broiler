@@ -12,5 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HtmlRenderer.Primitives\HtmlRenderer.Primitives.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Utils\HtmlRenderer.Utils.csproj" />
   </ItemGroup>
 </Project>

@@ -59,7 +59,7 @@ internal sealed class CssBoxHr : CssBox
 
     protected override void PaintImp(RGraphics g)
     {
-        var offset = (HtmlContainer != null && !IsFixed) ? HtmlContainer.ScrollOffset : RPoint.Empty;
+        var offset = (ContainerInt != null && !IsFixed) ? ContainerInt.ScrollOffset : RPoint.Empty;
         var rect = new RRect(Bounds.X + offset.X, Bounds.Y + offset.Y, Bounds.Width, Bounds.Height);
 
         if (rect.Height > 2 && RenderUtils.IsColorVisible(ActualBackgroundColor))
