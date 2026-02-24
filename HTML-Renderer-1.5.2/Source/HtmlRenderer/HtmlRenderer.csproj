@@ -23,6 +23,10 @@ For existing implementations see: HtmlRenderer.WinForms, HtmlRenderer.WPF and Ht
     <EmbeddedResource Include="Core\Utils\ImageLoad.png" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HtmlRenderer.Primitives\HtmlRenderer.Primitives.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Utils\HtmlRenderer.Utils.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="..\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
