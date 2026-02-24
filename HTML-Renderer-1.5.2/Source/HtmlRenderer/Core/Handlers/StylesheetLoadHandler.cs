@@ -7,19 +7,25 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
-internal static class StylesheetLoadHandler
+internal sealed class StylesheetLoadHandler : IStylesheetLoader
 {
-    public static void LoadStylesheet(HtmlContainerInt htmlContainer, string src, Dictionary<string, string> attributes, out string stylesheet, out CssData stylesheetData)
+    private readonly HtmlContainerInt _htmlContainer;
+
+    public StylesheetLoadHandler(HtmlContainerInt htmlContainer)
     {
         ArgChecker.AssertArgNotNull(htmlContainer, "htmlContainer");
+        _htmlContainer = htmlContainer;
+    }
 
+    public void LoadStylesheet(string src, Dictionary<string, string> attributes, out string stylesheet, out CssData stylesheetData)
+    {
         stylesheet = null;
         stylesheetData = null;
 
         try
         {
             var args = new HtmlStylesheetLoadEventArgs(src, attributes);
-            htmlContainer.RaiseHtmlStylesheetLoadEvent(args);
+            _htmlContainer.RaiseHtmlStylesheetLoadEvent(args);
 
             if (!string.IsNullOrEmpty(args.SetStyleSheet))
             {
@@ -31,35 +37,35 @@ internal static class StylesheetLoadHandler
             }
             else if (args.SetSrc != null)
             {
-                stylesheet = LoadStylesheet(htmlContainer, args.SetSrc);
+                stylesheet = LoadStylesheet(args.SetSrc);
             }
             else
             {
-                stylesheet = LoadStylesheet(htmlContainer, src);
+                stylesheet = LoadStylesheet(src);
             }
         }
         catch (Exception ex)
         {
-            htmlContainer.ReportError(HtmlRenderErrorType.CssParsing, "Exception in handling stylesheet source", ex);
+            _htmlContainer.ReportError(HtmlRenderErrorType.CssParsing, "Exception in handling stylesheet source", ex);
         }
     }
 
 
-    private static string LoadStylesheet(HtmlContainerInt htmlContainer, string src)
+    private string LoadStylesheet(string src)
     {
         var uri = CommonUtils.TryGetUri(src);
 
         if (uri == null || !uri.IsAbsoluteUri || uri.Scheme == "file")
         {
-            return LoadStylesheetFromFile(htmlContainer, (uri != null && uri.IsAbsoluteUri) ? uri.AbsolutePath : src);
+            return LoadStylesheetFromFile((uri != null && uri.IsAbsoluteUri) ? uri.AbsolutePath : src);
         }
         else
         {
-            return LoadStylesheetFromUri(htmlContainer, uri);
+            return LoadStylesheetFromUri(uri);
         }
     }
 
-    private static string LoadStylesheetFromFile(HtmlContainerInt htmlContainer, string path)
+    private string LoadStylesheetFromFile(string path)
     {
         var fileInfo = CommonUtils.TryGetFileInfo(path);
         if (fileInfo != null)
@@ -71,18 +77,18 @@ internal static class StylesheetLoadHandler
             }
             else
             {
-                htmlContainer.ReportError(HtmlRenderErrorType.CssParsing, "No stylesheet found by path: " + path);
+                _htmlContainer.ReportError(HtmlRenderErrorType.CssParsing, "No stylesheet found by path: " + path);
             }
         }
         else
         {
-            htmlContainer.ReportError(HtmlRenderErrorType.CssParsing, "Failed load image, invalid source: " + path);
+            _htmlContainer.ReportError(HtmlRenderErrorType.CssParsing, "Failed load image, invalid source: " + path);
         }
 
         return string.Empty;
     }
 
-    private static string LoadStylesheetFromUri(HtmlContainerInt htmlContainer, Uri uri)
+    private string LoadStylesheetFromUri(Uri uri)
     {
         using var client = new WebClient();
         var stylesheet = client.DownloadString(uri);
@@ -93,7 +99,7 @@ internal static class StylesheetLoadHandler
         }
         catch (Exception ex)
         {
-            htmlContainer.ReportError(HtmlRenderErrorType.CssParsing, "Error in correcting relative URL in loaded stylesheet", ex);
+            _htmlContainer.ReportError(HtmlRenderErrorType.CssParsing, "Error in correcting relative URL in loaded stylesheet", ex);
         }
 
         return stylesheet;

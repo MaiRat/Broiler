@@ -4,7 +4,6 @@ using System.Text;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Parse;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -329,7 +328,7 @@ internal sealed class DomUtils
         {
             var selectedBoxes = onlySelected ? CollectSelectedBoxes(root) : null;
             var selectionRoot = onlySelected ? GetSelectionRoot(root, selectedBoxes) : null;
-            WriteHtml(root.HtmlContainer.CssParser, sb, root, styleGen, selectedBoxes, selectionRoot);
+            WriteHtml(sb, root, styleGen, selectedBoxes, selectionRoot);
         }
 
         return sb.ToString();
@@ -510,7 +509,7 @@ internal sealed class DomUtils
         return false;
     }
 
-    private static void WriteHtml(CssParser cssParser, StringBuilder sb, CssBox box, HtmlGenerationStyle styleGen, Dictionary<CssBox, bool> selectedBoxes, CssBox selectionRoot)
+    private static void WriteHtml(StringBuilder sb, CssBox box, HtmlGenerationStyle styleGen, Dictionary<CssBox, bool> selectedBoxes, CssBox selectionRoot)
     {
         if (box.HtmlTag != null && selectedBoxes != null && !selectedBoxes.ContainsKey(box))
             return;
@@ -520,15 +519,15 @@ internal sealed class DomUtils
             if (box.HtmlTag.Name != "link" || !box.HtmlTag.Attributes.TryGetValue("href", out string value) ||
                 (!value.StartsWith("property") && !value.StartsWith("method")))
             {
-                WriteHtmlTag(cssParser, sb, box, styleGen);
+                WriteHtmlTag(sb, box, styleGen);
                 if (box == selectionRoot)
                     sb.Append("<!--StartFragment-->");
             }
 
-            if (styleGen == HtmlGenerationStyle.InHeader && box.HtmlTag.Name == "html" && box.HtmlContainer.CssData != null)
+            if (styleGen == HtmlGenerationStyle.InHeader && box.HtmlTag.Name == "html" && box.ContainerInt.CssData != null)
             {
                 sb.AppendLine("<head>");
-                WriteStylesheet(sb, box.HtmlContainer.CssData);
+                WriteStylesheet(sb, box.ContainerInt.CssData);
                 sb.AppendLine("</head>");
             }
         }
@@ -546,7 +545,7 @@ internal sealed class DomUtils
         }
 
         foreach (var childBox in box.Boxes)
-            WriteHtml(cssParser, sb, childBox, styleGen, selectedBoxes, selectionRoot);
+            WriteHtml(sb, childBox, styleGen, selectedBoxes, selectionRoot);
 
         if (box.HtmlTag != null && !box.HtmlTag.IsSingle)
         {
@@ -556,13 +555,13 @@ internal sealed class DomUtils
         }
     }
 
-    private static void WriteHtmlTag(CssParser cssParser, StringBuilder sb, CssBox box, HtmlGenerationStyle styleGen)
+    private static void WriteHtmlTag(StringBuilder sb, CssBox box, HtmlGenerationStyle styleGen)
     {
         sb.AppendFormat($"<{box.HtmlTag.Name}");
 
         // collect all element style properties including from stylesheet
         var tagStyles = new Dictionary<string, string>();
-        var tagCssBlock = box.HtmlContainer.CssData.GetCssBlock(box.HtmlTag.Name);
+        var tagCssBlock = box.ContainerInt.CssData.GetCssBlock(box.HtmlTag.Name);
         if (tagCssBlock != null)
         {
             // TODO:a handle selectors
@@ -580,14 +579,14 @@ internal sealed class DomUtils
                 if (styleGen == HtmlGenerationStyle.Inline && att.Key == HtmlConstants.Style)
                 {
                     // if inline style add the styles to the collection
-                    var block = cssParser.ParseCssBlock(box.HtmlTag.Name, box.HtmlTag.TryGetAttribute("style"));
+                    var block = box.ContainerInt.ParseCssBlock(box.HtmlTag.Name, box.HtmlTag.TryGetAttribute("style"));
                     foreach (var prop in block.Properties)
                         tagStyles[prop.Key] = prop.Value;
                 }
                 else if (styleGen == HtmlGenerationStyle.Inline && att.Key == HtmlConstants.Class)
                 {
                     // if inline style convert the style class to actual properties and add to collection
-                    var cssBlocks = box.HtmlContainer.CssData.GetCssBlock("." + att.Value);
+                    var cssBlocks = box.ContainerInt.CssData.GetCssBlock("." + att.Value);
                     if (cssBlocks != null)
                     {
                         // TODO:a handle selectors
@@ -625,7 +624,7 @@ internal sealed class DomUtils
     private static Dictionary<string, string> StripDefaultStyles(CssBox box, Dictionary<string, string> tagStyles)
     {
         var cleanTagStyles = new Dictionary<string, string>();
-        var defaultBlocks = box.HtmlContainer.Adapter.DefaultCssData.GetCssBlock(box.HtmlTag.Name);
+        var defaultBlocks = box.ContainerInt.DefaultCssData.GetCssBlock(box.HtmlTag.Name);
 
         foreach (var style in tagStyles)
         {

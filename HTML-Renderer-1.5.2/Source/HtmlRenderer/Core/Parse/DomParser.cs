@@ -2,7 +2,6 @@ using System;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Handlers;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Parse;
@@ -10,12 +9,15 @@ namespace TheArtOfDev.HtmlRenderer.Core.Parse;
 internal sealed class DomParser
 {
     private readonly CssParser _cssParser;
+    private readonly IStylesheetLoader _stylesheetLoader;
 
-    public DomParser(CssParser cssParser)
+    public DomParser(CssParser cssParser, IStylesheetLoader stylesheetLoader)
     {
         ArgChecker.AssertArgNotNull(cssParser, "cssParser");
+        ArgChecker.AssertArgNotNull(stylesheetLoader, "stylesheetLoader");
 
         _cssParser = cssParser;
+        _stylesheetLoader = stylesheetLoader;
     }
 
     public CssBox GenerateCssTree(string html, HtmlContainerInt htmlContainer, ref CssData cssData)
@@ -24,7 +26,7 @@ internal sealed class DomParser
         if (root == null)
             return root;
 
-        root.HtmlContainer = htmlContainer;
+        root.ContainerInt = htmlContainer;
 
         bool cssDataChanged = false;
         CascadeParseStyles(root, htmlContainer, ref cssData, ref cssDataChanged);
@@ -51,7 +53,7 @@ internal sealed class DomParser
                 box.GetAttribute("rel", string.Empty).Equals("stylesheet", StringComparison.CurrentCultureIgnoreCase))
             {
                 CloneCssData(ref cssData, ref cssDataChanged);
-                StylesheetLoadHandler.LoadStylesheet(htmlContainer, box.GetAttribute("href", string.Empty), box.HtmlTag.Attributes, out string stylesheet, out CssData stylesheetData);
+                _stylesheetLoader.LoadStylesheet(box.GetAttribute("href", string.Empty), box.HtmlTag.Attributes, out string stylesheet, out CssData stylesheetData);
                 if (stylesheet != null)
                     _cssParser.ParseStyleSheet(cssData, stylesheet);
                 else if (stylesheetData != null)
@@ -181,7 +183,7 @@ internal sealed class DomParser
 
         if (assignable && block.Hover)
         {
-            box.HtmlContainer.AddHoverBox(box, block);
+            box.ContainerInt.AddHoverBox(box, block);
             assignable = false;
         }
 
@@ -527,7 +529,7 @@ internal sealed class DomParser
         }
         catch (Exception ex)
         {
-            box.HtmlContainer.ReportError(HtmlRenderErrorType.HtmlParsing, "Failed in block inside inline box correction", ex);
+            box.ContainerInt.ReportError(HtmlRenderErrorType.HtmlParsing, "Failed in block inside inline box correction", ex);
         }
     }
 

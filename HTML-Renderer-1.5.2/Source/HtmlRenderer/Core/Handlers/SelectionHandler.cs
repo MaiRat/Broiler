@@ -10,6 +10,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 internal sealed class SelectionHandler : IDisposable
 {
     private readonly CssBox _root;
+    private readonly HtmlContainerInt _htmlContainer;
     private readonly ContextMenuHandler _contextMenuHandler;
     private RPoint _selectionStartPoint;
     private CssRect _selectionStart;
@@ -32,12 +33,13 @@ internal sealed class SelectionHandler : IDisposable
         ArgChecker.AssertArgNotNull(root, "root");
 
         _root = root;
-        _contextMenuHandler = new ContextMenuHandler(this, root.HtmlContainer);
+        _htmlContainer = (HtmlContainerInt)root.ContainerInt;
+        _contextMenuHandler = new ContextMenuHandler(this, _htmlContainer);
     }
 
     public void SelectAll(RControl control)
     {
-        if (!_root.HtmlContainer.IsSelectionEnabled)
+        if (!_htmlContainer.IsSelectionEnabled)
             return;
 
         ClearSelection();
@@ -47,7 +49,7 @@ internal sealed class SelectionHandler : IDisposable
 
     public void SelectWord(RControl control, RPoint loc)
     {
-        if (!_root.HtmlContainer.IsSelectionEnabled)
+        if (!_htmlContainer.IsSelectionEnabled)
             return;
 
         var word = DomUtils.GetCssBoxWord(_root, loc);
@@ -71,7 +73,7 @@ internal sealed class SelectionHandler : IDisposable
             _lastMouseDown = DateTime.Now;
             _mouseDownOnSelectedWord = false;
 
-            if (_root.HtmlContainer.IsSelectionEnabled && parent.LeftMouseButton)
+            if (_htmlContainer.IsSelectionEnabled && parent.LeftMouseButton)
             {
                 var word = DomUtils.GetCssBoxWord(_root, loc);
                 if (word != null && word.Selected)
@@ -88,7 +90,7 @@ internal sealed class SelectionHandler : IDisposable
                 var rect = DomUtils.GetCssBoxWord(_root, loc);
                 var link = DomUtils.GetLinkBox(_root, loc);
 
-                if (_root.HtmlContainer.IsContextMenuEnabled)
+                if (_htmlContainer.IsContextMenuEnabled)
                     _contextMenuHandler.ShowContextMenu(parent, rect, link);
 
                 clear = rect == null || !rect.Selected;
@@ -108,7 +110,7 @@ internal sealed class SelectionHandler : IDisposable
 
         _mouseDownInControl = false;
 
-        if (_root.HtmlContainer.IsSelectionEnabled)
+        if (_htmlContainer.IsSelectionEnabled)
         {
             ignore = _inSelection;
 
@@ -128,7 +130,7 @@ internal sealed class SelectionHandler : IDisposable
 
     public void HandleMouseMove(RControl parent, RPoint loc)
     {
-        if (_root.HtmlContainer.IsSelectionEnabled && _mouseDownInControl && parent.LeftMouseButton)
+        if (_htmlContainer.IsSelectionEnabled && _mouseDownInControl && parent.LeftMouseButton)
         {
             if (_mouseDownOnSelectedWord)
             {
@@ -151,7 +153,7 @@ internal sealed class SelectionHandler : IDisposable
                 _cursorChanged = true;
                 parent.SetCursorHand();
             }
-            else if (_root.HtmlContainer.IsSelectionEnabled)
+            else if (_htmlContainer.IsSelectionEnabled)
             {
                 var word = DomUtils.GetCssBoxWord(_root, loc);
                 _cursorChanged = word != null && !word.IsImage && !(word.Selected && (word.SelectedStartIndex < 0 || word.Left + word.SelectedStartOffset <= loc.X) && (word.SelectedEndOffset < 0 || word.Left + word.SelectedEndOffset >= loc.X));
@@ -179,18 +181,18 @@ internal sealed class SelectionHandler : IDisposable
 
     public void CopySelectedHtml()
     {
-        if (!_root.HtmlContainer.IsSelectionEnabled)
+        if (!_htmlContainer.IsSelectionEnabled)
             return;
 
         var html = DomUtils.GenerateHtml(_root, HtmlGenerationStyle.Inline, true);
         var plainText = DomUtils.GetSelectedPlainText(_root);
 
         if (!string.IsNullOrEmpty(plainText))
-            _root.HtmlContainer.Adapter.SetToClipboard(html, plainText);
+            _htmlContainer.Adapter.SetToClipboard(html, plainText);
     }
 
-    public string GetSelectedText() => _root.HtmlContainer.IsSelectionEnabled ? DomUtils.GetSelectedPlainText(_root) : null;
-    public string GetSelectedHtml() => _root.HtmlContainer.IsSelectionEnabled ? DomUtils.GenerateHtml(_root, HtmlGenerationStyle.Inline, true) : null;
+    public string GetSelectedText() => _htmlContainer.IsSelectionEnabled ? DomUtils.GetSelectedPlainText(_root) : null;
+    public string GetSelectedHtml() => _htmlContainer.IsSelectionEnabled ? DomUtils.GenerateHtml(_root, HtmlGenerationStyle.Inline, true) : null;
     public int GetSelectingStartIndex(CssRect word) => word == (_backwardSelection ? _selectionEnd : _selectionStart) ? (_backwardSelection ? _selectionEndIndex : _selectionStartIndex) : -1;
     public int GetSelectedEndIndexOffset(CssRect word) => word == (_backwardSelection ? _selectionStart : _selectionEnd) ? (_backwardSelection ? _selectionStartIndex : _selectionEndIndex) : -1;
     public double GetSelectedStartOffset(CssRect word) => word == (_backwardSelection ? _selectionEnd : _selectionStart) ? (_backwardSelection ? _selectionEndOffset : _selectionStartOffset) : -1;
