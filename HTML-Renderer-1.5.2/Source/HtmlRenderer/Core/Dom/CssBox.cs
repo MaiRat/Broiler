@@ -313,7 +313,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                 if (Width != CssConstants.Auto && !string.IsNullOrEmpty(Width))
                 {
-                    width = CssValueParser.ParseLength(Width, width, this);
+                    width = CssValueParser.ParseLength(Width, width, GetEmHeight());
                     width += ActualPaddingLeft + ActualPaddingRight + ActualBorderLeftWidth + ActualBorderRightWidth;
                 }
 
@@ -415,9 +415,9 @@ internal class CssBox : CssBoxProperties, IDisposable
         {
             double dx = 0, dy = 0;
             if (Left != null && Left != CssConstants.Auto)
-                dx = CssValueParser.ParseLength(Left, Size.Width, this);
+                dx = CssValueParser.ParseLength(Left, Size.Width, GetEmHeight());
             if (Top != null && Top != CssConstants.Auto)
-                dy = CssValueParser.ParseLength(Top, Size.Height, this);
+                dy = CssValueParser.ParseLength(Top, Size.Height, GetEmHeight());
 
             if (dx != 0)
                 OffsetLeft(dx);
@@ -942,8 +942,8 @@ internal class CssBox : CssBoxProperties, IDisposable
 
     protected override RPoint GetActualLocation(string X, string Y)
     {
-        var left = CssValueParser.ParseLength(X, HtmlContainer.PageSize.Width, this, null);
-        var top = CssValueParser.ParseLength(Y, HtmlContainer.PageSize.Height, this, null);
+        var left = CssValueParser.ParseLength(X, HtmlContainer.PageSize.Width, GetEmHeight(), null);
+        var top = CssValueParser.ParseLength(Y, HtmlContainer.PageSize.Height, GetEmHeight(), null);
 
         return new RPoint(left, top);
     }

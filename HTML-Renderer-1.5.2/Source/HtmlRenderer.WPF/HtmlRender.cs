@@ -27,7 +27,7 @@ public static class HtmlRender
         WpfAdapter.Instance.AddFontFamilyMapping(fromFamily, toFamily);
     }
 
-    public static CssData ParseStyleSheet(string stylesheet, bool combineWithDefault = true) => CssData.Parse(WpfAdapter.Instance, stylesheet, combineWithDefault);
+    public static CssData ParseStyleSheet(string stylesheet, bool combineWithDefault = true) => CssDataParser.Parse(WpfAdapter.Instance, stylesheet, combineWithDefault ? WpfAdapter.Instance.DefaultCssData : null);
 
     public static Size Measure(string html, double maxWidth = 0, CssData cssData = null,
         EventHandler<HtmlStylesheetLoadEventArgs> stylesheetLoad = null, EventHandler<HtmlImageLoadEventArgs> imageLoad = null)

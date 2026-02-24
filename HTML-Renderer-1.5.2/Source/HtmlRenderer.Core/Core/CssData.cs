@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Parse;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
@@ -13,12 +11,6 @@ public sealed class CssData
     private readonly Dictionary<string, Dictionary<string, List<CssBlock>>> _mediaBlocks = new(StringComparer.InvariantCultureIgnoreCase);
 
     internal CssData() => _mediaBlocks.Add("all", new Dictionary<string, List<CssBlock>>(StringComparer.InvariantCultureIgnoreCase));
-
-    public static CssData Parse(RAdapter adapter, string stylesheet, bool combineWithDefault = true)
-    {
-        CssParser parser = new(adapter);
-        return parser.ParseStyleSheet(stylesheet, combineWithDefault);
-    }
 
     internal IDictionary<string, Dictionary<string, List<CssBlock>>> MediaBlocks => _mediaBlocks;
 

@@ -269,7 +269,7 @@ internal sealed class CssLayoutEngineTable
                     if (i >= row.Boxes.Count || row.Boxes[i].Display != CssConstants.TableCell)
                         continue;
 
-                    double len = CssValueParser.ParseLength(row.Boxes[i].Width, availCellSpace, row.Boxes[i]);
+                    double len = CssValueParser.ParseLength(row.Boxes[i].Width, availCellSpace, row.Boxes[i].GetEmHeight());
                     
                     if (len <= 0) //If some width specified
                         continue;
@@ -732,7 +732,7 @@ internal sealed class CssLayoutEngineTable
         if (tblen.Number > 0)
         {
             _widthSpecified = true;
-            return CssValueParser.ParseLength(_tableBox.Width, _tableBox.ParentBox.AvailableWidth, _tableBox);
+            return CssValueParser.ParseLength(_tableBox.Width, _tableBox.ParentBox.AvailableWidth, _tableBox.GetEmHeight());
         }
         else
         {
@@ -746,7 +746,7 @@ internal sealed class CssLayoutEngineTable
         if (tblen.Number > 0)
         {
             _widthSpecified = true;
-            return CssValueParser.ParseLength(_tableBox.MaxWidth, _tableBox.ParentBox.AvailableWidth, _tableBox);
+            return CssValueParser.ParseLength(_tableBox.MaxWidth, _tableBox.ParentBox.AvailableWidth, _tableBox.GetEmHeight());
         }
         else
         {

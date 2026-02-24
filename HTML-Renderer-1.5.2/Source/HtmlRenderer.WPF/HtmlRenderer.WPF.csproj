@@ -39,6 +39,8 @@ Features and Benefits:
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HtmlRenderer\HtmlRenderer.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Core\HtmlRenderer.Core.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.CSS\HtmlRenderer.CSS.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\SharedAssemblyInfo.cs">

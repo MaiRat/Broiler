@@ -8,7 +8,7 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
-public abstract class RAdapter
+public abstract class RAdapter : IColorResolver
 {
     private readonly Dictionary<RColor, RBrush> _brushesCache = [];
     private readonly Dictionary<RColor, RPen> _penCache = [];
@@ -20,7 +20,7 @@ public abstract class RAdapter
 
     protected RAdapter() => _fontsHandler = new FontsHandler(this);
 
-    public CssData DefaultCssData => _defaultCssData ??= CssData.Parse(this, CssDefaults.DefaultStyleSheet, false);
+    public CssData DefaultCssData => _defaultCssData ??= CssDataParser.Parse(this, CssDefaults.DefaultStyleSheet);
 
     public RColor GetColor(string colorName)
     {

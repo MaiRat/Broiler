@@ -1,21 +1,19 @@
 using System;
 using System.Globalization;
-using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Dom;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Parse;
 
 internal sealed class CssValueParser
 {
-    private readonly RAdapter _adapter;
+    private readonly IColorResolver _colorResolver;
 
-    public CssValueParser(RAdapter adapter)
+    public CssValueParser(IColorResolver colorResolver)
     {
-        ArgChecker.AssertArgNotNull(adapter, "global");
+        ArgChecker.AssertArgNotNull(colorResolver, "colorResolver");
 
-        _adapter = adapter;
+        _colorResolver = colorResolver;
     }
 
     public static bool IsFloat(string str, int idx, int length)
@@ -100,8 +98,8 @@ internal sealed class CssValueParser
         return result;
     }
 
-    public static double ParseLength(string length, double hundredPercent, CssBoxProperties box, bool fontAdjust = false) => ParseLength(length, hundredPercent, box.GetEmHeight(), null, fontAdjust, false);
-    public static double ParseLength(string length, double hundredPercent, CssBoxProperties box, string defaultUnit) => ParseLength(length, hundredPercent, box.GetEmHeight(), defaultUnit, false, false);
+    public static double ParseLength(string length, double hundredPercent, double emFactor, bool fontAdjust = false) => ParseLength(length, hundredPercent, emFactor, null, fontAdjust, false);
+    public static double ParseLength(string length, double hundredPercent, double emFactor, string defaultUnit) => ParseLength(length, hundredPercent, emFactor, defaultUnit, false, false);
     public static double ParseLength(string length, double hundredPercent, double emFactor, string defaultUnit, bool fontAdjust, bool returnPoints)
     {
         //Return zero if no length specified, zero specified
@@ -239,17 +237,17 @@ internal sealed class CssValueParser
         return false;
     }
 
-    public static double GetActualBorderWidth(string borderValue, CssBoxProperties b)
+    public static double GetActualBorderWidth(string borderValue, double emHeight)
     {
         if (string.IsNullOrEmpty(borderValue))
-            return GetActualBorderWidth(CssConstants.Medium, b);
+            return GetActualBorderWidth(CssConstants.Medium, emHeight);
 
         return borderValue switch
         {
             CssConstants.Thin => (double)1f,
             CssConstants.Medium => (double)2f,
             CssConstants.Thick => (double)4f,
-            _ => Math.Abs(ParseLength(borderValue, 1, b)),
+            _ => Math.Abs(ParseLength(borderValue, 1, emHeight)),
         };
     }
 
@@ -355,7 +353,7 @@ internal sealed class CssValueParser
 
     private bool GetColorByName(string str, int idx, int length, out RColor color)
     {
-        color = _adapter.GetColor(str.Substring(idx, length));
+        color = _colorResolver.GetColor(str.Substring(idx, length));
         return color.A > 0;
     }
 

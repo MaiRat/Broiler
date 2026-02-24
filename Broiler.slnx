@@ -7,6 +7,8 @@
     <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer/HtmlRenderer.csproj" />
     <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.Primitives/HtmlRenderer.Primitives.csproj" />
     <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.Utils/HtmlRenderer.Utils.csproj" />
+    <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.Core/HtmlRenderer.Core.csproj" />
+    <Project Path="HTML-Renderer-1.5.2/Source/HtmlRenderer.CSS/HtmlRenderer.CSS.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Broiler.App/Broiler.App.csproj" />

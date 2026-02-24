@@ -29,4 +29,6 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion("1.5.2.0")]
 
+[assembly: InternalsVisibleTo("HtmlRenderer.Core")]
+[assembly: InternalsVisibleTo("HtmlRenderer.CSS")]
 [assembly: InternalsVisibleTo("HtmlRenderer.Image.Tests")]
