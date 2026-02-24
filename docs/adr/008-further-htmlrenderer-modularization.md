@@ -183,7 +183,9 @@ HtmlRenderer.Rendering.
 
    `StylesheetLoadHandler` (remaining in L4) implements this interface.
    `DomParser` accepts `IStylesheetLoader` instead of calling the static method
-   directly.
+   directly. The interface is `internal` because all consuming assemblies are
+   covered by `InternalsVisibleTo` (see ADR-007, Rationale); this avoids
+   exposing implementation details in the public API surface.
 
 2. **Move `CssBox.HtmlContainer` concrete property behind factory** — The
    concrete `HtmlContainer` property on `CssBox` (returning
@@ -205,7 +207,9 @@ HtmlRenderer.Rendering.
 3. **Decouple `ImageLoadHandler` instantiation** — `CssBoxImage` creates
    `ImageLoadHandler` directly. After Phase 1 moves `ImageLoadHandler` to
    HtmlRenderer.Rendering, `CssBoxImage` should receive it via
-   `IHtmlContainerInt`:
+   `IHtmlContainerInt`. Note: `IImageLoadHandler` already exists in
+   HtmlRenderer.Core (defined in ADR-007). The factory method below is a new
+   addition to the existing `IHtmlContainerInt` interface:
 
    ```csharp
    internal interface IHtmlContainerInt
@@ -239,7 +243,9 @@ HtmlRenderer.Rendering, HtmlRenderer.Dom.
 **Prerequisites** (additional interface decoupling):
 
 1. **`ISelectionHandler` interface** — `HtmlContainerInt` creates and drives
-   `SelectionHandler`. Define an interface in Core:
+   `SelectionHandler`. Define an interface in Core. Like all inter-module
+   interfaces in this codebase, it uses `internal` visibility with
+   `InternalsVisibleTo` to keep the public API surface minimal:
 
    ```csharp
    internal interface ISelectionHandler : IDisposable
