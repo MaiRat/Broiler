@@ -8,7 +8,7 @@
   </PropertyGroup>
   <!-- NuGet Package Properties -->
   <PropertyGroup>
-    <PackageId>HtmlRenderer.Core</PackageId>
+    <PackageId>HtmlRenderer.Main</PackageId>
     <Title>HTML Renderer Core</Title>
     <PackageTags>html render renderer draw core</PackageTags>
     <Description>Cross framework (WinForms/WPF/PDF/Metro/Mono/etc.), Multipurpose (UI Controls / Image generation / PDF generation / etc.), 100% managed (C#), High performance HTML Rendering library.
@@ -25,6 +25,9 @@ For existing implementations see: HtmlRenderer.WinForms, HtmlRenderer.WPF and Ht
   <ItemGroup>
     <ProjectReference Include="..\HtmlRenderer.Primitives\HtmlRenderer.Primitives.csproj" />
     <ProjectReference Include="..\HtmlRenderer.Utils\HtmlRenderer.Utils.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Core\HtmlRenderer.Core.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.CSS\HtmlRenderer.CSS.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Adapters\HtmlRenderer.Adapters.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\SharedAssemblyInfo.cs">

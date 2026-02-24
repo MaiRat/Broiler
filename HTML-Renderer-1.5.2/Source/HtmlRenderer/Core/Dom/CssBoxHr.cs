@@ -32,7 +32,7 @@ internal sealed class CssBoxHr : CssBox
 
         //Check width if not auto
         if (Width != CssConstants.Auto && !string.IsNullOrEmpty(Width))
-            width = CssValueParser.ParseLength(Width, width, this);
+            width = CssValueParser.ParseLength(Width, width, GetEmHeight());
 
         if (width < minwidth || width >= 9999)
             width = minwidth;

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
@@ -12,21 +11,21 @@ namespace TheArtOfDev.HtmlRenderer.Core.Parse;
 internal sealed class CssParser
 {
     private static readonly char[] _cssBlockSplitters = ['}', ';'];
-    private readonly RAdapter _adapter;
+    private readonly IColorResolver _colorResolver;
     private readonly CssValueParser _valueParser;
     private static readonly char[] _cssClassTrimChars = ['\r', '\n', '\t', ' ', '-', '!', '<', '>'];
 
-    public CssParser(RAdapter adapter)
+    public CssParser(IColorResolver colorResolver)
     {
-        ArgChecker.AssertArgNotNull(adapter, "global");
+        ArgChecker.AssertArgNotNull(colorResolver, "colorResolver");
 
-        _valueParser = new CssValueParser(adapter);
-        _adapter = adapter;
+        _valueParser = new CssValueParser(colorResolver);
+        _colorResolver = colorResolver;
     }
 
-    public CssData ParseStyleSheet(string stylesheet, bool combineWithDefault)
+    public CssData ParseStyleSheet(string stylesheet, CssData defaultCssData)
     {
-        var cssData = combineWithDefault ? _adapter.DefaultCssData.Clone() : new CssData();
+        var cssData = defaultCssData != null ? defaultCssData.Clone() : new CssData();
 
         if (!string.IsNullOrEmpty(stylesheet))
             ParseStyleSheet(cssData, stylesheet);
@@ -501,7 +500,7 @@ internal sealed class CssParser
 
             var font = propValue.Substring(start, adjEnd - start + 1);
 
-            if (_adapter.IsFontExists(font))
+            if (_colorResolver.IsFontExists(font))
                 return font;
 
             start = end;
