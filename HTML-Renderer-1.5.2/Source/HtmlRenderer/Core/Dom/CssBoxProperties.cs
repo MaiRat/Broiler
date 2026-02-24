@@ -8,7 +8,7 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
-internal abstract class CssBoxProperties
+internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderData
 {
     #region CSS Fields
 
@@ -753,6 +753,13 @@ internal abstract class CssBoxProperties
     }
 
     public bool IsRounded => ActualCornerNe > 0f || ActualCornerNw > 0f || ActualCornerSe > 0f || ActualCornerSw > 0f;
+
+    /// <summary>
+    /// Whether geometry anti-aliasing should be avoided. Overridden in CssBox to
+    /// delegate to the container.
+    /// </summary>
+    public virtual bool AvoidGeometryAntialias => false;
+
     public double ActualWordSpacing { get; private set; } = double.NaN;
 
     public RColor ActualColor

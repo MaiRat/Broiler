@@ -10,7 +10,7 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
-internal sealed class ImageLoadHandler : IDisposable
+internal sealed class ImageLoadHandler : IImageLoadHandler
 {
     private readonly IHtmlContainerInt _htmlContainer;
     private readonly ActionInt<RImage, RRect, bool> _loadCompleteCallback;
