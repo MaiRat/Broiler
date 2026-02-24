@@ -64,7 +64,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator
     {
         if (_loadImage == null)
         {
-            var stream = typeof(HtmlRendererUtils).Assembly.GetManifestResourceStream("TheArtOfDev.HtmlRenderer.Core.Utils.ImageLoad.png");
+            var stream = typeof(FontsHandler).Assembly.GetManifestResourceStream("TheArtOfDev.HtmlRenderer.Core.Utils.ImageLoad.png");
 
             if (stream != null)
                 _loadImage = ImageFromStream(stream);
@@ -77,7 +77,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator
     {
         if (_errorImage == null)
         {
-            var stream = typeof(HtmlRendererUtils).Assembly.GetManifestResourceStream("TheArtOfDev.HtmlRenderer.Core.Utils.ImageError.png");
+            var stream = typeof(FontsHandler).Assembly.GetManifestResourceStream("TheArtOfDev.HtmlRenderer.Core.Utils.ImageError.png");
 
             if (stream != null)
                 _errorImage = ImageFromStream(stream);

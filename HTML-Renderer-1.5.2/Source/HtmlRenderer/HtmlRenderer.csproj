@@ -19,15 +19,12 @@ For existing implementations see: HtmlRenderer.WinForms, HtmlRenderer.WPF and Ht
     <Summary>Cross framework (WinForms/WPF/PDF/Metro/Mono/etc.), Multipurpose (UI Controls / Image generation / PDF generation / etc.), 100% managed (C#), High performance HTML Rendering library.</Summary>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Core\Utils\ImageError.png" />
-    <EmbeddedResource Include="Core\Utils\ImageLoad.png" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\HtmlRenderer.Primitives\HtmlRenderer.Primitives.csproj" />
     <ProjectReference Include="..\HtmlRenderer.Utils\HtmlRenderer.Utils.csproj" />
     <ProjectReference Include="..\HtmlRenderer.Core\HtmlRenderer.Core.csproj" />
     <ProjectReference Include="..\HtmlRenderer.CSS\HtmlRenderer.CSS.csproj" />
     <ProjectReference Include="..\HtmlRenderer.Adapters\HtmlRenderer.Adapters.csproj" />
+    <ProjectReference Include="..\HtmlRenderer.Rendering\HtmlRenderer.Rendering.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\SharedAssemblyInfo.cs">

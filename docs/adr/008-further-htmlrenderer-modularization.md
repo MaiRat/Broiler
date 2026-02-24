@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Phase 1 Accepted (Rendering extraction complete)
 
 ## Context
 
