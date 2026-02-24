@@ -44,7 +44,7 @@ internal static class BordersDrawHandler
         {
             // rounded border need special path
             Object prevMode = null;
-            if (box.HtmlContainer != null && !box.HtmlContainer.AvoidGeometryAntialias && box.IsRounded)
+            if (box.ContainerInt != null && !box.ContainerInt.AvoidGeometryAntialias && box.IsRounded)
                 prevMode = g.SetAntiAliasSmoothingMode();
 
             var pen = GetPen(g, style, color, GetWidth(border, box));

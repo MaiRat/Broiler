@@ -22,7 +22,7 @@ internal static class RenderUtils
                 rect.Width += 2;
 
                 if (!box.IsFixed)
-                    rect.Offset(box.HtmlContainer.ScrollOffset);
+                    rect.Offset(box.ContainerInt.ScrollOffset);
 
                 rect.Intersect(prevClip);
                 g.PushClip(rect);
@@ -38,17 +38,17 @@ internal static class RenderUtils
         }
     }
 
-    public static void DrawImageLoadingIcon(RGraphics g, HtmlContainerInt htmlContainer, RRect r)
+    public static void DrawImageLoadingIcon(RGraphics g, IHtmlContainerInt htmlContainer, RRect r)
     {
         g.DrawRectangle(g.GetPen(RColor.LightGray), r.Left + 3, r.Top + 3, 13, 14);
-        var image = htmlContainer.Adapter.GetLoadingImage();
+        var image = htmlContainer.GetLoadingImage();
         g.DrawImage(image, new RRect(r.Left + 4, r.Top + 4, image.Width, image.Height));
     }
 
-    public static void DrawImageErrorIcon(RGraphics g, HtmlContainerInt htmlContainer, RRect r)
+    public static void DrawImageErrorIcon(RGraphics g, IHtmlContainerInt htmlContainer, RRect r)
     {
         g.DrawRectangle(g.GetPen(RColor.LightGray), r.Left + 2, r.Top + 2, 15, 15);
-        var image = htmlContainer.Adapter.GetLoadingFailedImage();
+        var image = htmlContainer.GetLoadingFailedImage();
         g.DrawImage(image, new RRect(r.Left + 3, r.Top + 3, image.Width, image.Height));
     }
 

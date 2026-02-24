@@ -13,7 +13,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 internal class CssBox : CssBoxProperties, IDisposable
 {
     private CssBox _parentBox;
-    protected HtmlContainerInt _htmlContainer;
+    protected IHtmlContainerInt _htmlContainer;
     private SubString _text;
 
     internal bool _tableFixed;
@@ -33,9 +33,22 @@ internal class CssBox : CssBoxProperties, IDisposable
         HtmlTag = tag;
     }
 
+    /// <summary>
+    /// The container abstracted through <see cref="IHtmlContainerInt"/>. Used by
+    /// CssBox and subclass code for decoupled access.
+    /// </summary>
+    internal IHtmlContainerInt ContainerInt
+    {
+        get { return _htmlContainer ??= _parentBox?.ContainerInt; }
+    }
+
+    /// <summary>
+    /// The concrete container for L4 orchestration code.
+    /// Setter accepts <see cref="IHtmlContainerInt"/> for decoupled assignment.
+    /// </summary>
     public HtmlContainerInt HtmlContainer
     {
-        get { return _htmlContainer ??= _parentBox?.HtmlContainer; }
+        get { return ContainerInt as HtmlContainerInt; }
         set { _htmlContainer = value; }
     }
 
@@ -156,7 +169,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         }
         catch (Exception ex)
         {
-            HtmlContainer.ReportError(HtmlRenderErrorType.Layout, "Exception in box layout", ex);
+            ContainerInt.ReportError(HtmlRenderErrorType.Layout, "Exception in box layout", ex);
         }
     }
 
@@ -184,7 +197,7 @@ internal class CssBox : CssBoxProperties, IDisposable
                     if (!IsFixed)
                     {
                         //rect.Offset(new RPoint(-HtmlContainer.Location.X, -HtmlContainer.Location.Y));
-                        rect.Offset(HtmlContainer.ScrollOffset);
+                        rect.Offset(ContainerInt.ScrollOffset);
                     }
 
                     clip.Intersect(rect);
@@ -204,7 +217,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         }
         catch (Exception ex)
         {
-            HtmlContainer.ReportError(HtmlRenderErrorType.Paint, "Exception in box paint", ex);
+            ContainerInt.ReportError(HtmlRenderErrorType.Paint, "Exception in box paint", ex);
         }
     }
 
@@ -429,8 +442,8 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         if (!IsFixed)
         {
-            var actualWidth = Math.Max(GetMinimumWidth() + CssBoxHelper.GetWidthMarginDeep(this), Size.Width < 90999 ? ActualRight - HtmlContainer.Root.Location.X : 0);
-            HtmlContainer.ActualSize = CommonUtils.Max(HtmlContainer.ActualSize, new RSize(actualWidth, ActualBottom - HtmlContainer.Root.Location.Y));
+            var actualWidth = Math.Max(GetMinimumWidth() + CssBoxHelper.GetWidthMarginDeep(this), Size.Width < 90999 ? ActualRight - ContainerInt.RootLocation.X : 0);
+            ContainerInt.ActualSize = CommonUtils.Max(ContainerInt.ActualSize, new RSize(actualWidth, ActualBottom - ContainerInt.RootLocation.Y));
         }
     }
 
@@ -441,7 +454,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         if (BackgroundImage != CssConstants.None && _imageLoadHandler == null)
         {
-            _imageLoadHandler = new ImageLoadHandler(HtmlContainer, OnImageLoadComplete);
+            _imageLoadHandler = new ImageLoadHandler(ContainerInt, OnImageLoadComplete);
             _imageLoadHandler.LoadImage(BackgroundImage, HtmlTag != null ? HtmlTag.Attributes : null);
         }
 
@@ -504,7 +517,7 @@ internal class CssBox : CssBoxProperties, IDisposable
             _listItemBox = new CssBox(null, null);
             _listItemBox.InheritStyle(this);
             _listItemBox.Display = CssConstants.Inline;
-            _listItemBox.HtmlContainer = HtmlContainer;
+            _listItemBox._htmlContainer = ContainerInt;
 
             if (ListStyleType.Equals(CssConstants.Disc, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -608,7 +621,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
     public bool BreakPage()
     {
-        var container = HtmlContainer;
+        var container = ContainerInt;
 
         if (Size.Height >= container.PageSize.Height)
             return false;
@@ -715,7 +728,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         RPoint offset = RPoint.Empty;
 
         if (!IsFixed)
-            offset = HtmlContainer.ScrollOffset;
+            offset = ContainerInt.ScrollOffset;
 
         for (int i = 0; i < rects.Length; i++)
         {
@@ -792,7 +805,7 @@ internal class CssBox : CssBoxProperties, IDisposable
                 roundrect = RenderUtils.GetRoundRect(g, rect, ActualCornerNw, ActualCornerNe, ActualCornerSe, ActualCornerSw);
 
             Object prevMode = null;
-            if (HtmlContainer != null && !HtmlContainer.AvoidGeometryAntialias && IsRounded)
+            if (ContainerInt != null && !ContainerInt.AvoidGeometryAntialias && IsRounded)
                 prevMode = g.SetAntiAliasSmoothingMode();
 
             if (roundrect != null)
@@ -848,7 +861,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                 g.DrawRectangle(GetSelectionBackBrush(g, false), rect.X, rect.Y, rect.Width, rect.Height);
 
-                if (HtmlContainer.SelectionForeColor != RColor.Empty && (word.SelectedStartOffset > 0 || word.SelectedEndIndexOffset > -1))
+                if (ContainerInt.SelectionForeColor != RColor.Empty && (word.SelectedStartOffset > 0 || word.SelectedEndIndexOffset > -1))
                 {
                     g.PushClipExclude(rect);
                     g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new RSize(word.Width, word.Height), isRtl);
@@ -915,14 +928,14 @@ internal class CssBox : CssBoxProperties, IDisposable
     private void OnImageLoadComplete(RImage image, RRect rectangle, bool async)
     {
         if (image != null && async)
-            HtmlContainer.RequestRefresh(false);
+            ContainerInt.RequestRefresh(false);
     }
 
-    protected RColor GetSelectionForeBrush() => HtmlContainer.SelectionForeColor != RColor.Empty ? HtmlContainer.SelectionForeColor : ActualColor;
+    protected RColor GetSelectionForeBrush() => ContainerInt.SelectionForeColor != RColor.Empty ? ContainerInt.SelectionForeColor : ActualColor;
 
     protected RBrush GetSelectionBackBrush(RGraphics g, bool forceAlpha)
     {
-        var backColor = HtmlContainer.SelectionBackColor;
+        var backColor = ContainerInt.SelectionBackColor;
         if (backColor != RColor.Empty)
         {
             if (forceAlpha && backColor.A > 180)
@@ -936,14 +949,14 @@ internal class CssBox : CssBoxProperties, IDisposable
         }
     }
 
-    protected override RFont GetCachedFont(string fontFamily, double fsize, RFontStyle st) => HtmlContainer.Adapter.GetFont(fontFamily, fsize, st);
+    protected override RFont GetCachedFont(string fontFamily, double fsize, RFontStyle st) => ContainerInt.GetFont(fontFamily, fsize, st);
 
-    protected override RColor GetActualColor(string colorStr) => HtmlContainer.CssParser.ParseColor(colorStr);
+    protected override RColor GetActualColor(string colorStr) => ContainerInt.ParseColor(colorStr);
 
     protected override RPoint GetActualLocation(string X, string Y)
     {
-        var left = CssValueParser.ParseLength(X, HtmlContainer.PageSize.Width, GetEmHeight(), null);
-        var top = CssValueParser.ParseLength(Y, HtmlContainer.PageSize.Height, GetEmHeight(), null);
+        var left = CssValueParser.ParseLength(X, ContainerInt.PageSize.Width, GetEmHeight(), null);
+        var top = CssValueParser.ParseLength(Y, ContainerInt.PageSize.Height, GetEmHeight(), null);
 
         return new RPoint(left, top);
     }

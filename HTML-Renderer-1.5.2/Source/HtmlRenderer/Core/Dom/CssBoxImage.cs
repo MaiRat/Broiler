@@ -25,7 +25,7 @@ internal sealed class CssBoxImage : CssBox
         // load image if it is in visible rectangle
         if (_imageLoadHandler == null)
         {
-            _imageLoadHandler = new ImageLoadHandler(HtmlContainer, OnLoadImageComplete);
+            _imageLoadHandler = new ImageLoadHandler(ContainerInt, OnLoadImageComplete);
             _imageLoadHandler.LoadImage(GetAttribute("src"), HtmlTag?.Attributes);
         }
 
@@ -33,7 +33,7 @@ internal sealed class CssBoxImage : CssBox
         RPoint offset = RPoint.Empty;
 
         if (!IsFixed)
-            offset = HtmlContainer.ScrollOffset;
+            offset = ContainerInt.ScrollOffset;
 
         rect.Offset(offset);
 
@@ -65,11 +65,11 @@ internal sealed class CssBoxImage : CssBox
         else if (_imageLoadingComplete)
         {
             if (_imageLoadingComplete && r.Width > 19 && r.Height > 19)
-                RenderUtils.DrawImageErrorIcon(g, HtmlContainer, r);
+                RenderUtils.DrawImageErrorIcon(g, ContainerInt, r);
         }
         else
         {
-            RenderUtils.DrawImageLoadingIcon(g, HtmlContainer, r);
+            RenderUtils.DrawImageLoadingIcon(g, ContainerInt, r);
             if (r.Width > 19 && r.Height > 19)
                 g.DrawRectangle(g.GetPen(RColor.LightGray), r.X, r.Y, r.Width, r.Height);
         }
@@ -82,9 +82,9 @@ internal sealed class CssBoxImage : CssBox
     {
         if (!_wordsSizeMeasured)
         {
-            if (_imageLoadHandler == null && (HtmlContainer.AvoidAsyncImagesLoading || HtmlContainer.AvoidImagesLateLoading))
+            if (_imageLoadHandler == null && (ContainerInt.AvoidAsyncImagesLoading || ContainerInt.AvoidImagesLateLoading))
             {
-                _imageLoadHandler = new ImageLoadHandler(HtmlContainer, OnLoadImageComplete);
+                _imageLoadHandler = new ImageLoadHandler(ContainerInt, OnLoadImageComplete);
 
                 if (Content != null && Content != CssConstants.Normal)
                     _imageLoadHandler.LoadImage(Content, HtmlTag?.Attributes);
@@ -121,13 +121,13 @@ internal sealed class CssBoxImage : CssBox
         if (_imageLoadingComplete && image == null)
             SetErrorBorder();
 
-        if (!HtmlContainer.AvoidImagesLateLoading || async)
+        if (!ContainerInt.AvoidImagesLateLoading || async)
         {
             var width = new CssLength(Width);
             var height = new CssLength(Height);
             var layout = width.Number <= 0 || width.Unit != CssUnit.Pixels || height.Number <= 0 || height.Unit != CssUnit.Pixels;
 
-            HtmlContainer.RequestRefresh(layout);
+            ContainerInt.RequestRefresh(layout);
         }
     }
 }
