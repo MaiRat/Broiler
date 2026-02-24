@@ -8,7 +8,7 @@ using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
-public abstract class RAdapter : IColorResolver
+public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator
 {
     private readonly Dictionary<RColor, RBrush> _brushesCache = [];
     private readonly Dictionary<RColor, RPen> _penCache = [];
@@ -101,6 +101,10 @@ public abstract class RAdapter : IColorResolver
     internal RFont CreateFont(string family, double size, RFontStyle style) => CreateFontInt(family, size, style);
 
     internal RFont CreateFont(RFontFamily family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+
+    RFont IFontCreator.CreateFont(string family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+
+    RFont IFontCreator.CreateFont(RFontFamily family, double size, RFontStyle style) => CreateFontInt(family, size, style);
 
     protected abstract RColor GetColorInt(string colorName);
 
