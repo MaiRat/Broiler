@@ -465,6 +465,12 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         ActualBottom = Math.Max(ActualBottom, Location.Y + ActualHeight);
 
+        // Floats with an explicit CSS height establish a new BFC.
+        // Their ActualBottom should reflect the stated height, not
+        // content overflow from child floats (CSS2.1 §10.6.1).
+        if (Float != CssConstants.None && Height != CssConstants.Auto && !string.IsNullOrEmpty(Height))
+            ActualBottom = Location.Y + ActualHeight;
+
         // Apply position:relative offset after layout (visual only, does not affect flow)
         if (Position == CssConstants.Relative)
         {

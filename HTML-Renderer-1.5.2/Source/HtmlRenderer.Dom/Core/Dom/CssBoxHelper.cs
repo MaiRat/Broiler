@@ -1,5 +1,7 @@
 ﻿using System;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 using System.Drawing;
 
@@ -185,6 +187,7 @@ internal static class CssBoxHelper
     public static double GetMaxFloatBottom(CssBox box)
     {
         double maxBottom = 0;
+        List<(string tag, double bottom)> considered = null;
 
         if (box.ParentBox == null)
             return maxBottom;
@@ -192,19 +195,49 @@ internal static class CssBoxHelper
         foreach (var sibling in box.ParentBox.Boxes)
         {
             if (sibling == box) break;
-            CollectMaxFloatBottom(sibling, ref maxBottom);
+            CollectMaxFloatBottom(sibling, ref maxBottom, ref considered);
+        }
+
+        if (considered != null && considered.Count > 0)
+        {
+            Debug.WriteLine($"[ClearFloat] Clearance for <{box.HtmlTag?.Name ?? "?"}> clear={box.Clear}: " +
+                $"considered {considered.Count} float(s), maxBottom={maxBottom:F1}");
+            foreach (var (tag, bottom) in considered)
+                Debug.WriteLine($"  - <{tag}> bottom={bottom:F1}");
         }
 
         return maxBottom;
     }
 
-    private static void CollectMaxFloatBottom(CssBox box, ref double maxBottom)
+    /// <summary>
+    /// Collects the maximum bottom coordinate of floats in the same
+    /// block formatting context (BFC). Floated elements establish a
+    /// new BFC, so their descendant floats are excluded from clearance
+    /// calculations outside.
+    /// </summary>
+    private static void CollectMaxFloatBottom(CssBox box, ref double maxBottom,
+        ref List<(string tag, double bottom)> considered)
     {
         if (box.Float != CssConstants.None)
-            maxBottom = Math.Max(maxBottom, box.ActualBottom + box.ActualBorderBottomWidth);
+        {
+            // When the float has an explicit CSS height, use the box height
+            // instead of ActualBottom which may be expanded by child overflow.
+            double boxBottom;
+            if (box.Height != CssConstants.Auto && !string.IsNullOrEmpty(box.Height))
+                boxBottom = box.Location.Y + box.ActualHeight;
+            else
+                boxBottom = box.ActualBottom;
+
+            double bottom = boxBottom + box.ActualBorderBottomWidth;
+            maxBottom = Math.Max(maxBottom, bottom);
+            considered ??= new List<(string, double)>();
+            considered.Add((box.HtmlTag?.Name ?? box.Display, bottom));
+            // Float establishes a new BFC – don't recurse into descendants.
+            return;
+        }
 
         foreach (var child in box.Boxes)
-            CollectMaxFloatBottom(child, ref maxBottom);
+            CollectMaxFloatBottom(child, ref maxBottom, ref considered);
     }
 
     public static bool IsRectVisible(RectangleF rect, RectangleF clip)

@@ -392,6 +392,54 @@ public class Acid1ProgrammaticTests
             "clear:both should push the block below all preceding floats.");
     }
 
+    /// <summary>
+    /// Regression test for float scope / BFC clearance (test5526c).
+    /// <c>clear: both</c> after a <c>&lt;dl&gt;</c> should only clear the
+    /// outer floats (<c>dt</c> float:left, <c>dd</c> float:right) — not
+    /// floats nested inside <c>dd</c> (e.g. <c>li</c>, <c>blockquote</c>,
+    /// <c>h1</c>), because <c>dd</c> is floated and establishes its own
+    /// block formatting context (BFC).
+    /// </summary>
+    [Fact]
+    public void Clear_Both_IgnoresFloatsInsideNestedBFC()
+    {
+        // Outer: dt (float:left, 80px tall) and dd (float:right, 80px tall).
+        // Inside dd: a deeply nested float that extends to 300px.
+        // The cleared paragraph should appear at y ≈ 80, NOT y ≈ 300.
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; }
+        </style></head><body>
+            <dl style='margin:0; padding:0;'>
+                <dt style='float:left; width:60px; height:80px; background-color:red; margin:0; padding:0; border:0;'>dt</dt>
+                <dd style='float:right; width:200px; height:80px; margin:0; padding:0; border:0;'>
+                    <div style='float:left; width:50px; height:300px; background-color:green;'>inner</div>
+                </dd>
+            </dl>
+            <p style='clear:both; margin:0; padding:0; background-color:rgb(0,0,255); height:30px;'>cleared</p>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 400);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+
+        // The cleared paragraph must start near the outer floats' bottom (~80px),
+        // NOT at the inner float's bottom (~300px).
+        Assert.True(blueBounds.Value.minY < 150,
+            $"Cleared paragraph starts at y={blueBounds.Value.minY}, expected < 150. " +
+            "clear:both is incorrectly clearing floats inside a nested BFC (dd). " +
+            "Only outer floats (dt, dd) should affect clearance.");
+
+        // Also verify the cleared paragraph is below the outer float.
+        Assert.True(blueBounds.Value.minY >= redBounds.Value.maxY - 1,
+            $"Cleared paragraph starts at y={blueBounds.Value.minY}, " +
+            $"outer float ends at y={redBounds.Value.maxY}. " +
+            "clear:both should push below the outer floats.");
+    }
+
     // -----------------------------------------------------------------
     // 5. Percentage widths
     // -----------------------------------------------------------------
