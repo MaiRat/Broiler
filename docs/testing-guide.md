@@ -75,7 +75,7 @@ Tests the CSS length value parser (`CssLength`) covering:
 
 #### PrimitivesTests (30 tests)
 Tests for primitive rendering types:
-- **RColor**: ARGB construction, channel extraction, equality, predefined
+- **System.Drawing.Color**: ARGB construction, channel extraction, equality, predefined
   colors, boundary validation, ToString formatting
 - **RRect**: Construction, derived properties (Left/Top/Right/Bottom),
   Contains, Intersect, Union, Inflate, Offset, FromLTRB, equality

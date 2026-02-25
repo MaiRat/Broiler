@@ -46,7 +46,7 @@ HtmlRenderer               (Layer 2 – depends on Primitives + Utils)
 ### HtmlRenderer.Primitives
 
 Contains only the `Adapters/Entities` value types:
-`RColor`, `RDashStyle`, `RFontStyle`, `RKeyEvent`, `RMouseEvent`, `RPoint`,
+`RDashStyle`, `RFontStyle`, `RKeyEvent`, `RMouseEvent`, `RPoint`,
 `RRect`, `RSize`.
 
 These types have zero internal dependencies and form the foundation that
