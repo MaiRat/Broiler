@@ -1,4 +1,5 @@
 ﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,7 +9,6 @@ using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 using TheArtOfDev.HtmlRenderer.WPF.Adapters;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 
@@ -153,7 +153,7 @@ public sealed class HtmlContainer : IDisposable
 
     public void PerformPaint(DrawingContext g, Rect clip)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
+        ArgumentNullException.ThrowIfNull(g);
 
         using var ig = new GraphicsAdapter(g, Utils.Convert(clip));
         HtmlContainerInt.PerformPaint(ig);
@@ -161,16 +161,16 @@ public sealed class HtmlContainer : IDisposable
 
     public void HandleMouseDown(Control parent, MouseEventArgs e)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
-        ArgChecker.AssertArgNotNull(e, "e");
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(e);
 
         HtmlContainerInt.HandleMouseDown(new ControlAdapter(parent), Utils.Convert(e.GetPosition(parent)));
     }
 
     public void HandleMouseUp(Control parent, MouseButtonEventArgs e)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
-        ArgChecker.AssertArgNotNull(e, "e");
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(e);
 
         var mouseEvent = new RMouseEvent(e.ChangedButton == MouseButton.Left);
         HtmlContainerInt.HandleMouseUp(new ControlAdapter(parent), Utils.Convert(e.GetPosition(parent)), mouseEvent);
@@ -178,30 +178,30 @@ public sealed class HtmlContainer : IDisposable
 
     public void HandleMouseDoubleClick(Control parent, MouseEventArgs e)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
-        ArgChecker.AssertArgNotNull(e, "e");
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(e);
 
         HtmlContainerInt.HandleMouseDoubleClick(new ControlAdapter(parent), Utils.Convert(e.GetPosition(parent)));
     }
 
     public void HandleMouseMove(Control parent, Point mousePos)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         HtmlContainerInt.HandleMouseMove(new ControlAdapter(parent), Utils.Convert(mousePos));
     }
 
     public void HandleMouseLeave(Control parent)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         HtmlContainerInt.HandleMouseLeave(new ControlAdapter(parent));
     }
 
     public void HandleKeyDown(Control parent, KeyEventArgs e)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
-        ArgChecker.AssertArgNotNull(e, "e");
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(e);
 
         HtmlContainerInt.HandleKeyDown(new ControlAdapter(parent), CreateKeyEevent(e));
     }

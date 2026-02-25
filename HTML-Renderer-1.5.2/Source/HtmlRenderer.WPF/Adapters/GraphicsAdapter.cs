@@ -6,7 +6,6 @@ using System.Windows.Media.Imaging;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using Color = System.Drawing.Color;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
@@ -18,7 +17,7 @@ internal sealed class GraphicsAdapter : RGraphics
 
     public GraphicsAdapter(DrawingContext g, RRect initialClip, bool releaseGraphics = false) : base(WpfAdapter.Instance, initialClip)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
+        ArgumentNullException.ThrowIfNull(g);
 
         _g = g;
         _releaseGraphics = releaseGraphics;

@@ -4,7 +4,6 @@ using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 using TheArtOfDev.HtmlRenderer.Image.Adapters;
 
 namespace TheArtOfDev.HtmlRenderer.Image;
@@ -106,7 +105,7 @@ public static class HtmlRender
         EventHandler<HtmlStylesheetLoadEventArgs> stylesheetLoad = null,
         EventHandler<HtmlImageLoadEventArgs> imageLoad = null)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(filePath, nameof(filePath));
+        ArgumentException.ThrowIfNullOrEmpty(filePath);
 
         using var bitmap = RenderToImage(html, width, height, backgroundColor, cssData, stylesheetLoad, imageLoad);
         using var data = bitmap.Encode(format, quality);

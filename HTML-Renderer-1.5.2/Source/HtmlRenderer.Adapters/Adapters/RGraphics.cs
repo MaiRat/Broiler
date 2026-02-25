@@ -2,7 +2,6 @@ using System.Drawing;
 using System;
 using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
@@ -14,7 +13,7 @@ public abstract class RGraphics : IDisposable
 
     protected RGraphics(IResourceFactory adapter, RRect initialClip)
     {
-        ArgChecker.AssertArgNotNull(adapter, "adapter");
+        ArgumentNullException.ThrowIfNull(adapter);
 
         _adapter = adapter;
         _clipStack.Push(initialClip);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System;
 using System.Drawing;
 using System.Collections.Generic;
 using System.Text;
@@ -18,7 +19,7 @@ internal sealed class CssParser
 
     public CssParser(IColorResolver colorResolver)
     {
-        ArgChecker.AssertArgNotNull(colorResolver, "colorResolver");
+        ArgumentNullException.ThrowIfNull(colorResolver);
 
         _valueParser = new CssValueParser(colorResolver);
         _colorResolver = colorResolver;

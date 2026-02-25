@@ -1,5 +1,5 @@
+using System;
 ﻿using System.Windows;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.WPF;
 
@@ -9,13 +9,13 @@ public sealed class RoutedEventArgs<T> : RoutedEventArgs where T : class
 {
     public RoutedEventArgs(RoutedEvent routedEvent, T data) : base(routedEvent)
     {
-        ArgChecker.AssertArgNotNull(data, "args");
+        ArgumentNullException.ThrowIfNull(data);
         Data = data;
     }
 
     public RoutedEventArgs(RoutedEvent routedEvent, object source, T data) : base(routedEvent, source)
     {
-        ArgChecker.AssertArgNotNull(data, "args");
+        ArgumentNullException.ThrowIfNull(data);
         Data = data;
     }
 

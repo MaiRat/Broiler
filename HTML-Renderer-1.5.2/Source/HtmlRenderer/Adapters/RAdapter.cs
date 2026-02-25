@@ -5,7 +5,6 @@ using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Handlers;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
@@ -25,7 +24,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     public Color GetColor(string colorName)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(colorName, "colorName");
+        ArgumentException.ThrowIfNullOrEmpty(colorName);
         return GetColorInt(colorName);
     }
 

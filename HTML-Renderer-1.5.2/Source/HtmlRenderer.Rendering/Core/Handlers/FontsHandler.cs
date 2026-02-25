@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
@@ -15,7 +14,7 @@ internal sealed class FontsHandler
 
     public FontsHandler(IFontCreator fontCreator)
     {
-        ArgChecker.AssertArgNotNull(fontCreator, "fontCreator");
+        ArgumentNullException.ThrowIfNull(fontCreator);
 
         _fontCreator = fontCreator;
     }
@@ -35,15 +34,15 @@ internal sealed class FontsHandler
 
     public void AddFontFamily(RFontFamily fontFamily)
     {
-        ArgChecker.AssertArgNotNull(fontFamily, "family");
+        ArgumentNullException.ThrowIfNull(fontFamily);
 
         _existingFontFamilies[fontFamily.Name] = fontFamily;
     }
 
     public void AddFontFamilyMapping(string fromFamily, string toFamily)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(fromFamily, "fromFamily");
-        ArgChecker.AssertArgNotNullOrEmpty(toFamily, "toFamily");
+        ArgumentException.ThrowIfNullOrEmpty(fromFamily);
+        ArgumentException.ThrowIfNullOrEmpty(toFamily);
 
         _fontsMapping[fromFamily] = toFamily;
     }

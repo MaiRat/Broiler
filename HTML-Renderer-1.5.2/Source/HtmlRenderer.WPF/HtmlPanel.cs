@@ -1,10 +1,10 @@
 ﻿using System.Windows;
+using System;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.WPF;
 
@@ -40,7 +40,7 @@ public class HtmlPanel : HtmlControl
 
     public virtual void ScrollToElement(string elementId)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(elementId, "elementId");
+        ArgumentException.ThrowIfNullOrEmpty(elementId);
 
         if (_htmlContainer == null)
             return;

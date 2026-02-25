@@ -12,7 +12,7 @@ internal sealed class CssValueParser
 
     public CssValueParser(IColorResolver colorResolver)
     {
-        ArgChecker.AssertArgNotNull(colorResolver, "colorResolver");
+        ArgumentNullException.ThrowIfNull(colorResolver);
 
         _colorResolver = colorResolver;
     }

@@ -4,7 +4,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 using TheArtOfDev.HtmlRenderer.WPF.Adapters;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 
@@ -14,15 +13,15 @@ public static class HtmlRender
 {
     public static void AddFontFamily(FontFamily fontFamily)
     {
-        ArgChecker.AssertArgNotNull(fontFamily, "fontFamily");
+        ArgumentNullException.ThrowIfNull(fontFamily);
 
         WpfAdapter.Instance.AddFontFamily(new FontFamilyAdapter(fontFamily));
     }
 
     public static void AddFontFamilyMapping(string fromFamily, string toFamily)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(fromFamily, "fromFamily");
-        ArgChecker.AssertArgNotNullOrEmpty(toFamily, "toFamily");
+        ArgumentException.ThrowIfNullOrEmpty(fromFamily);
+        ArgumentException.ThrowIfNullOrEmpty(toFamily);
 
         WpfAdapter.Instance.AddFontFamilyMapping(fromFamily, toFamily);
     }
@@ -56,14 +55,14 @@ public static class HtmlRender
     public static Size Render(DrawingContext g, string html, double left = 0, double top = 0, double maxWidth = 0, CssData cssData = null,
         EventHandler<HtmlStylesheetLoadEventArgs> stylesheetLoad = null, EventHandler<HtmlImageLoadEventArgs> imageLoad = null)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
+        ArgumentNullException.ThrowIfNull(g);
         return RenderClip(g, html, new Point(left, top), new Size(maxWidth, 0), cssData, stylesheetLoad, imageLoad);
     }
 
     public static Size Render(DrawingContext g, string html, Point location, Size maxSize, CssData cssData = null,
         EventHandler<HtmlStylesheetLoadEventArgs> stylesheetLoad = null, EventHandler<HtmlImageLoadEventArgs> imageLoad = null)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
+        ArgumentNullException.ThrowIfNull(g);
         return RenderClip(g, html, location, maxSize, cssData, stylesheetLoad, imageLoad);
     }
 

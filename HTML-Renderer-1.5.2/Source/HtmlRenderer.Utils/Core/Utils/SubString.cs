@@ -8,7 +8,7 @@ internal sealed class SubString
 
     public SubString(string fullString)
     {
-        ArgChecker.AssertArgNotNull(fullString, "fullString");
+        ArgumentNullException.ThrowIfNull(fullString);
 
         FullString = fullString;
         _startIdx = 0;
@@ -17,7 +17,7 @@ internal sealed class SubString
 
     public SubString(string fullString, int startIdx, int length)
     {
-        ArgChecker.AssertArgNotNull(fullString, "fullString");
+        ArgumentNullException.ThrowIfNull(fullString);
 
         if (startIdx < 0 || startIdx >= fullString.Length)
             throw new ArgumentOutOfRangeException("startIdx", "Must within fullString boundries");

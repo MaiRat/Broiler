@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Entities;
 
@@ -30,7 +29,7 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
 
     public void Callback(string path)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(path, "path");
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         Handled = true;
         _callback(path, null, RRect.Empty);
@@ -38,7 +37,7 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
 
     public void Callback(string path, double x, double y, double width, double height)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(path, "path");
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         Handled = true;
         _callback(path, null, new RRect(x, y, width, height));
@@ -46,7 +45,7 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
 
     public void Callback(Object image)
     {
-        ArgChecker.AssertArgNotNull(image, "image");
+        ArgumentNullException.ThrowIfNull(image);
 
         Handled = true;
         _callback(null, image, RRect.Empty);
@@ -54,7 +53,7 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
 
     public void Callback(Object image, double x, double y, double width, double height)
     {
-        ArgChecker.AssertArgNotNull(image, "image");
+        ArgumentNullException.ThrowIfNull(image);
 
         Handled = true;
         _callback(null, image, new RRect(x, y, width, height));

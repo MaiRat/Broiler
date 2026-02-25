@@ -28,8 +28,8 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     internal HtmlContainerInt(IAdapter adapter, IHandlerFactory handlerFactory)
     {
-        ArgChecker.AssertArgNotNull(adapter, "global");
-        ArgChecker.AssertArgNotNull(handlerFactory, "handlerFactory");
+        ArgumentNullException.ThrowIfNull(adapter);
+        ArgumentNullException.ThrowIfNull(handlerFactory);
 
         Adapter = adapter;
         _handlerFactory = handlerFactory;
@@ -171,7 +171,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public string GetAttributeAt(RPoint location, string attribute)
     {
-        ArgChecker.AssertArgNotNull(attribute, "attribute");
+        ArgumentNullException.ThrowIfNull(attribute);
 
         var cssBox = DomUtils.GetCssBox(Root, OffsetByScroll(location));
         return cssBox != null ? DomUtils.GetAttribute(cssBox, attribute) : null;
@@ -198,7 +198,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public RRect? GetElementRectangle(string elementId)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(elementId, "elementId");
+        ArgumentException.ThrowIfNullOrEmpty(elementId);
 
         var box = DomUtils.GetBoxById(Root, elementId.ToLower());
         return box != null ? CommonUtils.GetFirstValueOrDefault(box.Rectangles, box.Bounds) : (RRect?)null;
@@ -206,7 +206,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void PerformLayout(RGraphics g)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
+        ArgumentNullException.ThrowIfNull(g);
 
         ActualSize = RSize.Empty;
         if (Root == null)
@@ -234,7 +234,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void PerformPaint(RGraphics g)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
+        ArgumentNullException.ThrowIfNull(g);
 
         if (MaxSize.Height > 0)
         {
@@ -252,7 +252,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseDown(object parent, RPoint location)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -266,7 +266,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseUp(object parent, RPoint location, RMouseEvent e)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -294,7 +294,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseDoubleClick(object parent, RPoint location)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -309,7 +309,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseMove(object parent, RPoint location)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -346,7 +346,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseLeave(object parent)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -360,8 +360,8 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleKeyDown(object parent, RKeyEvent e)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
-        ArgChecker.AssertArgNotNull(e, "e");
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(e);
 
         try
         {
@@ -471,8 +471,8 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     internal void AddHoverBox(CssBox box, CssBlock block)
     {
-        ArgChecker.AssertArgNotNull(box, "box");
-        ArgChecker.AssertArgNotNull(block, "block");
+        ArgumentNullException.ThrowIfNull(box);
+        ArgumentNullException.ThrowIfNull(block);
 
         _hoverBoxes ??= [];
         _hoverBoxes.Add(new HoverBoxBlock(box, block));

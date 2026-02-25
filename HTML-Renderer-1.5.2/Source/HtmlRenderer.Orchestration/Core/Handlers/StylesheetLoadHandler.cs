@@ -13,7 +13,7 @@ internal sealed class StylesheetLoadHandler : IStylesheetLoader
 
     public StylesheetLoadHandler(HtmlContainerInt htmlContainer)
     {
-        ArgChecker.AssertArgNotNull(htmlContainer, "htmlContainer");
+        ArgumentNullException.ThrowIfNull(htmlContainer);
         _htmlContainer = htmlContainer;
     }
 

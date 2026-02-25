@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Entities;
 
@@ -9,8 +9,8 @@ public sealed class CssBlock
 
     public CssBlock(string @class, Dictionary<string, string> properties, List<CssBlockSelectorItem> selectors = null, bool hover = false)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(@class, "@class");
-        ArgChecker.AssertArgNotNull(properties, "properties");
+        ArgumentException.ThrowIfNullOrEmpty(@class);
+        ArgumentNullException.ThrowIfNull(properties);
 
         Class = @class;
         Selectors = selectors;
@@ -24,7 +24,7 @@ public sealed class CssBlock
     public bool Hover { get; }
     public void Merge(CssBlock other)
     {
-        ArgChecker.AssertArgNotNull(other, "other");
+        ArgumentNullException.ThrowIfNull(other);
 
         foreach (var prop in other._properties.Keys)
             _properties[prop] = other._properties[prop];

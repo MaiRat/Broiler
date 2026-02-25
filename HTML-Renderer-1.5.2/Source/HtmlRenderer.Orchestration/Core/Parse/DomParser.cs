@@ -14,8 +14,8 @@ internal sealed class DomParser
 
     public DomParser(CssParser cssParser, IStylesheetLoader stylesheetLoader)
     {
-        ArgChecker.AssertArgNotNull(cssParser, "cssParser");
-        ArgChecker.AssertArgNotNull(stylesheetLoader, "stylesheetLoader");
+        ArgumentNullException.ThrowIfNull(cssParser);
+        ArgumentNullException.ThrowIfNull(stylesheetLoader);
 
         _cssParser = cssParser;
         _stylesheetLoader = stylesheetLoader;
