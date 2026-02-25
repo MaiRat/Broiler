@@ -4,12 +4,13 @@ using System.Text;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Utils;
 
 internal sealed class DomUtils
 {
-    public static bool IsInBox(CssBox box, RPoint location)
+    public static bool IsInBox(CssBox box, PointF location)
     {
         foreach (var line in box.Rectangles)
         {
@@ -151,7 +152,7 @@ internal sealed class DomUtils
         return value;
     }
 
-    public static CssBox GetCssBox(CssBox box, RPoint location, bool visible = true)
+    public static CssBox GetCssBox(CssBox box, PointF location, bool visible = true)
     {
         if (box == null || visible && box.Visibility != CssConstants.Visible || !box.Bounds.IsEmpty && !box.Bounds.Contains(location))
             return null;
@@ -177,7 +178,7 @@ internal sealed class DomUtils
             GetAllLinkBoxes(childBox, linkBoxes);
     }
 
-    public static CssBox GetLinkBox(CssBox box, RPoint location)
+    public static CssBox GetLinkBox(CssBox box, PointF location)
     {
         if (box == null)
             return null;
@@ -219,7 +220,7 @@ internal sealed class DomUtils
         return null;
     }
 
-    public static CssLineBox GetCssLineBox(CssBox box, RPoint location)
+    public static CssLineBox GetCssLineBox(CssBox box, PointF location)
     {
         CssLineBox line = null;
 
@@ -250,7 +251,7 @@ internal sealed class DomUtils
         return line;
     }
 
-    public static CssRect GetCssBoxWord(CssBox box, RPoint location)
+    public static CssRect GetCssBoxWord(CssBox box, PointF location)
     {
         if (box == null || box.Visibility != CssConstants.Visible)
             return null;
@@ -278,7 +279,7 @@ internal sealed class DomUtils
         return null;
     }
 
-    public static CssRect GetCssBoxWord(CssLineBox lineBox, RPoint location)
+    public static CssRect GetCssBoxWord(CssLineBox lineBox, PointF location)
     {
         foreach (var rects in lineBox.Rectangles)
         {
@@ -286,7 +287,7 @@ internal sealed class DomUtils
             {
                 // add word spacing to word width so sentence won't have hols in it when moving the mouse
                 var rect = word.Rectangle;
-                rect.Width += word.OwnerBox.ActualWordSpacing;
+                rect.Width += (float)word.OwnerBox.ActualWordSpacing;
                 if (rect.Contains(location))
                     return word;
             }

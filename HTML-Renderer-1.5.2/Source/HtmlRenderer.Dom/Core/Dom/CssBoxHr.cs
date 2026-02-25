@@ -3,6 +3,7 @@ using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Handlers;
 using TheArtOfDev.HtmlRenderer.Core.Parse;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
@@ -20,7 +21,7 @@ internal sealed class CssBoxHr : CssBox
         var prevSibling = DomUtils.GetPreviousSibling(this);
         double left = ContainingBlock.Location.X + ContainingBlock.ActualPaddingLeft + ActualMarginLeft + ContainingBlock.ActualBorderLeftWidth;
         double top = (prevSibling == null && ParentBox != null ? ParentBox.ClientTop : ParentBox == null ? Location.Y : 0) + MarginTopCollapse(prevSibling) + (prevSibling != null ? prevSibling.ActualBottom + prevSibling.ActualBorderBottomWidth : 0);
-        Location = new RPoint(left, top);
+        Location = new PointF((float)left, (float)top);
         ActualBottom = top;
 
         //width at 100% (or auto)
@@ -52,15 +53,15 @@ internal sealed class CssBoxHr : CssBox
             BorderBottomWidth = "1px";
         }
 
-        Size = new RSize(width, height);
+        Size = new SizeF((float)width, (float)height);
 
         ActualBottom = Location.Y + ActualPaddingTop + ActualPaddingBottom + height;
     }
 
     protected override void PaintImp(RGraphics g)
     {
-        var offset = (ContainerInt != null && !IsFixed) ? ContainerInt.ScrollOffset : RPoint.Empty;
-        var rect = new RRect(Bounds.X + offset.X, Bounds.Y + offset.Y, Bounds.Width, Bounds.Height);
+        var offset = (ContainerInt != null && !IsFixed) ? ContainerInt.ScrollOffset : PointF.Empty;
+        var rect = new RectangleF(Bounds.X + offset.X, Bounds.Y + offset.Y, Bounds.Width, Bounds.Height);
 
         if (rect.Height > 2 && RenderUtils.IsColorVisible(ActualBackgroundColor))
             g.DrawRectangle(g.GetSolidBrush(ActualBackgroundColor), rect.X, rect.Y, rect.Width, rect.Height);

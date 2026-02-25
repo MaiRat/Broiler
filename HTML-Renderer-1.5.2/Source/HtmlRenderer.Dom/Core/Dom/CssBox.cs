@@ -149,7 +149,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
     internal List<CssLineBox> LineBoxes { get; } = [];
     internal List<CssLineBox> ParentLineBoxes { get; } = [];
-    internal Dictionary<CssLineBox, RRect> Rectangles { get; } = [];
+    internal Dictionary<CssLineBox, RectangleF> Rectangles { get; } = [];
     internal List<CssRect> Words { get; } = [];
     internal CssRect FirstWord => Words[0];
 
@@ -192,13 +192,13 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                     if (!IsFixed)
                     {
-                        //rect.Offset(new RPoint(-HtmlContainer.Location.X, -HtmlContainer.Location.Y));
+                        //rect.Offset(new PointF(-HtmlContainer.Location.X, -HtmlContainer.Location.Y));
                         rect.Offset(ContainerInt.ScrollOffset);
                     }
 
                     clip.Intersect(rect);
 
-                    if (clip != RRect.Empty)
+                    if (clip != RectangleF.Empty)
                         visible = true;
                 }
 
@@ -327,10 +327,10 @@ internal class CssBox : CssBoxProperties, IDisposable
                     width += ActualPaddingLeft + ActualPaddingRight + ActualBorderLeftWidth + ActualBorderRightWidth;
                 }
 
-                Size = new RSize(width, Size.Height);
+                Size = new SizeF((float)width, Size.Height);
 
                 // must be separate because the margin can be calculated by percentage of the width
-                Size = new RSize(width - ActualMarginLeft - ActualMarginRight, Size.Height);
+                Size = new SizeF((float)(width - ActualMarginLeft - ActualMarginRight), Size.Height);
             }
 
             if (Display != CssConstants.TableCell)
@@ -378,7 +378,7 @@ internal class CssBox : CssBoxProperties, IDisposable
                             top = maxFloatBottom;
                     }
 
-                    Location = new RPoint(left, top);
+                    Location = new PointF((float)left, (float)top);
                     ActualBottom = top;
                 }
             }
@@ -411,7 +411,7 @@ internal class CssBox : CssBoxProperties, IDisposable
             var prevSibling = DomUtils.GetPreviousSibling(this);
             if (prevSibling != null)
             {
-                if (Location == RPoint.Empty)
+                if (Location == PointF.Empty)
                     Location = prevSibling.Location;
 
                 ActualBottom = prevSibling.ActualBottom;
@@ -440,7 +440,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         if (!IsFixed)
         {
             var actualWidth = Math.Max(GetMinimumWidth() + CssBoxHelper.GetWidthMarginDeep(this), Size.Width < 90999 ? ActualRight - ContainerInt.RootLocation.X : 0);
-            ContainerInt.ActualSize = CommonUtils.Max(ContainerInt.ActualSize, new RSize(actualWidth, ActualBottom - ContainerInt.RootLocation.Y));
+            ContainerInt.ActualSize = CommonUtils.Max(ContainerInt.ActualSize, new SizeF((float)actualWidth, (float)(ActualBottom - ContainerInt.RootLocation.Y)));
         }
     }
 
@@ -544,7 +544,7 @@ internal class CssBox : CssBoxProperties, IDisposable
             _listItemBox.ParseToWords();
 
             _listItemBox.PerformLayoutImp(g);
-            _listItemBox.Size = new RSize(_listItemBox.Words[0].Width, _listItemBox.Words[0].Height);
+            _listItemBox.Size = new SizeF((float)_listItemBox.Words[0].Width, (float)_listItemBox.Words[0].Height);
         }
 
         _listItemBox.Words[0].Left = Location.X - _listItemBox.Size.Width - 5;
@@ -629,7 +629,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         if (remTop > remBottom)
         {
             var diff = container.PageSize.Height - remTop;
-            Location = new RPoint(Location.X, Location.Y + diff + 1);
+            Location = new PointF(Location.X, (float)(Location.Y + diff + 1));
             
             return true;
         }
@@ -676,8 +676,8 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         foreach (CssLineBox line in lines)
         {
-            RRect r = Rectangles[line];
-            Rectangles[line] = new RRect(r.X, r.Y + amount, r.Width, r.Height);
+            RectangleF r = Rectangles[line];
+            Rectangles[line] = new RectangleF(r.X, (float)(r.Y + amount), r.Width, r.Height);
         }
 
         foreach (CssRect word in Words)
@@ -688,7 +688,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         _listItemBox?.OffsetTop(amount);
 
-        Location = new RPoint(Location.X, Location.Y + amount);
+        Location = new PointF(Location.X, (float)(Location.Y + amount));
     }
 
     internal void OffsetLeft(double amount)
@@ -697,8 +697,8 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         foreach (CssLineBox line in lines)
         {
-            RRect r = Rectangles[line];
-            Rectangles[line] = new RRect(r.X + amount, r.Y, r.Width, r.Height);
+            RectangleF r = Rectangles[line];
+            Rectangles[line] = new RectangleF((float)(r.X + amount), r.Y, r.Width, r.Height);
         }
 
         foreach (CssRect word in Words)
@@ -709,7 +709,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         _listItemBox?.OffsetLeft(amount);
 
-        Location = new RPoint(Location.X + amount, Location.Y);
+        Location = new PointF((float)(Location.X + amount), Location.Y);
     }
 
     protected virtual void PaintImp(RGraphics g)
@@ -719,10 +719,10 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         var clipped = RenderUtils.ClipGraphicsByOverflow(g, this);
 
-        var areas = Rectangles.Count == 0 ? [Bounds] : new List<RRect>(Rectangles.Values);
+        var areas = Rectangles.Count == 0 ? [Bounds] : new List<RectangleF>(Rectangles.Values);
         var clip = g.GetClip();
-        RRect[] rects = areas.ToArray();
-        RPoint offset = RPoint.Empty;
+        RectangleF[] rects = areas.ToArray();
+        PointF offset = PointF.Empty;
 
         if (!IsFixed)
             offset = ContainerInt.ScrollOffset;
@@ -775,7 +775,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         _listItemBox?.Paint(g);
     }
 
-    protected void PaintBackground(RGraphics g, RRect rect, bool isFirst, bool isLast)
+    protected void PaintBackground(RGraphics g, RectangleF rect, bool isFirst, bool isLast)
     {
         if (rect.Width <= 0 || rect.Height <= 0)
             return;
@@ -824,7 +824,7 @@ internal class CssBox : CssBoxProperties, IDisposable
             BackgroundImageDrawHandler.DrawBackgroundImage(g, this, _imageLoadHandler, rect);
     }
 
-    private void PaintWords(RGraphics g, RPoint offset)
+    private void PaintWords(RGraphics g, PointF offset)
     {
         if (Width.Length == 0)
             return;
@@ -842,10 +842,10 @@ internal class CssBox : CssBoxProperties, IDisposable
             wordRect.Offset(offset);
             clip.Intersect(wordRect);
 
-            if (clip == RRect.Empty)
+            if (clip == RectangleF.Empty)
                 continue;
 
-            var wordPoint = new RPoint(word.Left + offset.X, word.Top + offset.Y);
+            var wordPoint = new PointF((float)(word.Left + offset.X), (float)(word.Top + offset.Y));
 
             if (word.Selected)
             {
@@ -854,33 +854,33 @@ internal class CssBox : CssBoxProperties, IDisposable
                 var left = word.SelectedStartOffset > -1 ? word.SelectedStartOffset : (wordLine.Words[0] != word && word.HasSpaceBefore ? -ActualWordSpacing : 0);
                 var padWordRight = word.HasSpaceAfter && !wordLine.IsLastSelectedWord(word);
                 var width = word.SelectedEndOffset > -1 ? word.SelectedEndOffset : word.Width + (padWordRight ? ActualWordSpacing : 0);
-                var rect = new RRect(word.Left + offset.X + left, word.Top + offset.Y, width - left, wordLine.LineHeight);
+                var rect = new RectangleF((float)(word.Left + offset.X + left), (float)(word.Top + offset.Y), (float)(width - left), (float)wordLine.LineHeight);
 
                 g.DrawRectangle(GetSelectionBackBrush(g, false), rect.X, rect.Y, rect.Width, rect.Height);
 
                 if (ContainerInt.SelectionForeColor != System.Drawing.Color.Empty && (word.SelectedStartOffset > 0 || word.SelectedEndIndexOffset > -1))
                 {
                     g.PushClipExclude(rect);
-                    g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new RSize(word.Width, word.Height), isRtl);
+                    g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new SizeF((float)word.Width, (float)word.Height), isRtl);
                     g.PopClip();
                     g.PushClip(rect);
-                    g.DrawString(word.Text, ActualFont, GetSelectionForeBrush(), wordPoint, new RSize(word.Width, word.Height), isRtl);
+                    g.DrawString(word.Text, ActualFont, GetSelectionForeBrush(), wordPoint, new SizeF((float)word.Width, (float)word.Height), isRtl);
                     g.PopClip();
                 }
                 else
                 {
-                    g.DrawString(word.Text, ActualFont, GetSelectionForeBrush(), wordPoint, new RSize(word.Width, word.Height), isRtl);
+                    g.DrawString(word.Text, ActualFont, GetSelectionForeBrush(), wordPoint, new SizeF((float)word.Width, (float)word.Height), isRtl);
                 }
             }
             else
             {
                 //                            g.DrawRectangle(HtmlContainer.Adapter.GetPen(Color.Black), wordPoint.X, wordPoint.Y, word.Width - 1, word.Height - 1);
-                g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new RSize(word.Width, word.Height), isRtl);
+                g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new SizeF((float)word.Width, (float)word.Height), isRtl);
             }
         }
     }
 
-    protected void PaintDecoration(RGraphics g, RRect rectangle, bool isFirst, bool isLast)
+    protected void PaintDecoration(RGraphics g, RectangleF rectangle, bool isFirst, bool isLast)
     {
         if (string.IsNullOrEmpty(TextDecoration) || TextDecoration == CssConstants.None)
             return;
@@ -916,13 +916,13 @@ internal class CssBox : CssBoxProperties, IDisposable
 
     internal void OffsetRectangle(CssLineBox lineBox, double gap)
     {
-        if (Rectangles.TryGetValue(lineBox, out RRect r))
-            Rectangles[lineBox] = new RRect(r.X, r.Y + gap, r.Width, r.Height);
+        if (Rectangles.TryGetValue(lineBox, out RectangleF r))
+            Rectangles[lineBox] = new RectangleF(r.X, (float)(r.Y + gap), r.Width, r.Height);
     }
 
     internal void RectanglesReset() => Rectangles.Clear();
 
-    private void OnImageLoadComplete(RImage image, RRect rectangle, bool async)
+    private void OnImageLoadComplete(RImage image, RectangleF rectangle, bool async)
     {
         if (image != null && async)
             ContainerInt.RequestRefresh(false);
@@ -950,12 +950,12 @@ internal class CssBox : CssBoxProperties, IDisposable
 
     protected override Color GetActualColor(string colorStr) => ContainerInt.ParseColor(colorStr);
 
-    protected override RPoint GetActualLocation(string X, string Y)
+    protected override PointF GetActualLocation(string X, string Y)
     {
         var left = CssValueParser.ParseLength(X, ContainerInt.PageSize.Width, GetEmHeight(), null);
         var top = CssValueParser.ParseLength(Y, ContainerInt.PageSize.Height, GetEmHeight(), null);
 
-        return new RPoint(left, top);
+        return new PointF((float)left, (float)top);
     }
 
     public override string ToString()

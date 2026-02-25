@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
@@ -31,7 +32,7 @@ internal static class CssLayoutEngine
         }
         else if (imageWord.Image != null)
         {
-            imageWord.Width = imageWord.ImageRectangle == RRect.Empty ? imageWord.Image.Width : imageWord.ImageRectangle.Width;
+            imageWord.Width = imageWord.ImageRectangle == RectangleF.Empty ? imageWord.Image.Width : imageWord.ImageRectangle.Width;
         }
         else
         {
@@ -64,7 +65,7 @@ internal static class CssLayoutEngine
         }
         else if (imageWord.Image != null)
         {
-            imageWord.Height = imageWord.ImageRectangle == RRect.Empty ? imageWord.Image.Height : imageWord.ImageRectangle.Height;
+            imageWord.Height = imageWord.ImageRectangle == RectangleF.Empty ? imageWord.Image.Height : imageWord.ImageRectangle.Height;
         }
         else
         {
@@ -288,7 +289,7 @@ internal static class CssLayoutEngine
         {
             // hack for actual width handling
             curx += box.ActualWidth - (curx - startX);
-            line.Rectangles.Add(box, new RRect(startX, startY, box.ActualWidth, box.ActualHeight));
+            line.Rectangles.Add(box, new RectangleF((float)startX, (float)startY, (float)box.ActualWidth, (float)box.ActualHeight));
         }
 
         // handle box that is only a whitespace
@@ -539,8 +540,8 @@ internal static class CssLayoutEngine
 
         foreach (CssBox b in ToList(line.Rectangles.Keys))
         {
-            RRect r = line.Rectangles[b];
-            line.Rectangles[b] = new RRect(r.X + diff, r.Y, r.Width, r.Height);
+            RectangleF r = line.Rectangles[b];
+            line.Rectangles[b] = new RectangleF((float)(r.X + diff), r.Y, r.Width, r.Height);
         }
     }
 
@@ -564,8 +565,8 @@ internal static class CssLayoutEngine
 
         foreach (CssBox b in ToList(line.Rectangles.Keys))
         {
-            RRect r = line.Rectangles[b];
-            line.Rectangles[b] = new RRect(r.X + diff, r.Y, r.Width, r.Height);
+            RectangleF r = line.Rectangles[b];
+            line.Rectangles[b] = new RectangleF((float)(r.X + diff), r.Y, r.Width, r.Height);
         }
     }
 

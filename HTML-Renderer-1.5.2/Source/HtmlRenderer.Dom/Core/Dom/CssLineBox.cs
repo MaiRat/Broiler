@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
@@ -19,7 +20,7 @@ internal sealed class CssLineBox
     public List<CssBox> RelatedBoxes { get; }
     public List<CssRect> Words { get; }
     public CssBox OwnerBox { get; }
-    public Dictionary<CssBox, RRect> Rectangles { get; }
+    public Dictionary<CssBox, RectangleF> Rectangles { get; }
     public double LineHeight
     {
         get
@@ -85,15 +86,15 @@ internal sealed class CssLineBox
             b += bottomspacing;
         }
 
-        if (!Rectangles.TryGetValue(box, out RRect f))
+        if (!Rectangles.TryGetValue(box, out RectangleF f))
         {
-            Rectangles.Add(box, RRect.FromLTRB(x, y, r, b));
+            Rectangles.Add(box, RectangleF.FromLTRB((float)x, (float)y, (float)r, (float)b));
         }
         else
         {
-            Rectangles[box] = RRect.FromLTRB(
-                Math.Min(f.X, x), Math.Min(f.Y, y),
-                Math.Max(f.Right, r), Math.Max(f.Bottom, b));
+            Rectangles[box] = RectangleF.FromLTRB(
+                (float)Math.Min(f.X, x), (float)Math.Min(f.Y, y),
+                (float)Math.Max(f.Right, r), (float)Math.Max(f.Bottom, b));
         }
 
         if (box.ParentBox != null && box.ParentBox.IsInline)
@@ -111,7 +112,7 @@ internal sealed class CssLineBox
         //TODO: Aqui me quede, checar poniendo "by the" con un font-size de 3em
         List<CssRect> ws = WordsOf(b);
 
-        if (!Rectangles.TryGetValue(b, out RRect r))
+        if (!Rectangles.TryGetValue(b, out RectangleF r))
             return;
 
         //Save top of words related to the top of rectangle
@@ -137,7 +138,7 @@ internal sealed class CssLineBox
         {
             //Do this only if rectangle is shorter than parent's
             double recttop = newtop - gap;
-            RRect newr = new(r.X, recttop, r.Width, r.Height);
+            RectangleF newr = new(r.X, (float)recttop, r.Width, r.Height);
             
             Rectangles[b] = newr;
             b.OffsetRectangle(this, gap);
