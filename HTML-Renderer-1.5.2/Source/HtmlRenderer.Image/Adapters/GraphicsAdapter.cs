@@ -1,7 +1,6 @@
 using System.Drawing;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Image.Utilities;
 
 namespace TheArtOfDev.HtmlRenderer.Image.Adapters;

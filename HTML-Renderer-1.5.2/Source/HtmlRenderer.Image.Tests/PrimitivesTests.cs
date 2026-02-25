@@ -1,5 +1,4 @@
 using System.Drawing;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace HtmlRenderer.Image.Tests;
 

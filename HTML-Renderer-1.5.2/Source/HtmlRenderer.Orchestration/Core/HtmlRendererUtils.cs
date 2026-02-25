@@ -1,6 +1,5 @@
 ﻿using System;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core;

@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Utils;

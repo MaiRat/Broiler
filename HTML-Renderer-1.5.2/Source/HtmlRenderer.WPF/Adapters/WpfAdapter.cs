@@ -9,7 +9,6 @@ using System.Diagnostics;
 using FontStyle = System.Drawing.FontStyle;
 using Color = System.Drawing.Color;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 using Microsoft.Win32;
 using RectangleF = System.Drawing.RectangleF;

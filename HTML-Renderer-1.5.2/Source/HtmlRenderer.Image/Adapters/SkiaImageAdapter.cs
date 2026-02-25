@@ -3,7 +3,6 @@ using System.Drawing;
 using System.IO;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.Image.Adapters;
 

@@ -1,7 +1,6 @@
 using System.Drawing;
 using System;
 using System.Collections.Generic;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 

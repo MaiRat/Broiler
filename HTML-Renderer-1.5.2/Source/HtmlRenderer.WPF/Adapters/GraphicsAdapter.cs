@@ -4,7 +4,6 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using Color = System.Drawing.Color;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 using PointF = System.Drawing.PointF;
