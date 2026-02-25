@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
@@ -493,7 +494,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     RPoint IHtmlContainerInt.RootLocation => Root?.Location ?? RPoint.Empty;
 
-    RFont IHtmlContainerInt.GetFont(string family, double size, RFontStyle style) => Adapter.GetFont(family, size, style);
+    RFont IHtmlContainerInt.GetFont(string family, double size, FontStyle style) => Adapter.GetFont(family, size, style);
 
     RColor IHtmlContainerInt.ParseColor(string colorStr) => CssParser.ParseColor(colorStr);
 

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
+using FontStyle = System.Drawing.FontStyle;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
@@ -89,13 +90,13 @@ internal sealed class WpfAdapter : RAdapter
         return new ImageAdapter(bitmap);
     }
 
-    protected override RFont CreateFontInt(string family, double size, RFontStyle style)
+    protected override RFont CreateFontInt(string family, double size, FontStyle style)
     {
         var fontFamily = (FontFamily)new FontFamilyConverter().ConvertFromString(family) ?? new FontFamily();
-        return new FontAdapter(new Typeface(fontFamily, GetFontStyle(style), GetFontWidth(style), FontStretches.Normal), size);
+        return new FontAdapter(new Typeface(fontFamily, GetWpfFontStyle(style), GetFontWidth(style), FontStretches.Normal), size);
     }
 
-    protected override RFont CreateFontInt(RFontFamily family, double size, RFontStyle style) => new FontAdapter(new Typeface(((FontFamilyAdapter)family).FontFamily, GetFontStyle(style), GetFontWidth(style), FontStretches.Normal), size);
+    protected override RFont CreateFontInt(RFontFamily family, double size, FontStyle style) => new FontAdapter(new Typeface(((FontFamilyAdapter)family).FontFamily, GetWpfFontStyle(style), GetFontWidth(style), FontStretches.Normal), size);
 
     protected override object GetClipboardDataObjectInt(string html, string plainText) => ClipboardHelper.CreateDataObject(html, plainText);
 
@@ -139,17 +140,17 @@ internal sealed class WpfAdapter : RAdapter
         return solidBrush;
     }
 
-    private static FontStyle GetFontStyle(RFontStyle style)
+    private static System.Windows.FontStyle GetWpfFontStyle(FontStyle style)
     {
-        if ((style & RFontStyle.Italic) == RFontStyle.Italic)
+        if ((style & FontStyle.Italic) == FontStyle.Italic)
             return FontStyles.Italic;
 
         return FontStyles.Normal;
     }
 
-    private static FontWeight GetFontWidth(RFontStyle style)
+    private static FontWeight GetFontWidth(FontStyle style)
     {
-        if ((style & RFontStyle.Bold) == RFontStyle.Bold)
+        if ((style & FontStyle.Bold) == FontStyle.Bold)
             return FontWeights.Bold;
 
         return FontWeights.Normal;

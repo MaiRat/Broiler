@@ -1,18 +1,18 @@
+using System.Drawing;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.Image.Adapters;
 
 internal sealed class FontAdapter : RFont
 {
     private readonly double _size;
-    private readonly RFontStyle _style;
+    private readonly FontStyle _style;
     private double _height = -1;
     private double _underlineOffset = -1;
     private double _whitespaceWidth = -1;
 
-    public FontAdapter(SKTypeface typeface, double size, RFontStyle style)
+    public FontAdapter(SKTypeface typeface, double size, FontStyle style)
     {
         Typeface = typeface;
         _size = size;

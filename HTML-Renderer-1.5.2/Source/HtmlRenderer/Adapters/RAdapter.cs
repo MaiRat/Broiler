@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
@@ -58,7 +59,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     public void AddFontFamilyMapping(string fromFamily, string toFamily) => _fontsHandler.AddFontFamilyMapping(fromFamily, toFamily);
 
-    public RFont GetFont(string family, double size, RFontStyle style) => _fontsHandler.GetCachedFont(family, size, style);
+    public RFont GetFont(string family, double size, FontStyle style) => _fontsHandler.GetCachedFont(family, size, style);
 
     public RImage GetLoadingImage()
     {
@@ -98,13 +99,13 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     public void SaveToFile(RImage image, string name, string extension, RControl control = null) => SaveToFileInt(image, name, extension, control);
 
-    internal RFont CreateFont(string family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+    internal RFont CreateFont(string family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
-    internal RFont CreateFont(RFontFamily family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+    internal RFont CreateFont(RFontFamily family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
-    RFont IFontCreator.CreateFont(string family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+    RFont IFontCreator.CreateFont(string family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
-    RFont IFontCreator.CreateFont(RFontFamily family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+    RFont IFontCreator.CreateFont(RFontFamily family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
     protected abstract RColor GetColorInt(string colorName);
 
@@ -118,9 +119,9 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     protected abstract RImage ImageFromStreamInt(Stream memoryStream);
 
-    protected abstract RFont CreateFontInt(string family, double size, RFontStyle style);
+    protected abstract RFont CreateFontInt(string family, double size, FontStyle style);
 
-    protected abstract RFont CreateFontInt(RFontFamily family, double size, RFontStyle style);
+    protected abstract RFont CreateFontInt(RFontFamily family, double size, FontStyle style);
 
     protected virtual object GetClipboardDataObjectInt(string html, string plainText) => throw new NotImplementedException();
 

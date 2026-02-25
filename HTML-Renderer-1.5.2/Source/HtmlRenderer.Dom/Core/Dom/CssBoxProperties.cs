@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TheArtOfDev.HtmlRenderer.Adapters;
@@ -820,13 +821,13 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
                 if (string.IsNullOrEmpty(FontSize))
                     FontSize = CssConstants.FontSize.ToString(CultureInfo.InvariantCulture) + "pt";
 
-                RFontStyle st = RFontStyle.Regular;
+                FontStyle st = System.Drawing.FontStyle.Regular;
 
-                if (FontStyle == CssConstants.Italic || FontStyle == CssConstants.Oblique)
-                    st |= RFontStyle.Italic;
+                if (this.FontStyle == CssConstants.Italic || this.FontStyle == CssConstants.Oblique)
+                    st |= System.Drawing.FontStyle.Italic;
 
                 if (FontWeight != CssConstants.Normal && FontWeight != CssConstants.Lighter && !string.IsNullOrEmpty(FontWeight) && FontWeight != CssConstants.Inherit)
-                    st |= RFontStyle.Bold;
+                    st |= System.Drawing.FontStyle.Bold;
 
                 double parentSize = CssConstants.FontSize;
 
@@ -857,7 +858,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    protected abstract RFont GetCachedFont(string fontFamily, double fsize, RFontStyle st);
+    protected abstract RFont GetCachedFont(string fontFamily, double fsize, FontStyle st);
 
     public double ActualLineHeight
     {

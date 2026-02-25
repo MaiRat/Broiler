@@ -1,4 +1,5 @@
 using System;
+using System.Drawing.Drawing2D;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -214,13 +215,13 @@ internal sealed class BordersDrawHandler : IBordersDrawHandler
         switch (style)
         {
             case "solid":
-                p.DashStyle = RDashStyle.Solid;
+                p.DashStyle = DashStyle.Solid;
                 break;
             case "dotted":
-                p.DashStyle = RDashStyle.Dot;
+                p.DashStyle = DashStyle.Dot;
                 break;
             case "dashed":
-                p.DashStyle = RDashStyle.Dash;
+                p.DashStyle = DashStyle.Dash;
                 break;
         }
         return p;

@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.IO;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
@@ -108,19 +109,19 @@ internal sealed class SkiaImageAdapter : RAdapter
 
     protected override RImage ImageFromStreamInt(Stream memoryStream) => new ImageAdapter(SKBitmap.Decode(memoryStream));
 
-    protected override RFont CreateFontInt(string family, double size, RFontStyle style)
+    protected override RFont CreateFontInt(string family, double size, FontStyle style)
     {
         var skStyle = ConvertFontStyle(style);
         var typeface = SKTypeface.FromFamilyName(family, skStyle) ?? SKTypeface.Default;
         return new FontAdapter(typeface, size, style);
     }
 
-    protected override RFont CreateFontInt(RFontFamily family, double size, RFontStyle style) => CreateFontInt(family.Name, size, style);
+    protected override RFont CreateFontInt(RFontFamily family, double size, FontStyle style) => CreateFontInt(family.Name, size, style);
 
-    private static SKFontStyle ConvertFontStyle(RFontStyle style)
+    private static SKFontStyle ConvertFontStyle(FontStyle style)
     {
-        var weight = (style & RFontStyle.Bold) != 0 ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal;
-        var slant = (style & RFontStyle.Italic) != 0 ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright;
+        var weight = (style & FontStyle.Bold) != 0 ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal;
+        var slant = (style & FontStyle.Italic) != 0 ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright;
         return new SKFontStyle(weight, SKFontStyleWidth.Normal, slant);
     }
 }

@@ -319,7 +319,7 @@ Each phase is considered complete when:
 
 ## Action Items
 
-- [ ] Phase 1 — Replace `RDashStyle` and `RFontStyle` with `System.Drawing` enums
+- [x] Phase 1 — Replace `RDashStyle` and `RFontStyle` with `System.Drawing` enums
 - [ ] Phase 2 — Replace `RColor` with `System.Drawing.Color`
 - [ ] Phase 3 — Replace `ArgChecker` with .NET built-in throw helpers
 - [ ] Phase 4 — Replace `HtmlUtils.DecodeHtml/EncodeHtml` with `WebUtility`

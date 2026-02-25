@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
@@ -907,7 +909,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         var pen = g.GetPen(ActualColor);
         pen.Width = 1;
-        pen.DashStyle = RDashStyle.Solid;
+        pen.DashStyle = DashStyle.Solid;
         g.DrawLine(pen, x1, y, x2, y);
     }
 
@@ -943,7 +945,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         }
     }
 
-    protected override RFont GetCachedFont(string fontFamily, double fsize, RFontStyle st) => ContainerInt.GetFont(fontFamily, fsize, st);
+    protected override RFont GetCachedFont(string fontFamily, double fsize, FontStyle st) => ContainerInt.GetFont(fontFamily, fsize, st);
 
     protected override RColor GetActualColor(string colorStr) => ContainerInt.ParseColor(colorStr);
 
