@@ -186,7 +186,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         get { return _cornerRadius; }
         set
         {
-            MatchCollection r = RegexParserUtils.Match(RegexParserUtils.CssLength, value);
+            MatchCollection r = RegexParserUtils.Match(RegexParserUtils.CssLengthRegex(), value);
 
             switch (r.Count)
             {
@@ -361,7 +361,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         get { return _fontSize; }
         set
         {
-            string length = RegexParserUtils.Search(RegexParserUtils.CssLength, value);
+            string length = RegexParserUtils.Search(RegexParserUtils.CssLengthRegex(), value);
 
             if (length != null)
             {
@@ -888,7 +888,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         {
             if (double.IsNaN(_actualBorderSpacingHorizontal))
             {
-                MatchCollection matches = RegexParserUtils.Match(RegexParserUtils.CssLength, BorderSpacing);
+                MatchCollection matches = RegexParserUtils.Match(RegexParserUtils.CssLengthRegex(), BorderSpacing);
 
                 if (matches.Count == 0)
                 {
@@ -910,7 +910,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         {
             if (double.IsNaN(_actualBorderSpacingVertical))
             {
-                MatchCollection matches = RegexParserUtils.Match(RegexParserUtils.CssLength, BorderSpacing);
+                MatchCollection matches = RegexParserUtils.Match(RegexParserUtils.CssLengthRegex(), BorderSpacing);
 
                 if (matches.Count == 0)
                 {
@@ -966,7 +966,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         if (WordSpacing == CssConstants.Normal)
             return;
 
-        string len = RegexParserUtils.Search(RegexParserUtils.CssLength, WordSpacing);
+        string len = RegexParserUtils.Search(RegexParserUtils.CssLengthRegex(), WordSpacing);
         ActualWordSpacing += CssValueParser.ParseLength(len, 1, GetEmHeight());
     }
 
