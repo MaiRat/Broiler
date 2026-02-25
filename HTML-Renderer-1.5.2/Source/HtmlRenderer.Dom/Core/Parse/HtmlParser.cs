@@ -60,8 +60,8 @@ internal static class HtmlParser
         if (endIdx > -1 && endIdx < source.Length)
         {
             // there is text after the end of last element
-            var endText = new SubString(source, endIdx, source.Length - endIdx);
-            if (!endText.IsEmptyOrWhitespace())
+            var endText = source.AsMemory(endIdx, source.Length - endIdx);
+            if (!endText.Span.IsWhiteSpace())
             {
                 var abox = CssBoxHelper.CreateBox(root);
                 abox.Text = endText;
@@ -73,13 +73,11 @@ internal static class HtmlParser
 
     private static void AddTextBox(string source, int startIdx, int tagIdx, ref CssBox curBox)
     {
-        var text = tagIdx > startIdx ? new SubString(source, startIdx, tagIdx - startIdx) : null;
-
-        if (text == null)
+        if (tagIdx <= startIdx)
             return;
 
         var abox = CssBoxHelper.CreateBox(curBox);
-        abox.Text = text;
+        abox.Text = source.AsMemory(startIdx, tagIdx - startIdx);
     }
 
     private static int ParseHtmlTag(string source, int tagIdx, ref CssBox curBox)

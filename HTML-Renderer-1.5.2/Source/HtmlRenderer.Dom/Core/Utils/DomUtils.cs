@@ -355,7 +355,7 @@ internal sealed class DomUtils
         }
 
         // empty span box
-        if (box.Boxes.Count < 1 && box.Text != null && box.Text.IsWhitespace())
+        if (box.Boxes.Count < 1 && box.Text.Length > 0 && box.Text.Span.IsWhiteSpace())
             sb.Append(' ');
 
         // deep traversal

@@ -292,7 +292,7 @@ internal static class CssLayoutEngine
         }
 
         // handle box that is only a whitespace
-        if (box.Text != null && box.Text.IsWhitespace() && !box.IsImage && box.IsInline && box.Boxes.Count == 0 && box.Words.Count == 0)
+        if (box.Text.Length > 0 && box.Text.Span.IsWhiteSpace() && !box.IsImage && box.IsInline && box.Boxes.Count == 0 && box.Words.Count == 0)
             curx += box.ActualWordSpacing;
 
         // hack to support specific absolute position elements

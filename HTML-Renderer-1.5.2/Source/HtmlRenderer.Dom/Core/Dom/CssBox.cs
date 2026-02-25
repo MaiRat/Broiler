@@ -16,7 +16,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 {
     private CssBox _parentBox;
     protected IHtmlContainerInt _htmlContainer;
-    private SubString _text;
+    private ReadOnlyMemory<char> _text;
 
     internal bool _tableFixed;
 
@@ -137,7 +137,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         }
     }
 
-    public SubString Text
+    public ReadOnlyMemory<char> Text
     {
         get { return _text; }
         set
@@ -245,44 +245,45 @@ internal class CssBox : CssBoxProperties, IDisposable
         bool preserveSpaces = WhiteSpace == CssConstants.Pre || WhiteSpace == CssConstants.PreWrap;
         bool respoctNewline = preserveSpaces || WhiteSpace == CssConstants.PreLine;
 
-        while (startIdx < _text.Length)
+        var textSpan = _text.Span;
+        while (startIdx < textSpan.Length)
         {
-            while (startIdx < _text.Length && _text[startIdx] == '\r')
+            while (startIdx < textSpan.Length && textSpan[startIdx] == '\r')
                 startIdx++;
 
-            if (startIdx < _text.Length)
+            if (startIdx < textSpan.Length)
             {
                 var endIdx = startIdx;
 
-                while (endIdx < _text.Length && char.IsWhiteSpace(_text[endIdx]) && _text[endIdx] != '\n')
+                while (endIdx < textSpan.Length && char.IsWhiteSpace(textSpan[endIdx]) && textSpan[endIdx] != '\n')
                     endIdx++;
 
                 if (endIdx > startIdx)
                 {
                     if (preserveSpaces)
-                        Words.Add(new CssRectWord(this, HtmlUtils.DecodeHtml(_text.Substring(startIdx, endIdx - startIdx)), false, false));
+                        Words.Add(new CssRectWord(this, HtmlUtils.DecodeHtml(_text.Slice(startIdx, endIdx - startIdx).ToString()), false, false));
                 }
                 else
                 {
                     endIdx = startIdx;
 
-                    while (endIdx < _text.Length && !char.IsWhiteSpace(_text[endIdx]) && _text[endIdx] != '-' && WordBreak != CssConstants.BreakAll && !CommonUtils.IsAsianCharecter(_text[endIdx]))
+                    while (endIdx < textSpan.Length && !char.IsWhiteSpace(textSpan[endIdx]) && textSpan[endIdx] != '-' && WordBreak != CssConstants.BreakAll && !CommonUtils.IsAsianCharecter(textSpan[endIdx]))
                         endIdx++;
 
-                    if (endIdx < _text.Length && (_text[endIdx] == '-' || WordBreak == CssConstants.BreakAll || CommonUtils.IsAsianCharecter(_text[endIdx])))
+                    if (endIdx < textSpan.Length && (textSpan[endIdx] == '-' || WordBreak == CssConstants.BreakAll || CommonUtils.IsAsianCharecter(textSpan[endIdx])))
                         endIdx++;
 
                     if (endIdx > startIdx)
                     {
-                        var hasSpaceBefore = !preserveSpaces && startIdx > 0 && Words.Count == 0 && char.IsWhiteSpace(_text[startIdx - 1]);
-                        var hasSpaceAfter = !preserveSpaces && endIdx < _text.Length && char.IsWhiteSpace(_text[endIdx]);
+                        var hasSpaceBefore = !preserveSpaces && startIdx > 0 && Words.Count == 0 && char.IsWhiteSpace(textSpan[startIdx - 1]);
+                        var hasSpaceAfter = !preserveSpaces && endIdx < textSpan.Length && char.IsWhiteSpace(textSpan[endIdx]);
 
-                        Words.Add(new CssRectWord(this, HtmlUtils.DecodeHtml(_text.Substring(startIdx, endIdx - startIdx)), hasSpaceBefore, hasSpaceAfter));
+                        Words.Add(new CssRectWord(this, HtmlUtils.DecodeHtml(_text.Slice(startIdx, endIdx - startIdx).ToString()), hasSpaceBefore, hasSpaceAfter));
                     }
                 }
 
                 // create new-line word so it will effect the layout
-                if (endIdx < _text.Length && _text[endIdx] == '\n')
+                if (endIdx < textSpan.Length && textSpan[endIdx] == '\n')
                 {
                     endIdx++;
 
@@ -517,27 +518,27 @@ internal class CssBox : CssBoxProperties, IDisposable
 
             if (ListStyleType.Equals(CssConstants.Disc, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString("•");
+                _listItemBox.Text = "•".AsMemory();
             }
             else if (ListStyleType.Equals(CssConstants.Circle, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString("o");
+                _listItemBox.Text = "o".AsMemory();
             }
             else if (ListStyleType.Equals(CssConstants.Square, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString("♠");
+                _listItemBox.Text = "♠".AsMemory();
             }
             else if (ListStyleType.Equals(CssConstants.Decimal, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString(GetIndexForList().ToString(CultureInfo.InvariantCulture) + ".");
+                _listItemBox.Text = (GetIndexForList().ToString(CultureInfo.InvariantCulture) + ".").AsMemory();
             }
             else if (ListStyleType.Equals(CssConstants.DecimalLeadingZero, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString(GetIndexForList().ToString("00", CultureInfo.InvariantCulture) + ".");
+                _listItemBox.Text = (GetIndexForList().ToString("00", CultureInfo.InvariantCulture) + ".").AsMemory();
             }
             else
             {
-                _listItemBox.Text = new SubString(CommonUtils.ConvertToAlphaNumber(GetIndexForList(), ListStyleType) + ".");
+                _listItemBox.Text = (CommonUtils.ConvertToAlphaNumber(GetIndexForList(), ListStyleType) + ".").AsMemory();
             }
 
             _listItemBox.ParseToWords();
