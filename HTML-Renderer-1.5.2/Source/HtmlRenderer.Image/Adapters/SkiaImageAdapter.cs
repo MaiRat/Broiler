@@ -77,7 +77,7 @@ internal sealed class SkiaImageAdapter : RAdapter
         return new BrushAdapter(paint, false);
     }
 
-    protected override RBrush CreateLinearGradientBrush(RRect rect, Color color1, Color color2, double angle)
+    protected override RBrush CreateLinearGradientBrush(RectangleF rect, Color color1, Color color2, double angle)
     {
         var radians = angle * Math.PI / 180.0;
         var cos = (float)Math.Cos(radians);

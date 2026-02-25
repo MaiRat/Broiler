@@ -60,15 +60,15 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public bool IsContextMenuEnabled { get; set; } = true;
 
-    public RPoint ScrollOffset { get; set; }
+    public PointF ScrollOffset { get; set; }
 
-    public RPoint Location { get; set; }
+    public PointF Location { get; set; }
 
-    public RSize MaxSize { get; set; }
+    public SizeF MaxSize { get; set; }
 
-    public RSize ActualSize { get; set; }
+    public SizeF ActualSize { get; set; }
 
-    public RSize PageSize { get; set; }
+    public SizeF PageSize { get; set; }
 
     public int MarginTop
     {
@@ -169,7 +169,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public string GetHtml(HtmlGenerationStyle styleGen = HtmlGenerationStyle.Inline) => DomUtils.GenerateHtml(Root, styleGen);
 
-    public string GetAttributeAt(RPoint location, string attribute)
+    public string GetAttributeAt(PointF location, string attribute)
     {
         ArgumentNullException.ThrowIfNull(attribute);
 
@@ -177,51 +177,51 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         return cssBox != null ? DomUtils.GetAttribute(cssBox, attribute) : null;
     }
 
-    public List<LinkElementData<RRect>> GetLinks()
+    public List<LinkElementData<RectangleF>> GetLinks()
     {
         var linkBoxes = new List<CssBox>();
         DomUtils.GetAllLinkBoxes(Root, linkBoxes);
 
-        var linkElements = new List<LinkElementData<RRect>>();
+        var linkElements = new List<LinkElementData<RectangleF>>();
 
         foreach (var box in linkBoxes)
-            linkElements.Add(new LinkElementData<RRect>(box.GetAttribute("id"), box.GetAttribute("href"), CommonUtils.GetFirstValueOrDefault(box.Rectangles, box.Bounds)));
+            linkElements.Add(new LinkElementData<RectangleF>(box.GetAttribute("id"), box.GetAttribute("href"), CommonUtils.GetFirstValueOrDefault(box.Rectangles, box.Bounds)));
 
         return linkElements;
     }
 
-    public string GetLinkAt(RPoint location)
+    public string GetLinkAt(PointF location)
     {
         var link = DomUtils.GetLinkBox(Root, OffsetByScroll(location));
         return link?.HrefLink;
     }
 
-    public RRect? GetElementRectangle(string elementId)
+    public RectangleF? GetElementRectangle(string elementId)
     {
         ArgumentException.ThrowIfNullOrEmpty(elementId);
 
         var box = DomUtils.GetBoxById(Root, elementId.ToLower());
-        return box != null ? CommonUtils.GetFirstValueOrDefault(box.Rectangles, box.Bounds) : (RRect?)null;
+        return box != null ? CommonUtils.GetFirstValueOrDefault(box.Rectangles, box.Bounds) : (RectangleF?)null;
     }
 
     public void PerformLayout(RGraphics g)
     {
         ArgumentNullException.ThrowIfNull(g);
 
-        ActualSize = RSize.Empty;
+        ActualSize = SizeF.Empty;
         if (Root == null)
             return;
 
         // if width is not restricted we set it to large value to get the actual later
-        Root.Size = new RSize(MaxSize.Width > 0 ? MaxSize.Width : 99999, 0);
+        Root.Size = new SizeF(MaxSize.Width > 0 ? MaxSize.Width : 99999, 0);
         Root.Location = Location;
         Root.PerformLayout(g);
 
         if (MaxSize.Width <= 0.1)
         {
             // in case the width is not restricted we need to double layout, first will find the width so second can layout by it (center alignment)
-            Root.Size = new RSize((int)Math.Ceiling(ActualSize.Width), 0);
-            ActualSize = RSize.Empty;
+            Root.Size = new SizeF((int)Math.Ceiling(ActualSize.Width), 0);
+            ActualSize = SizeF.Empty;
             Root.PerformLayout(g);
         }
 
@@ -238,11 +238,11 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
         if (MaxSize.Height > 0)
         {
-            g.PushClip(new RRect(Location.X, Location.Y, Math.Min(MaxSize.Width, PageSize.Width), Math.Min(MaxSize.Height, PageSize.Height)));
+            g.PushClip(new RectangleF(Location.X, Location.Y, Math.Min(MaxSize.Width, PageSize.Width), Math.Min(MaxSize.Height, PageSize.Height)));
         }
         else
         {
-            g.PushClip(new RRect(MarginLeft, MarginTop, PageSize.Width, PageSize.Height));
+            g.PushClip(new RectangleF(MarginLeft, MarginTop, PageSize.Width, PageSize.Height));
         }
 
         Root?.Paint(g);
@@ -250,7 +250,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         g.PopClip();
     }
 
-    public void HandleMouseDown(object parent, RPoint location)
+    public void HandleMouseDown(object parent, PointF location)
     {
         ArgumentNullException.ThrowIfNull(parent);
 
@@ -264,7 +264,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         }
     }
 
-    public void HandleMouseUp(object parent, RPoint location, RMouseEvent e)
+    public void HandleMouseUp(object parent, PointF location, RMouseEvent e)
     {
         ArgumentNullException.ThrowIfNull(parent);
 
@@ -292,7 +292,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         }
     }
 
-    public void HandleMouseDoubleClick(object parent, RPoint location)
+    public void HandleMouseDoubleClick(object parent, PointF location)
     {
         ArgumentNullException.ThrowIfNull(parent);
 
@@ -307,7 +307,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         }
     }
 
-    public void HandleMouseMove(object parent, RPoint location)
+    public void HandleMouseMove(object parent, PointF location)
     {
         ArgumentNullException.ThrowIfNull(parent);
 
@@ -428,7 +428,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
         { }
     }
 
-    internal void HandleLinkClicked(object parent, RPoint location, CssBox link)
+    internal void HandleLinkClicked(object parent, PointF location, CssBox link)
     {
         EventHandler<HtmlLinkClickedEventArgs> clickHandler = LinkClicked;
         if (clickHandler != null)
@@ -492,7 +492,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     void IHtmlContainerInt.RaiseHtmlImageLoadEvent(HtmlImageLoadEventArgs args)
         => RaiseHtmlImageLoadEvent(args);
 
-    RPoint IHtmlContainerInt.RootLocation => Root?.Location ?? RPoint.Empty;
+    PointF IHtmlContainerInt.RootLocation => Root?.Location ?? PointF.Empty;
 
     RFont IHtmlContainerInt.GetFont(string family, double size, FontStyle style) => Adapter.GetFont(family, size, style);
 
@@ -509,7 +509,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     void IHtmlContainerInt.DownloadImage(Uri uri, string filePath, bool async, Action<Uri, string, Exception, bool> callback)
         => _imageDownloader?.DownloadImage(uri, filePath, async, (imageUri, fp, error, canceled) => callback(imageUri, fp, error, canceled));
 
-    IImageLoadHandler IHtmlContainerInt.CreateImageLoadHandler(ActionInt<RImage, RRect, bool> loadCompleteCallback)
+    IImageLoadHandler IHtmlContainerInt.CreateImageLoadHandler(ActionInt<RImage, RectangleF, bool> loadCompleteCallback)
         => new ImageLoadHandler(this, loadCompleteCallback);
 
     void IHtmlContainerInt.AddHoverBox(object box, CssBlock block)
@@ -527,9 +527,9 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     public void Dispose() => Dispose(true);
 
 
-    private RPoint OffsetByScroll(RPoint location) => new(location.X - ScrollOffset.X, location.Y - ScrollOffset.Y);
+    private PointF OffsetByScroll(PointF location) => new(location.X - ScrollOffset.X, location.Y - ScrollOffset.Y);
 
-    private bool IsMouseInContainer(RPoint location)
+    private bool IsMouseInContainer(PointF location)
     {
         return location.X >= Location.X
             && location.X <= Location.X + ActualSize.Width

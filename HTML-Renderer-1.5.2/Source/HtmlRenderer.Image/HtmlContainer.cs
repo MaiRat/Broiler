@@ -5,6 +5,7 @@ using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Image.Adapters;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Image;
 
@@ -14,7 +15,7 @@ public sealed class HtmlContainer : IDisposable
     {
         HtmlContainerInt = new HtmlContainerInt(SkiaImageAdapter.Instance, HandlerFactory.Instance);
         HtmlContainerInt.SetMargins(0);
-        HtmlContainerInt.PageSize = new RSize(99999, 99999);
+        HtmlContainerInt.PageSize = new SizeF(99999, 99999);
     }
 
     public event EventHandler LoadComplete
@@ -57,19 +58,19 @@ public sealed class HtmlContainer : IDisposable
         set => HtmlContainerInt.AvoidImagesLateLoading = value;
     }
 
-    public RSize MaxSize
+    public SizeF MaxSize
     {
         get => HtmlContainerInt.MaxSize;
         set => HtmlContainerInt.MaxSize = value;
     }
 
-    public RSize ActualSize
+    public SizeF ActualSize
     {
         get => HtmlContainerInt.ActualSize;
         internal set => HtmlContainerInt.ActualSize = value;
     }
 
-    public RPoint Location
+    public PointF Location
     {
         get => HtmlContainerInt.Location;
         set => HtmlContainerInt.Location = value;
@@ -77,13 +78,13 @@ public sealed class HtmlContainer : IDisposable
 
     public void SetHtml(string htmlSource, CssData baseCssData = null) => HtmlContainerInt.SetHtml(htmlSource, baseCssData);
 
-    public void PerformLayout(SKCanvas canvas, RRect clip)
+    public void PerformLayout(SKCanvas canvas, RectangleF clip)
     {
         using var g = new GraphicsAdapter(canvas, clip);
         HtmlContainerInt.PerformLayout(g);
     }
 
-    public void PerformPaint(SKCanvas canvas, RRect clip)
+    public void PerformPaint(SKCanvas canvas, RectangleF clip)
     {
         using var g = new GraphicsAdapter(canvas, clip);
         HtmlContainerInt.PerformPaint(g);

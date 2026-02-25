@@ -7,20 +7,21 @@ using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
 internal sealed class ImageLoadHandler : IImageLoadHandler
 {
     private readonly IHtmlContainerInt _htmlContainer;
-    private readonly ActionInt<RImage, RRect, bool> _loadCompleteCallback;
+    private readonly ActionInt<RImage, RectangleF, bool> _loadCompleteCallback;
     private FileStream _imageFileStream;
-    private RRect _imageRectangle;
+    private RectangleF _imageRectangle;
     private bool _asyncCallback;
     private bool _releaseImageObject;
     private bool _disposed;
 
-    public ImageLoadHandler(IHtmlContainerInt htmlContainer, ActionInt<RImage, RRect, bool> loadCompleteCallback)
+    public ImageLoadHandler(IHtmlContainerInt htmlContainer, ActionInt<RImage, RectangleF, bool> loadCompleteCallback)
     {
         ArgumentNullException.ThrowIfNull(htmlContainer);
         ArgumentNullException.ThrowIfNull(loadCompleteCallback);
@@ -30,7 +31,7 @@ internal sealed class ImageLoadHandler : IImageLoadHandler
     }
 
     public RImage Image { get; private set; }
-    public RRect Rectangle => _imageRectangle;
+    public RectangleF Rectangle => _imageRectangle;
 
     public void LoadImage(string src, Dictionary<string, string> attributes)
     {
@@ -73,7 +74,7 @@ internal sealed class ImageLoadHandler : IImageLoadHandler
     }
 
 
-    private void OnHtmlImageLoadEventCallback(string path, object image, RRect imageRectangle)
+    private void OnHtmlImageLoadEventCallback(string path, object image, RectangleF imageRectangle)
     {
         if (_disposed)
             return;

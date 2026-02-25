@@ -12,6 +12,7 @@ using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 using Microsoft.Win32;
+using RectangleF = System.Drawing.RectangleF;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
 
@@ -66,7 +67,7 @@ internal sealed class WpfAdapter : RAdapter
         return new BrushAdapter(solidBrush);
     }
 
-    protected override RBrush CreateLinearGradientBrush(RRect rect, Color color1, Color color2, double angle)
+    protected override RBrush CreateLinearGradientBrush(RectangleF rect, Color color1, Color color2, double angle)
     {
         var startColor = angle <= 180 ? Utils.Convert(color1) : Utils.Convert(color2);
         var endColor = angle <= 180 ? Utils.Convert(color2) : Utils.Convert(color1);

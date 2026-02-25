@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Entities;
 
-public delegate void HtmlImageLoadCallback(string path, Object image, RRect imageRectangle);
+public delegate void HtmlImageLoadCallback(string path, Object image, RectangleF imageRectangle);
 
 public sealed class HtmlImageLoadEventArgs : EventArgs
 {
@@ -24,7 +25,7 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
     public void Callback()
     {
         Handled = true;
-        _callback(null, null, new RRect());
+        _callback(null, null, new RectangleF());
     }
 
     public void Callback(string path)
@@ -32,7 +33,7 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
         ArgumentException.ThrowIfNullOrEmpty(path);
 
         Handled = true;
-        _callback(path, null, RRect.Empty);
+        _callback(path, null, RectangleF.Empty);
     }
 
     public void Callback(string path, double x, double y, double width, double height)
@@ -40,7 +41,7 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
         ArgumentException.ThrowIfNullOrEmpty(path);
 
         Handled = true;
-        _callback(path, null, new RRect(x, y, width, height));
+        _callback(path, null, new RectangleF((float)x, (float)y, (float)width, (float)height));
     }
 
     public void Callback(Object image)
@@ -48,7 +49,7 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
         ArgumentNullException.ThrowIfNull(image);
 
         Handled = true;
-        _callback(null, image, RRect.Empty);
+        _callback(null, image, RectangleF.Empty);
     }
 
     public void Callback(Object image, double x, double y, double width, double height)
@@ -56,6 +57,6 @@ public sealed class HtmlImageLoadEventArgs : EventArgs
         ArgumentNullException.ThrowIfNull(image);
 
         Handled = true;
-        _callback(null, image, new RRect(x, y, width, height));
+        _callback(null, image, new RectangleF((float)x, (float)y, (float)width, (float)height));
     }
 }

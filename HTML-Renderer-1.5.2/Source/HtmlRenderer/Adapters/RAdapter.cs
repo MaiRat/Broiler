@@ -44,7 +44,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
         return brush;
     }
 
-    public RBrush GetLinearGradientBrush(RRect rect, Color color1, Color color2, double angle) => CreateLinearGradientBrush(rect, color1, color2, angle);
+    public RBrush GetLinearGradientBrush(RectangleF rect, Color color1, Color color2, double angle) => CreateLinearGradientBrush(rect, color1, color2, angle);
 
     public RImage ConvertImage(object image) =>
         // TODO:a remove this by creating better API.
@@ -112,7 +112,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     protected abstract RBrush CreateSolidBrush(Color color);
 
-    protected abstract RBrush CreateLinearGradientBrush(RRect rect, Color color1, Color color2, double angle);
+    protected abstract RBrush CreateLinearGradientBrush(RectangleF rect, Color color1, Color color2, double angle);
 
     protected abstract RImage ConvertImageInt(object image);
 

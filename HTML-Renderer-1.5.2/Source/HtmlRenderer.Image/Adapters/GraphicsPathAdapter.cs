@@ -2,25 +2,26 @@ using System;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Image.Adapters;
 
 internal sealed class GraphicsPathAdapter : RGraphicsPath
 {
-    private RPoint _lastPoint;
+    private PointF _lastPoint;
 
     public SKPath Path { get; } = new();
 
     public override void Start(double x, double y)
     {
-        _lastPoint = new RPoint(x, y);
+        _lastPoint = new PointF((float)x, (float)y);
         Path.MoveTo((float)x, (float)y);
     }
 
     public override void LineTo(double x, double y)
     {
         Path.LineTo((float)x, (float)y);
-        _lastPoint = new RPoint(x, y);
+        _lastPoint = new PointF((float)x, (float)y);
     }
 
     public override void ArcTo(double x, double y, double size, Corner corner)
@@ -29,7 +30,7 @@ internal sealed class GraphicsPathAdapter : RGraphicsPath
         float top = (float)(Math.Min(y, _lastPoint.Y) - (corner == Corner.BottomLeft || corner == Corner.BottomRight ? size : 0));
         var rect = SKRect.Create(left, top, (float)size * 2, (float)size * 2);
         Path.ArcTo(rect, GetStartAngle(corner), 90, false);
-        _lastPoint = new RPoint(x, y);
+        _lastPoint = new PointF((float)x, (float)y);
     }
 
     public override void Dispose() => Path.Dispose();

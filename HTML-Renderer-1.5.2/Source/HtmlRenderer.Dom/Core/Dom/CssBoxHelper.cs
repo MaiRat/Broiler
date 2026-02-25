@@ -2,6 +2,7 @@
 using System;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
@@ -207,14 +208,14 @@ internal static class CssBoxHelper
             CollectMaxFloatBottom(child, ref maxBottom);
     }
 
-    public static bool IsRectVisible(RRect rect, RRect clip)
+    public static bool IsRectVisible(RectangleF rect, RectangleF clip)
     {
         rect.X -= 2;
         rect.Width += 2;
 
         clip.Intersect(rect);
 
-        if (clip != RRect.Empty)
+        if (clip != RectangleF.Empty)
             return true;
 
         return false;

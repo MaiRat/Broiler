@@ -5,6 +5,7 @@ using System.Windows.Input;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
+using PointF = System.Drawing.PointF;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
 
@@ -19,7 +20,7 @@ internal sealed class ControlAdapter : RControl
 
     public Control Control { get; }
 
-    public override RPoint MouseLocation => Utils.Convert(Control.PointFromScreen(Mouse.GetPosition(Control)));
+    public override PointF MouseLocation => Utils.Convert(Control.PointFromScreen(Mouse.GetPosition(Control)));
 
     public override bool LeftMouseButton => Mouse.LeftButton == MouseButtonState.Pressed;
 

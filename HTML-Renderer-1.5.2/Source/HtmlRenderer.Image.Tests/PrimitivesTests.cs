@@ -5,8 +5,8 @@ namespace HtmlRenderer.Image.Tests;
 
 /// <summary>
 /// Unit tests for the HtmlRenderer primitive types:
-/// <see cref="Color"/>, <see cref="RRect"/>, <see cref="RPoint"/>,
-/// and <see cref="RSize"/>.
+/// <see cref="Color"/>, <see cref="RectangleF"/>, <see cref="PointF"/>,
+/// and <see cref="SizeF"/>.
 /// </summary>
 public class PrimitivesTests
 {
@@ -96,13 +96,13 @@ public class PrimitivesTests
     }
 
     // =================================================================
-    // RRect
+    // RectangleF
     // =================================================================
 
     [Fact]
     public void RRect_Constructor_StoresValues()
     {
-        var r = new RRect(10, 20, 100, 50);
+        var r = new RectangleF(10, 20, 100, 50);
         Assert.Equal(10, r.X);
         Assert.Equal(20, r.Y);
         Assert.Equal(100, r.Width);
@@ -112,7 +112,7 @@ public class PrimitivesTests
     [Fact]
     public void RRect_DerivedProperties_AreCorrect()
     {
-        var r = new RRect(10, 20, 100, 50);
+        var r = new RectangleF(10, 20, 100, 50);
         Assert.Equal(10, r.Left);
         Assert.Equal(20, r.Top);
         Assert.Equal(110, r.Right);
@@ -122,7 +122,7 @@ public class PrimitivesTests
     [Fact]
     public void RRect_Contains_Point_InsideAndOutside()
     {
-        var r = new RRect(0, 0, 100, 100);
+        var r = new RectangleF(0, 0, 100, 100);
         Assert.True(r.Contains(50, 50));
         Assert.False(r.Contains(150, 50));
         Assert.False(r.Contains(-1, 50));
@@ -131,17 +131,17 @@ public class PrimitivesTests
     [Fact]
     public void RRect_Contains_RPoint()
     {
-        var r = new RRect(0, 0, 100, 100);
-        Assert.True(r.Contains(new RPoint(50, 50)));
-        Assert.False(r.Contains(new RPoint(200, 200)));
+        var r = new RectangleF(0, 0, 100, 100);
+        Assert.True(r.Contains(new PointF(50, 50)));
+        Assert.False(r.Contains(new PointF(200, 200)));
     }
 
     [Fact]
     public void RRect_Contains_InnerRect()
     {
-        var outer = new RRect(0, 0, 100, 100);
-        var inner = new RRect(10, 10, 50, 50);
-        var overlapping = new RRect(50, 50, 100, 100);
+        var outer = new RectangleF(0, 0, 100, 100);
+        var inner = new RectangleF(10, 10, 50, 50);
+        var overlapping = new RectangleF(50, 50, 100, 100);
 
         Assert.True(outer.Contains(inner));
         Assert.False(outer.Contains(overlapping));
@@ -150,9 +150,9 @@ public class PrimitivesTests
     [Fact]
     public void RRect_Intersect_OverlappingRects()
     {
-        var a = new RRect(0, 0, 100, 100);
-        var b = new RRect(50, 50, 100, 100);
-        var result = RRect.Intersect(a, b);
+        var a = new RectangleF(0, 0, 100, 100);
+        var b = new RectangleF(50, 50, 100, 100);
+        var result = RectangleF.Intersect(a, b);
 
         Assert.Equal(50, result.X);
         Assert.Equal(50, result.Y);
@@ -163,18 +163,18 @@ public class PrimitivesTests
     [Fact]
     public void RRect_Intersect_NonOverlapping_ReturnsEmpty()
     {
-        var a = new RRect(0, 0, 50, 50);
-        var b = new RRect(100, 100, 50, 50);
-        var result = RRect.Intersect(a, b);
+        var a = new RectangleF(0, 0, 50, 50);
+        var b = new RectangleF(100, 100, 50, 50);
+        var result = RectangleF.Intersect(a, b);
         Assert.True(result.IsEmpty);
     }
 
     [Fact]
     public void RRect_Union_CombinesRects()
     {
-        var a = new RRect(0, 0, 50, 50);
-        var b = new RRect(100, 100, 50, 50);
-        var result = RRect.Union(a, b);
+        var a = new RectangleF(0, 0, 50, 50);
+        var b = new RectangleF(100, 100, 50, 50);
+        var result = RectangleF.Union(a, b);
 
         Assert.Equal(0, result.X);
         Assert.Equal(0, result.Y);
@@ -185,23 +185,23 @@ public class PrimitivesTests
     [Fact]
     public void RRect_Equality_SameValues()
     {
-        var a = new RRect(1, 2, 3, 4);
-        var b = new RRect(1, 2, 3, 4);
+        var a = new RectangleF(1, 2, 3, 4);
+        var b = new RectangleF(1, 2, 3, 4);
         Assert.True(a == b);
     }
 
     [Fact]
     public void RRect_Equality_DifferentValues()
     {
-        var a = new RRect(1, 2, 3, 4);
-        var b = new RRect(5, 6, 7, 8);
+        var a = new RectangleF(1, 2, 3, 4);
+        var b = new RectangleF(5, 6, 7, 8);
         Assert.True(a != b);
     }
 
     [Fact]
     public void RRect_FromLTRB_CalculatesCorrectly()
     {
-        var r = RRect.FromLTRB(10, 20, 110, 70);
+        var r = RectangleF.FromLTRB(10, 20, 110, 70);
         Assert.Equal(10, r.X);
         Assert.Equal(20, r.Y);
         Assert.Equal(100, r.Width);
@@ -211,7 +211,7 @@ public class PrimitivesTests
     [Fact]
     public void RRect_Inflate_ExpandsRect()
     {
-        var r = new RRect(10, 10, 100, 100);
+        var r = new RectangleF(10, 10, 100, 100);
         r.Inflate(5, 5);
         Assert.Equal(5, r.X);
         Assert.Equal(5, r.Y);
@@ -222,7 +222,7 @@ public class PrimitivesTests
     [Fact]
     public void RRect_Offset_ShiftsRect()
     {
-        var r = new RRect(10, 10, 100, 100);
+        var r = new RectangleF(10, 10, 100, 100);
         r.Offset(5, 10);
         Assert.Equal(15, r.X);
         Assert.Equal(20, r.Y);
@@ -231,44 +231,44 @@ public class PrimitivesTests
     [Fact]
     public void RRect_IntersectsWith_OverlappingRects()
     {
-        var a = new RRect(0, 0, 100, 100);
-        var b = new RRect(50, 50, 100, 100);
+        var a = new RectangleF(0, 0, 100, 100);
+        var b = new RectangleF(50, 50, 100, 100);
         Assert.True(a.IntersectsWith(b));
     }
 
     [Fact]
     public void RRect_IntersectsWith_NonOverlapping()
     {
-        var a = new RRect(0, 0, 50, 50);
-        var b = new RRect(100, 100, 50, 50);
+        var a = new RectangleF(0, 0, 50, 50);
+        var b = new RectangleF(100, 100, 50, 50);
         Assert.False(a.IntersectsWith(b));
     }
 
     [Fact]
     public void RRect_LocationAndSize_Properties()
     {
-        var r = new RRect(10, 20, 100, 50);
-        Assert.Equal(new RPoint(10, 20), r.Location);
-        Assert.Equal(new RSize(100, 50), r.Size);
+        var r = new RectangleF(10, 20, 100, 50);
+        Assert.Equal(new PointF(10, 20), r.Location);
+        Assert.Equal(new SizeF(100, 50), r.Size);
     }
 
     // =================================================================
-    // RPoint
+    // PointF
     // =================================================================
 
     [Fact]
     public void RPoint_Constructor_StoresValues()
     {
-        var p = new RPoint(3.5, 7.2);
-        Assert.Equal(3.5, p.X);
-        Assert.Equal(7.2, p.Y);
+        var p = new PointF(3.5f, 7.2f);
+        Assert.Equal(3.5f, p.X);
+        Assert.Equal(7.2f, p.Y);
     }
 
     [Fact]
     public void RPoint_Add_WithSize()
     {
-        var p = new RPoint(10, 20);
-        var s = new RSize(5, 10);
+        var p = new PointF(10, 20);
+        var s = new SizeF(5, 10);
         var result = p + s;
         Assert.Equal(15, result.X);
         Assert.Equal(30, result.Y);
@@ -277,8 +277,8 @@ public class PrimitivesTests
     [Fact]
     public void RPoint_Subtract_WithSize()
     {
-        var p = new RPoint(10, 20);
-        var s = new RSize(3, 7);
+        var p = new PointF(10, 20);
+        var s = new SizeF(3, 7);
         var result = p - s;
         Assert.Equal(7, result.X);
         Assert.Equal(13, result.Y);
@@ -287,28 +287,28 @@ public class PrimitivesTests
     [Fact]
     public void RPoint_Empty_IsEmpty()
     {
-        Assert.True(RPoint.Empty.IsEmpty);
-        Assert.False(new RPoint(1, 0).IsEmpty);
+        Assert.True(PointF.Empty.IsEmpty);
+        Assert.False(new PointF(1, 0).IsEmpty);
     }
 
     [Fact]
     public void RPoint_Equality()
     {
-        var a = new RPoint(5, 10);
-        var b = new RPoint(5, 10);
-        var c = new RPoint(1, 2);
+        var a = new PointF(5, 10);
+        var b = new PointF(5, 10);
+        var c = new PointF(1, 2);
         Assert.True(a == b);
         Assert.True(a != c);
     }
 
     // =================================================================
-    // RSize
+    // SizeF
     // =================================================================
 
     [Fact]
     public void RSize_Constructor_StoresValues()
     {
-        var s = new RSize(100, 200);
+        var s = new SizeF(100, 200);
         Assert.Equal(100, s.Width);
         Assert.Equal(200, s.Height);
     }
@@ -316,8 +316,8 @@ public class PrimitivesTests
     [Fact]
     public void RSize_Add_TwoSizes()
     {
-        var a = new RSize(10, 20);
-        var b = new RSize(30, 40);
+        var a = new SizeF(10, 20);
+        var b = new SizeF(30, 40);
         var result = a + b;
         Assert.Equal(40, result.Width);
         Assert.Equal(60, result.Height);
@@ -326,8 +326,8 @@ public class PrimitivesTests
     [Fact]
     public void RSize_Subtract_TwoSizes()
     {
-        var a = new RSize(30, 40);
-        var b = new RSize(10, 15);
+        var a = new SizeF(30, 40);
+        var b = new SizeF(10, 15);
         var result = a - b;
         Assert.Equal(20, result.Width);
         Assert.Equal(25, result.Height);
@@ -336,8 +336,8 @@ public class PrimitivesTests
     [Fact]
     public void RSize_CopyConstructor()
     {
-        var original = new RSize(50, 75);
-        var copy = new RSize(original);
+        var original = new SizeF(50, 75);
+        var copy = new SizeF(original);
         Assert.Equal(original.Width, copy.Width);
         Assert.Equal(original.Height, copy.Height);
     }
@@ -345,8 +345,8 @@ public class PrimitivesTests
     [Fact]
     public void RSize_FromPoint()
     {
-        var p = new RPoint(10, 20);
-        var s = new RSize(p);
+        var p = new PointF(10, 20);
+        var s = new SizeF(p);
         Assert.Equal(10, s.Width);
         Assert.Equal(20, s.Height);
     }
@@ -354,16 +354,16 @@ public class PrimitivesTests
     [Fact]
     public void RSize_Empty_IsEmpty()
     {
-        Assert.True(RSize.Empty.IsEmpty);
-        Assert.False(new RSize(1, 1).IsEmpty);
+        Assert.True(SizeF.Empty.IsEmpty);
+        Assert.False(new SizeF(1, 1).IsEmpty);
     }
 
     [Fact]
     public void RSize_Equality()
     {
-        var a = new RSize(10, 20);
-        var b = new RSize(10, 20);
-        var c = new RSize(30, 40);
+        var a = new SizeF(10, 20);
+        var b = new SizeF(10, 20);
+        var c = new SizeF(30, 40);
         Assert.True(a == b);
         Assert.True(a != c);
     }
@@ -371,7 +371,7 @@ public class PrimitivesTests
     [Fact]
     public void RSize_ToPointF_Converts()
     {
-        var s = new RSize(10, 20);
+        var s = new SizeF(10, 20);
         var p = s.ToPointF();
         Assert.Equal(10, p.X);
         Assert.Equal(20, p.Y);

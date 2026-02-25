@@ -12,9 +12,9 @@ internal sealed class BordersDrawHandler : IBordersDrawHandler
 {
     public static readonly BordersDrawHandler Instance = new();
 
-    private static readonly RPoint[] _borderPts = new RPoint[4];
+    private static readonly PointF[] _borderPts = new PointF[4];
 
-    public static void DrawBoxBorders(RGraphics g, IBorderRenderData box, RRect rect, bool isFirst, bool isLast)
+    public static void DrawBoxBorders(RGraphics g, IBorderRenderData box, RectangleF rect, bool isFirst, bool isLast)
     {
         if (rect.Width <= 0 || rect.Height <= 0)
             return;
@@ -32,13 +32,13 @@ internal sealed class BordersDrawHandler : IBordersDrawHandler
             DrawBorder(Border.Right, box, g, rect, isFirst, true);
     }
 
-    public static void DrawBorder(Border border, RGraphics g, IBorderRenderData box, RBrush brush, RRect rectangle)
+    public static void DrawBorder(Border border, RGraphics g, IBorderRenderData box, RBrush brush, RectangleF rectangle)
     {
         SetInOutsetRectanglePoints(border, box, rectangle, true, true);
         g.DrawPolygon(brush, _borderPts);
     }
 
-    private static void DrawBorder(Border border, IBorderRenderData box, RGraphics g, RRect rect, bool isLineStart, bool isLineEnd)
+    private static void DrawBorder(Border border, IBorderRenderData box, RGraphics g, RectangleF rect, bool isLineStart, bool isLineEnd)
     {
         var style = GetStyle(border, box);
         var color = GetColor(border, box, style);
@@ -89,46 +89,46 @@ internal sealed class BordersDrawHandler : IBordersDrawHandler
         }
     }
 
-    private static void SetInOutsetRectanglePoints(Border border, IBorderRenderData b, RRect r, bool isLineStart, bool isLineEnd)
+    private static void SetInOutsetRectanglePoints(Border border, IBorderRenderData b, RectangleF r, bool isLineStart, bool isLineEnd)
     {
         switch (border)
         {
             case Border.Top:
-                _borderPts[0] = new RPoint(r.Left, r.Top);
-                _borderPts[1] = new RPoint(r.Right, r.Top);
-                _borderPts[2] = new RPoint(r.Right, r.Top + b.ActualBorderTopWidth);
-                _borderPts[3] = new RPoint(r.Left, r.Top + b.ActualBorderTopWidth);
+                _borderPts[0] = new PointF(r.Left, r.Top);
+                _borderPts[1] = new PointF(r.Right, r.Top);
+                _borderPts[2] = new PointF(r.Right, (float)(r.Top + b.ActualBorderTopWidth));
+                _borderPts[3] = new PointF(r.Left, (float)(r.Top + b.ActualBorderTopWidth));
                 if (isLineEnd)
-                    _borderPts[2].X -= b.ActualBorderRightWidth;
+                    _borderPts[2].X -= (float)b.ActualBorderRightWidth;
                 if (isLineStart)
-                    _borderPts[3].X += b.ActualBorderLeftWidth;
+                    _borderPts[3].X += (float)b.ActualBorderLeftWidth;
                 break;
             case Border.Right:
-                _borderPts[0] = new RPoint(r.Right - b.ActualBorderRightWidth, r.Top + b.ActualBorderTopWidth);
-                _borderPts[1] = new RPoint(r.Right, r.Top);
-                _borderPts[2] = new RPoint(r.Right, r.Bottom);
-                _borderPts[3] = new RPoint(r.Right - b.ActualBorderRightWidth, r.Bottom - b.ActualBorderBottomWidth);
+                _borderPts[0] = new PointF((float)(r.Right - b.ActualBorderRightWidth), (float)(r.Top + b.ActualBorderTopWidth));
+                _borderPts[1] = new PointF(r.Right, r.Top);
+                _borderPts[2] = new PointF(r.Right, r.Bottom);
+                _borderPts[3] = new PointF((float)(r.Right - b.ActualBorderRightWidth), (float)(r.Bottom - b.ActualBorderBottomWidth));
                 break;
             case Border.Bottom:
-                _borderPts[0] = new RPoint(r.Left, r.Bottom - b.ActualBorderBottomWidth);
-                _borderPts[1] = new RPoint(r.Right, r.Bottom - b.ActualBorderBottomWidth);
-                _borderPts[2] = new RPoint(r.Right, r.Bottom);
-                _borderPts[3] = new RPoint(r.Left, r.Bottom);
+                _borderPts[0] = new PointF(r.Left, (float)(r.Bottom - b.ActualBorderBottomWidth));
+                _borderPts[1] = new PointF(r.Right, (float)(r.Bottom - b.ActualBorderBottomWidth));
+                _borderPts[2] = new PointF(r.Right, r.Bottom);
+                _borderPts[3] = new PointF(r.Left, r.Bottom);
                 if (isLineStart)
-                    _borderPts[0].X += b.ActualBorderLeftWidth;
+                    _borderPts[0].X += (float)b.ActualBorderLeftWidth;
                 if (isLineEnd)
-                    _borderPts[1].X -= b.ActualBorderRightWidth;
+                    _borderPts[1].X -= (float)b.ActualBorderRightWidth;
                 break;
             case Border.Left:
-                _borderPts[0] = new RPoint(r.Left, r.Top);
-                _borderPts[1] = new RPoint(r.Left + b.ActualBorderLeftWidth, r.Top + b.ActualBorderTopWidth);
-                _borderPts[2] = new RPoint(r.Left + b.ActualBorderLeftWidth, r.Bottom - b.ActualBorderBottomWidth);
-                _borderPts[3] = new RPoint(r.Left, r.Bottom);
+                _borderPts[0] = new PointF(r.Left, r.Top);
+                _borderPts[1] = new PointF((float)(r.Left + b.ActualBorderLeftWidth), (float)(r.Top + b.ActualBorderTopWidth));
+                _borderPts[2] = new PointF((float)(r.Left + b.ActualBorderLeftWidth), (float)(r.Bottom - b.ActualBorderBottomWidth));
+                _borderPts[3] = new PointF(r.Left, r.Bottom);
                 break;
         }
     }
 
-    private static RGraphicsPath GetRoundedBorderPath(RGraphics g, Border border, IBorderRenderData b, RRect r)
+    private static RGraphicsPath GetRoundedBorderPath(RGraphics g, Border border, IBorderRenderData b, RectangleF r)
     {
         RGraphicsPath path = null;
         switch (border)
@@ -257,9 +257,9 @@ internal sealed class BordersDrawHandler : IBordersDrawHandler
 
     private static Color Darken(Color c) => Color.FromArgb(c.R / 2, c.G / 2, c.B / 2);
 
-    void IBordersDrawHandler.DrawBoxBorders(RGraphics g, IBorderRenderData box, RRect rect, bool isFirst, bool isLast)
+    void IBordersDrawHandler.DrawBoxBorders(RGraphics g, IBorderRenderData box, RectangleF rect, bool isFirst, bool isLast)
         => DrawBoxBorders(g, box, rect, isFirst, isLast);
 
-    void IBordersDrawHandler.DrawBorder(Border border, RGraphics g, IBorderRenderData box, RBrush brush, RRect rectangle)
+    void IBordersDrawHandler.DrawBorder(Border border, RGraphics g, IBorderRenderData box, RBrush brush, RectangleF rectangle)
         => DrawBorder(border, g, box, brush, rectangle);
 }

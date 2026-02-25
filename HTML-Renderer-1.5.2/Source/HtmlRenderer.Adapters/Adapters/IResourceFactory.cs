@@ -24,5 +24,5 @@ public interface IResourceFactory
     /// <summary>
     /// Creates a linear gradient brush.
     /// </summary>
-    RBrush GetLinearGradientBrush(RRect rect, Color color1, Color color2, double angle);
+    RBrush GetLinearGradientBrush(RectangleF rect, Color color1, Color color2, double angle);
 }

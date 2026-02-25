@@ -1,12 +1,13 @@
 ﻿using System;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
 
 public static class HtmlRendererUtils
 {
-    public static RSize MeasureHtmlByRestrictions(RGraphics g, HtmlContainerInt htmlContainer, RSize minSize, RSize maxSize)
+    public static SizeF MeasureHtmlByRestrictions(RGraphics g, HtmlContainerInt htmlContainer, SizeF minSize, SizeF maxSize)
     {
         // first layout without size restriction to know html actual size
         htmlContainer.PerformLayout(g);
@@ -14,7 +15,7 @@ public static class HtmlRendererUtils
         if (maxSize.Width > 0 && maxSize.Width < htmlContainer.ActualSize.Width)
         {
             // to allow the actual size be smaller than max we need to set max size only if it is really larger
-            htmlContainer.MaxSize = new RSize(maxSize.Width, 0);
+            htmlContainer.MaxSize = new SizeF(maxSize.Width, 0);
             htmlContainer.PerformLayout(g);
         }
 
@@ -24,27 +25,27 @@ public static class HtmlRendererUtils
         // if the final width is larger than the actual we need to re-layout so the html can take the full given width.
         if (finalWidth > htmlContainer.ActualSize.Width)
         {
-            htmlContainer.MaxSize = new RSize(finalWidth, 0);
+            htmlContainer.MaxSize = new SizeF(finalWidth, 0);
             htmlContainer.PerformLayout(g);
         }
 
         var finalHeight = Math.Max(maxSize.Height > 0 ? Math.Min(maxSize.Height, (int)htmlContainer.ActualSize.Height) : (int)htmlContainer.ActualSize.Height, minSize.Height);
 
-        return new RSize(finalWidth, finalHeight);
+        return new SizeF(finalWidth, finalHeight);
     }
 
-    public static RSize Layout(RGraphics g, HtmlContainerInt htmlContainer, RSize size, RSize minSize, RSize maxSize, bool autoSize, bool autoSizeHeightOnly)
+    public static SizeF Layout(RGraphics g, HtmlContainerInt htmlContainer, SizeF size, SizeF minSize, SizeF maxSize, bool autoSize, bool autoSizeHeightOnly)
     {
         if (autoSize)
-            htmlContainer.MaxSize = new RSize(0, 0);
+            htmlContainer.MaxSize = new SizeF(0, 0);
         else if (autoSizeHeightOnly)
-            htmlContainer.MaxSize = new RSize(size.Width, 0);
+            htmlContainer.MaxSize = new SizeF(size.Width, 0);
         else
             htmlContainer.MaxSize = size;
 
         htmlContainer.PerformLayout(g);
 
-        RSize newSize = size;
+        SizeF newSize = size;
 
         if (!autoSize && !autoSizeHeightOnly)
             return newSize;
@@ -60,7 +61,7 @@ public static class HtmlRendererUtils
             else if (minSize.Width > 0 && minSize.Width > htmlContainer.ActualSize.Width)
             {
                 // if min size is larger than the actual we need to re-layout so all 100% layouts will be correct
-                htmlContainer.MaxSize = new RSize(minSize.Width, 0);
+                htmlContainer.MaxSize = new SizeF(minSize.Width, 0);
                 htmlContainer.PerformLayout(g);
             }
             newSize = htmlContainer.ActualSize;

@@ -1,5 +1,6 @@
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
 
@@ -26,5 +27,5 @@ internal interface IBackgroundImageDrawHandler
     /// <summary>
     /// Draws a background image within the specified rectangle.
     /// </summary>
-    void DrawBackgroundImage(RGraphics g, IBackgroundRenderData box, IImageLoadHandler imageHandler, RRect rectangle);
+    void DrawBackgroundImage(RGraphics g, IBackgroundRenderData box, IImageLoadHandler imageHandler, RectangleF rectangle);
 }

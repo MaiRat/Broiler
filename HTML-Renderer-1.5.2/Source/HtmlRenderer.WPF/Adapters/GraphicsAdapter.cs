@@ -7,6 +7,9 @@ using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using Color = System.Drawing.Color;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
+using PointF = System.Drawing.PointF;
+using SizeF = System.Drawing.SizeF;
+using RectangleF = System.Drawing.RectangleF;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
 
@@ -15,7 +18,7 @@ internal sealed class GraphicsAdapter : RGraphics
     private readonly DrawingContext _g;
     private readonly bool _releaseGraphics;
 
-    public GraphicsAdapter(DrawingContext g, RRect initialClip, bool releaseGraphics = false) : base(WpfAdapter.Instance, initialClip)
+    public GraphicsAdapter(DrawingContext g, RectangleF initialClip, bool releaseGraphics = false) : base(WpfAdapter.Instance, initialClip)
     {
         ArgumentNullException.ThrowIfNull(g);
 
@@ -23,7 +26,7 @@ internal sealed class GraphicsAdapter : RGraphics
         _releaseGraphics = releaseGraphics;
     }
 
-    public GraphicsAdapter() : base(WpfAdapter.Instance, RRect.Empty)
+    public GraphicsAdapter() : base(WpfAdapter.Instance, RectangleF.Empty)
     {
         _g = null;
         _releaseGraphics = false;
@@ -35,13 +38,13 @@ internal sealed class GraphicsAdapter : RGraphics
         _clipStack.Pop();
     }
 
-    public override void PushClip(RRect rect)
+    public override void PushClip(RectangleF rect)
     {
         _clipStack.Push(rect);
         _g.PushClip(new RectangleGeometry(Utils.Convert(rect)));
     }
 
-    public override void PushClipExclude(RRect rect)
+    public override void PushClipExclude(RectangleF rect)
     {
         var geometry = new CombinedGeometry
         {
@@ -59,7 +62,7 @@ internal sealed class GraphicsAdapter : RGraphics
     public override void ReturnPreviousSmoothingMode(Object prevMode)
     { }
 
-    public override RSize MeasureString(string str, RFont font)
+    public override SizeF MeasureString(string str, RFont font)
     {
         double width = 0;
         GlyphTypeface glyphTypeface = ((FontAdapter)font).GlyphTypeface;
@@ -85,10 +88,10 @@ internal sealed class GraphicsAdapter : RGraphics
         if (width <= 0)
         {
             var formattedText = new FormattedText(str, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, ((FontAdapter)font).Font, 96d / 72d * font.Size, Brushes.Red, 1.0);
-            return new RSize(formattedText.WidthIncludingTrailingWhitespace, formattedText.Height);
+            return new SizeF((float)formattedText.WidthIncludingTrailingWhitespace, (float)formattedText.Height);
         }
 
-        return new RSize(width * font.Size * 96d / 72d, font.Height);
+        return new SizeF((float)(width * font.Size * 96d / 72d), (float)font.Height);
     }
 
     public override void MeasureString(string str, RFont font, double maxWidth, out int charFit, out double charFitWidth)
@@ -134,7 +137,7 @@ internal sealed class GraphicsAdapter : RGraphics
         }
     }
 
-    public override void DrawString(string str, RFont font, Color color, RPoint point, RSize size, bool rtl)
+    public override void DrawString(string str, RFont font, Color color, PointF point, SizeF size, bool rtl)
     {
         var colorConv = ((BrushAdapter)_adapter.GetSolidBrush(color)).Brush;
 
@@ -160,8 +163,8 @@ internal sealed class GraphicsAdapter : RGraphics
 
             if (i >= str.Length)
             {
-                point.Y += glyphTypeface.Baseline * font.Size * 96d / 72d;
-                point.X += rtl ? 96d / 72d * font.Size * width : 0;
+                point.Y += (float)(glyphTypeface.Baseline * font.Size * 96d / 72d);
+                point.X += (float)(rtl ? 96d / 72d * font.Size * width : 0);
 
                 glyphRendered = true;
                 var wpfPoint = Utils.ConvertRound(point);
@@ -181,12 +184,12 @@ internal sealed class GraphicsAdapter : RGraphics
         if (!glyphRendered)
         {
             var formattedText = new FormattedText(str, CultureInfo.CurrentCulture, rtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight, ((FontAdapter)font).Font, 96d / 72d * font.Size, colorConv, 1.0);
-            point.X += rtl ? formattedText.Width : 0;
+            point.X += (float)(rtl ? formattedText.Width : 0);
             _g.DrawText(formattedText, Utils.ConvertRound(point));
         }
     }
 
-    public override RBrush GetTextureBrush(RImage image, RRect dstRect, RPoint translateTransformLocation)
+    public override RBrush GetTextureBrush(RImage image, RectangleF dstRect, PointF translateTransformLocation)
     {
         var brush = new ImageBrush(((ImageAdapter)image).Image);
         brush.Stretch = Stretch.None;
@@ -243,19 +246,19 @@ internal sealed class GraphicsAdapter : RGraphics
 
     public override void DrawRectangle(RBrush brush, double x, double y, double width, double height) => _g.DrawRectangle(((BrushAdapter)brush).Brush, null, new Rect(x, y, width, height));
 
-    public override void DrawImage(RImage image, RRect destRect, RRect srcRect)
+    public override void DrawImage(RImage image, RectangleF destRect, RectangleF srcRect)
     {
         CroppedBitmap croppedImage = new(((ImageAdapter)image).Image, new Int32Rect((int)srcRect.X, (int)srcRect.Y, (int)srcRect.Width, (int)srcRect.Height));
         _g.DrawImage(croppedImage, Utils.ConvertRound(destRect));
     }
 
-    public override void DrawImage(RImage image, RRect destRect) => _g.DrawImage(((ImageAdapter)image).Image, Utils.ConvertRound(destRect));
+    public override void DrawImage(RImage image, RectangleF destRect) => _g.DrawImage(((ImageAdapter)image).Image, Utils.ConvertRound(destRect));
 
     public override void DrawPath(RPen pen, RGraphicsPath path) => _g.DrawGeometry(null, ((PenAdapter)pen).CreatePen(), ((GraphicsPathAdapter)path).GetClosedGeometry());
 
     public override void DrawPath(RBrush brush, RGraphicsPath path) => _g.DrawGeometry(((BrushAdapter)brush).Brush, null, ((GraphicsPathAdapter)path).GetClosedGeometry());
 
-    public override void DrawPolygon(RBrush brush, RPoint[] points)
+    public override void DrawPolygon(RBrush brush, PointF[] points)
     {
         if (points != null && points.Length > 0)
         {

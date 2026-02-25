@@ -1,12 +1,13 @@
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
 internal sealed class CssRectImage(CssBox owner) : CssRect(owner)
 {
     private RImage _image;
-    private RRect _imageRectangle;
+    private RectangleF _imageRectangle;
 
     public override RImage Image
     {
@@ -16,7 +17,7 @@ internal sealed class CssRectImage(CssBox owner) : CssRect(owner)
 
     public override bool IsImage => true;
 
-    public RRect ImageRectangle
+    public RectangleF ImageRectangle
     {
         get { return _imageRectangle; }
         set { _imageRectangle = value; }
