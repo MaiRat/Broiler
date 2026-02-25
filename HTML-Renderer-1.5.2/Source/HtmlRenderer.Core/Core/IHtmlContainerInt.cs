@@ -2,7 +2,6 @@ using System;
 using System.Drawing;
 using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -26,22 +25,22 @@ internal interface IHtmlContainerInt
     /// <summary>
     /// The scroll offset of the container.
     /// </summary>
-    RPoint ScrollOffset { get; }
+    PointF ScrollOffset { get; }
 
     /// <summary>
     /// The location of the root box.
     /// </summary>
-    RPoint RootLocation { get; }
+    PointF RootLocation { get; }
 
     /// <summary>
     /// The actual rendered size of the content (get/set).
     /// </summary>
-    RSize ActualSize { get; set; }
+    SizeF ActualSize { get; set; }
 
     /// <summary>
     /// The page size used for paged rendering.
     /// </summary>
-    RSize PageSize { get; }
+    SizeF PageSize { get; }
 
     /// <summary>
     /// Whether to avoid geometry anti-aliasing.
@@ -127,7 +126,7 @@ internal interface IHtmlContainerInt
     /// <remarks>
     /// See ADR-008, Phase 2 prerequisites, item 3.
     /// </remarks>
-    IImageLoadHandler CreateImageLoadHandler(ActionInt<RImage, RRect, bool> loadCompleteCallback);
+    IImageLoadHandler CreateImageLoadHandler(ActionInt<RImage, RectangleF, bool> loadCompleteCallback);
 
     /// <summary>
     /// Registers a hover box/block pair for hover-state CSS handling.

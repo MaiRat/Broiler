@@ -1,7 +1,6 @@
 using System.Drawing;
 using System;
 using System.Globalization;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Parse;

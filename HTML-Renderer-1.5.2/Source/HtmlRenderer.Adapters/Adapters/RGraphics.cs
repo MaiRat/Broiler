@@ -1,17 +1,16 @@
 using System.Drawing;
 using System;
 using System.Collections.Generic;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
 public abstract class RGraphics : IDisposable
 {
     protected readonly IResourceFactory _adapter;
-    protected readonly Stack<RRect> _clipStack = new();
-    private readonly Stack<RRect> _suspendedClips = new();
+    protected readonly Stack<RectangleF> _clipStack = new();
+    private readonly Stack<RectangleF> _suspendedClips = new();
 
-    protected RGraphics(IResourceFactory adapter, RRect initialClip)
+    protected RGraphics(IResourceFactory adapter, RectangleF initialClip)
     {
         ArgumentNullException.ThrowIfNull(adapter);
 
@@ -21,11 +20,11 @@ public abstract class RGraphics : IDisposable
 
     public RPen GetPen(Color color) => _adapter.GetPen(color);
     public RBrush GetSolidBrush(Color color) => _adapter.GetSolidBrush(color);
-    public RBrush GetLinearGradientBrush(RRect rect, Color color1, Color color2, double angle) => _adapter.GetLinearGradientBrush(rect, color1, color2, angle);
-    public RRect GetClip() => _clipStack.Peek();
+    public RBrush GetLinearGradientBrush(RectangleF rect, Color color1, Color color2, double angle) => _adapter.GetLinearGradientBrush(rect, color1, color2, angle);
+    public RectangleF GetClip() => _clipStack.Peek();
     public abstract void PopClip();
-    public abstract void PushClip(RRect rect);
-    public abstract void PushClipExclude(RRect rect);
+    public abstract void PushClip(RectangleF rect);
+    public abstract void PushClipExclude(RectangleF rect);
 
     public void SuspendClipping()
     {
@@ -48,18 +47,18 @@ public abstract class RGraphics : IDisposable
 
     public abstract Object SetAntiAliasSmoothingMode();
     public abstract void ReturnPreviousSmoothingMode(Object prevMode);
-    public abstract RBrush GetTextureBrush(RImage image, RRect dstRect, RPoint translateTransformLocation);
+    public abstract RBrush GetTextureBrush(RImage image, RectangleF dstRect, PointF translateTransformLocation);
     public abstract RGraphicsPath GetGraphicsPath();
-    public abstract RSize MeasureString(string str, RFont font);
+    public abstract SizeF MeasureString(string str, RFont font);
     public abstract void MeasureString(string str, RFont font, double maxWidth, out int charFit, out double charFitWidth);
-    public abstract void DrawString(String str, RFont font, Color color, RPoint point, RSize size, bool rtl);
+    public abstract void DrawString(String str, RFont font, Color color, PointF point, SizeF size, bool rtl);
     public abstract void DrawLine(RPen pen, double x1, double y1, double x2, double y2);
     public abstract void DrawRectangle(RPen pen, double x, double y, double width, double height);
     public abstract void DrawRectangle(RBrush brush, double x, double y, double width, double height);
-    public abstract void DrawImage(RImage image, RRect destRect, RRect srcRect);
-    public abstract void DrawImage(RImage image, RRect destRect);
+    public abstract void DrawImage(RImage image, RectangleF destRect, RectangleF srcRect);
+    public abstract void DrawImage(RImage image, RectangleF destRect);
     public abstract void DrawPath(RPen pen, RGraphicsPath path);
     public abstract void DrawPath(RBrush brush, RGraphicsPath path);
-    public abstract void DrawPolygon(RBrush brush, RPoint[] points);
+    public abstract void DrawPolygon(RBrush brush, PointF[] points);
     public abstract void Dispose();
 }

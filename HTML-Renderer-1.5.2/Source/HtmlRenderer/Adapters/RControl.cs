@@ -1,5 +1,5 @@
 using System;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
@@ -14,7 +14,7 @@ public abstract class RControl
     public RAdapter Adapter { get; }
     public abstract bool LeftMouseButton { get; }
     public abstract bool RightMouseButton { get; }
-    public abstract RPoint MouseLocation { get; }
+    public abstract PointF MouseLocation { get; }
     public abstract void SetCursorDefault();
     public abstract void SetCursorHand();
     public abstract void SetCursorIBeam();

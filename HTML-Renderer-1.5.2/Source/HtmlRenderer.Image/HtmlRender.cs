@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using SkiaSharp;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Image.Adapters;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Image;
 
@@ -23,7 +23,7 @@ public static class HtmlRender
         canvas.Clear(bgColor);
 
         if (!string.IsNullOrEmpty(html))
-            RenderHtml(canvas, html, new RPoint(0, 0), new RSize(width, height), cssData, stylesheetLoad, imageLoad);
+            RenderHtml(canvas, html, new PointF(0, 0), new SizeF(width, height), cssData, stylesheetLoad, imageLoad);
 
         return bitmap;
     }
@@ -50,8 +50,8 @@ public static class HtmlRender
 
         container.SetHtml(html, cssData);
 
-        var minSize = new RSize(0, 0);
-        var maxSize = new RSize(maxWidth, maxHeight);
+        var minSize = new SizeF(0, 0);
+        var maxSize = new SizeF(maxWidth, maxHeight);
         var finalSize = MeasureHtml(container, minSize, maxSize);
 
         // Ensure minimum dimensions
@@ -62,13 +62,13 @@ public static class HtmlRender
         if (maxWidth < 1 && w > 4096)
             w = 4096;
 
-        container.MaxSize = new RSize(w, h);
+        container.MaxSize = new SizeF(w, h);
 
         var bitmap = new SKBitmap(w, h, SKColorType.Rgba8888, SKAlphaType.Premul);
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(bgColor);
 
-        var clip = new RRect(0, 0, w, h);
+        var clip = new RectangleF(0, 0, w, h);
         container.PerformPaint(canvas, clip);
 
         return bitmap;
@@ -113,23 +113,23 @@ public static class HtmlRender
         data.SaveTo(stream);
     }
 
-    private static RSize MeasureHtml(HtmlContainer container, RSize minSize, RSize maxSize)
+    private static SizeF MeasureHtml(HtmlContainer container, SizeF minSize, SizeF maxSize)
     {
         // Create a small temporary surface for measurement
         using var measureBitmap = new SKBitmap(1, 1);
         using var measureCanvas = new SKCanvas(measureBitmap);
-        var clip = new RRect(0, 0, 99999, 99999);
+        var clip = new RectangleF(0, 0, 99999, 99999);
 
         using var g = new GraphicsAdapter(measureCanvas, clip);
         return HtmlRendererUtils.MeasureHtmlByRestrictions(g, container.HtmlContainerInt, minSize, maxSize);
     }
 
-    private static RSize RenderHtml(SKCanvas canvas, string html, RPoint location, RSize maxSize,
+    private static SizeF RenderHtml(SKCanvas canvas, string html, PointF location, SizeF maxSize,
         CssData cssData,
         EventHandler<HtmlStylesheetLoadEventArgs> stylesheetLoad,
         EventHandler<HtmlImageLoadEventArgs> imageLoad)
     {
-        RSize actualSize = new(0, 0);
+        SizeF actualSize = new(0, 0);
 
         if (string.IsNullOrEmpty(html))
             return actualSize;
@@ -147,7 +147,7 @@ public static class HtmlRender
 
         container.SetHtml(html, cssData);
 
-        var clip = new RRect(location.X, location.Y, maxSize.Width, maxSize.Height);
+        var clip = new RectangleF(location.X, location.Y, maxSize.Width, maxSize.Height);
         container.PerformLayout(canvas, clip);
         container.PerformPaint(canvas, clip);
 

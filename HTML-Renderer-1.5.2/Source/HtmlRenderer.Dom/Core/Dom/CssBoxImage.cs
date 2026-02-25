@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Handlers;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -31,7 +30,7 @@ internal sealed class CssBoxImage : CssBox
         }
 
         var rect = CommonUtils.GetFirstValueOrDefault(Rectangles);
-        RPoint offset = RPoint.Empty;
+        PointF offset = PointF.Empty;
 
         if (!IsFixed)
             offset = ContainerInt.ScrollOffset;
@@ -43,18 +42,18 @@ internal sealed class CssBoxImage : CssBox
         PaintBackground(g, rect, true, true);
         BordersDrawHandler.DrawBoxBorders(g, this, rect, true, true);
 
-        RRect r = _imageWord.Rectangle;
+        RectangleF r = _imageWord.Rectangle;
         r.Offset(offset);
-        r.Height -= ActualBorderTopWidth + ActualBorderBottomWidth + ActualPaddingTop + ActualPaddingBottom;
-        r.Y += ActualBorderTopWidth + ActualPaddingTop;
-        r.X = Math.Floor(r.X);
-        r.Y = Math.Floor(r.Y);
+        r.Height -= (float)(ActualBorderTopWidth + ActualBorderBottomWidth + ActualPaddingTop + ActualPaddingBottom);
+        r.Y += (float)(ActualBorderTopWidth + ActualPaddingTop);
+        r.X = (float)Math.Floor(r.X);
+        r.Y = (float)Math.Floor(r.Y);
 
         if (_imageWord.Image != null)
         {
             if (r.Width > 0 && r.Height > 0)
             {
-                if (_imageWord.ImageRectangle == RRect.Empty)
+                if (_imageWord.ImageRectangle == RectangleF.Empty)
                     g.DrawImage(_imageWord.Image, r);
                 else
                     g.DrawImage(_imageWord.Image, r, _imageWord.ImageRectangle);
@@ -112,7 +111,7 @@ internal sealed class CssBoxImage : CssBox
         BorderRightColor = BorderBottomColor = "#E3E3E3";
     }
 
-    private void OnLoadImageComplete(RImage image, RRect rectangle, bool async)
+    private void OnLoadImageComplete(RImage image, RectangleF rectangle, bool async)
     {
         _imageWord.Image = image;
         _imageWord.ImageRectangle = rectangle;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
 
@@ -21,9 +21,9 @@ internal interface IImageLoadHandler : IDisposable
     RImage Image { get; }
 
     /// <summary>
-    /// The sub-rectangle of the image to use, or <see cref="RRect.Empty"/> for the entire image.
+    /// The sub-rectangle of the image to use, or <see cref="RectangleF.Empty"/> for the entire image.
     /// </summary>
-    RRect Rectangle { get; }
+    RectangleF Rectangle { get; }
 
     /// <summary>
     /// Initiates image loading from the specified source.

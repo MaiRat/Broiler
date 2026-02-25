@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Parse;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
@@ -537,7 +537,7 @@ internal sealed class CssLayoutEngineTable
                 ? GetAvailableTableWidth() - maxRightCalc
                 : startx + (GetAvailableTableWidth() - maxRightCalc) / 2;
 
-            _tableBox.Location = new RPoint(startx - _tableBox.ActualBorderLeftWidth - _tableBox.ActualPaddingLeft - GetHorizontalSpacing(), _tableBox.Location.Y);
+            _tableBox.Location = new PointF((float)(startx - _tableBox.ActualBorderLeftWidth - _tableBox.ActualPaddingLeft - GetHorizontalSpacing()), _tableBox.Location.Y);
         }
 
         for (int i = 0; i < _allRows.Count; i++)
@@ -557,8 +557,8 @@ internal sealed class CssLayoutEngineTable
                 var columnIndex = GetCellRealColumnIndex(row, cell);
                 double width = GetCellWidth(columnIndex, cell);
 
-                cell.Location = new RPoint(curx, cury);
-                cell.Size = new RSize(width, 0f);
+                cell.Location = new PointF((float)curx, (float)cury);
+                cell.Size = new SizeF((float)width, 0f);
                 cell.PerformLayout(g); //That will automatically set the bottom of the cell
 
                 //Alter max bottom only if row is cell's row + cell's rowspan - 1

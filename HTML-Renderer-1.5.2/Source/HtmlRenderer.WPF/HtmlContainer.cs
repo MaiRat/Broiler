@@ -11,6 +11,7 @@ using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.WPF.Adapters;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
+using SizeF = System.Drawing.SizeF;
 
 namespace TheArtOfDev.HtmlRenderer.WPF;
 
@@ -19,7 +20,7 @@ public sealed class HtmlContainer : IDisposable
     public HtmlContainer()
     {
         HtmlContainerInt = new HtmlContainerInt(WpfAdapter.Instance, HandlerFactory.Instance);
-        HtmlContainerInt.PageSize = new RSize(99999, 99999);
+        HtmlContainerInt.PageSize = new SizeF(99999, 99999);
     }
 
     public event EventHandler LoadComplete

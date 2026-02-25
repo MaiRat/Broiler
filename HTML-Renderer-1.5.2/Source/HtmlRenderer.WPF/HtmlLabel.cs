@@ -2,9 +2,9 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.WPF.Adapters;
+using SizeF = System.Drawing.SizeF;
 
 namespace TheArtOfDev.HtmlRenderer.WPF;
 
@@ -39,9 +39,9 @@ public class HtmlLabel : HtmlControl
             var horizontal = Padding.Left + Padding.Right + BorderThickness.Left + BorderThickness.Right;
             var vertical = Padding.Top + Padding.Bottom + BorderThickness.Top + BorderThickness.Bottom;
 
-            var size = new RSize(constraint.Width < Double.PositiveInfinity ? constraint.Width - horizontal : 0, constraint.Height < Double.PositiveInfinity ? constraint.Height - vertical : 0);
-            var minSize = new RSize(MinWidth < Double.PositiveInfinity ? MinWidth - horizontal : 0, MinHeight < Double.PositiveInfinity ? MinHeight - vertical : 0);
-            var maxSize = new RSize(MaxWidth < Double.PositiveInfinity ? MaxWidth - horizontal : 0, MaxHeight < Double.PositiveInfinity ? MaxHeight - vertical : 0);
+            var size = new SizeF((float)(constraint.Width < Double.PositiveInfinity ? constraint.Width - horizontal : 0), (float)(constraint.Height < Double.PositiveInfinity ? constraint.Height - vertical : 0));
+            var minSize = new SizeF((float)(MinWidth < Double.PositiveInfinity ? MinWidth - horizontal : 0), (float)(MinHeight < Double.PositiveInfinity ? MinHeight - vertical : 0));
+            var maxSize = new SizeF((float)(MaxWidth < Double.PositiveInfinity ? MaxWidth - horizontal : 0), (float)(MaxHeight < Double.PositiveInfinity ? MaxHeight - vertical : 0));
 
             var newSize = HtmlRendererUtils.Layout(ig, _htmlContainer.HtmlContainerInt, size, minSize, maxSize, AutoSize, AutoSizeHeightOnly);
 

@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Parse;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -44,12 +43,12 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
     /// <summary>
     /// Gets or sets the location of the box
     /// </summary>
-    private RPoint _location;
+    private PointF _location;
 
     /// <summary>
     /// Gets or sets the size of the box
     /// </summary>
-    private RSize _size;
+    private SizeF _size;
 
     private double _actualCornerNw = double.NaN;
     private double _actualCornerNe = double.NaN;
@@ -403,7 +402,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
 
     #endregion CSS Propertier
 
-    public RPoint Location
+    public PointF Location
     {
         get
         {
@@ -418,33 +417,33 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RSize Size
+    public SizeF Size
     {
         get { return _size; }
         set { _size = value; }
     }
 
-    public RRect Bounds => new(Location, Size);
+    public RectangleF Bounds => new(Location, Size);
 
     public double AvailableWidth => Size.Width - ActualBorderLeftWidth - ActualPaddingLeft - ActualPaddingRight - ActualBorderRightWidth;
 
     public double ActualRight
     {
         get { return Location.X + Size.Width; }
-        set { Size = new RSize(value - Location.X, Size.Height); }
+        set { Size = new SizeF((float)(value - Location.X), Size.Height); }
     }
 
     public double ActualBottom
     {
         get { return Location.Y + Size.Height; }
-        set { Size = new RSize(Size.Width, value - Location.Y); }
+        set { Size = new SizeF(Size.Width, (float)(value - Location.Y)); }
     }
 
     public double ClientLeft => Location.X + ActualBorderLeftWidth + ActualPaddingLeft;
     public double ClientTop => Location.Y + ActualBorderTopWidth + ActualPaddingTop;
     public double ClientRight => ActualRight - ActualPaddingRight - ActualBorderRightWidth;
     public double ClientBottom => ActualBottom - ActualPaddingBottom - ActualBorderBottomWidth;
-    public RRect ClientRectangle => RRect.FromLTRB(ClientLeft, ClientTop, ClientRight, ClientBottom);
+    public RectangleF ClientRectangle => RectangleF.FromLTRB((float)ClientLeft, (float)ClientTop, (float)ClientRight, (float)ClientBottom);
 
     public double ActualHeight
     {
@@ -672,7 +671,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    protected abstract RPoint GetActualLocation(string X, string Y);
+    protected abstract PointF GetActualLocation(string X, string Y);
 
     protected abstract Color GetActualColor(string colorStr);
 

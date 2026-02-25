@@ -1,15 +1,15 @@
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
 internal abstract class CssRect(CssBox owner)
 {
-    private RRect _rect;
+    private RectangleF _rect;
 
     public CssBox OwnerBox { get; } = owner;
 
-    public RRect Rectangle
+    public RectangleF Rectangle
     {
         get { return _rect; }
         set { _rect = value; }
@@ -18,19 +18,19 @@ internal abstract class CssRect(CssBox owner)
     public double Left
     {
         get { return _rect.X; }
-        set { _rect.X = value; }
+        set { _rect.X = (float)value; }
     }
 
     public double Top
     {
         get { return _rect.Y; }
-        set { _rect.Y = value; }
+        set { _rect.Y = (float)value; }
     }
 
     public double Width
     {
         get { return _rect.Width; }
-        set { _rect.Width = value; }
+        set { _rect.Width = (float)value; }
     }
 
     public double FullWidth => _rect.Width + ActualWordSpacing;
@@ -40,7 +40,7 @@ internal abstract class CssRect(CssBox owner)
     public double Height
     {
         get { return _rect.Height; }
-        set { _rect.Height = value; }
+        set { _rect.Height = (float)value; }
     }
 
     public double Right

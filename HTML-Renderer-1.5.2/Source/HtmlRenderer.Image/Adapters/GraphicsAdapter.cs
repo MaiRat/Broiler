@@ -1,12 +1,11 @@
 using System.Drawing;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Image.Utilities;
 
 namespace TheArtOfDev.HtmlRenderer.Image.Adapters;
 
-internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool dispose = false) : RGraphics(SkiaImageAdapter.Instance, initialClip)
+internal sealed class GraphicsAdapter(SKCanvas canvas, RectangleF initialClip, bool dispose = false) : RGraphics(SkiaImageAdapter.Instance, initialClip)
 {
     public override void PopClip()
     {
@@ -14,14 +13,14 @@ internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool d
         _clipStack.Pop();
     }
 
-    public override void PushClip(RRect rect)
+    public override void PushClip(RectangleF rect)
     {
         _clipStack.Push(rect);
         canvas.Save();
         canvas.ClipRect(Utils.Convert(rect));
     }
 
-    public override void PushClipExclude(RRect rect)
+    public override void PushClipExclude(RectangleF rect)
     {
         _clipStack.Push(_clipStack.Peek());
         canvas.Save();
@@ -37,12 +36,12 @@ internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool d
         // No-op for SkiaSharp
     }
 
-    public override RSize MeasureString(string str, RFont font)
+    public override SizeF MeasureString(string str, RFont font)
     {
         var fontAdapter = (FontAdapter)font;
         var skFont = fontAdapter.Font;
         var width = skFont.MeasureText(str);
-        return new RSize(width, font.Height);
+        return new SizeF(width, (float)font.Height);
     }
 
     public override void MeasureString(string str, RFont font, double maxWidth, out int charFit, out double charFitWidth)
@@ -65,7 +64,7 @@ internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool d
         }
     }
 
-    public override void DrawString(string str, RFont font, Color color, RPoint point, RSize size, bool rtl)
+    public override void DrawString(string str, RFont font, Color color, PointF point, SizeF size, bool rtl)
     {
         var fontAdapter = (FontAdapter)font;
         using var paint = new SKPaint();
@@ -80,7 +79,7 @@ internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool d
         canvas.DrawText(str, x, y, fontAdapter.Font, paint);
     }
 
-    public override RBrush GetTextureBrush(RImage image, RRect dstRect, RPoint translateTransformLocation)
+    public override RBrush GetTextureBrush(RImage image, RectangleF dstRect, PointF translateTransformLocation)
     {
         var imgAdapter = (ImageAdapter)image;
         var paint = new SKPaint();
@@ -101,13 +100,13 @@ internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool d
 
     public override void DrawRectangle(RBrush brush, double x, double y, double width, double height) => canvas.DrawRect(SKRect.Create((float)x, (float)y, (float)width, (float)height), ((BrushAdapter)brush).Paint);
 
-    public override void DrawImage(RImage image, RRect destRect, RRect srcRect)
+    public override void DrawImage(RImage image, RectangleF destRect, RectangleF srcRect)
     {
         var imgAdapter = (ImageAdapter)image;
         canvas.DrawBitmap(imgAdapter.Bitmap, Utils.Convert(srcRect), Utils.Convert(destRect));
     }
 
-    public override void DrawImage(RImage image, RRect destRect)
+    public override void DrawImage(RImage image, RectangleF destRect)
     {
         var imgAdapter = (ImageAdapter)image;
         canvas.DrawBitmap(imgAdapter.Bitmap, Utils.Convert(destRect));
@@ -117,7 +116,7 @@ internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool d
 
     public override void DrawPath(RBrush brush, RGraphicsPath path) => canvas.DrawPath(((GraphicsPathAdapter)path).Path, ((BrushAdapter)brush).Paint);
 
-    public override void DrawPolygon(RBrush brush, RPoint[] points)
+    public override void DrawPolygon(RBrush brush, PointF[] points)
     {
         if (points == null || points.Length == 0)
             return;

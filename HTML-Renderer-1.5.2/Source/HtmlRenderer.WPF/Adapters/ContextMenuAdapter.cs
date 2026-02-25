@@ -2,8 +2,8 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
+using PointF = System.Drawing.PointF;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
 
@@ -33,7 +33,7 @@ internal sealed class ContextMenuAdapter : RContextMenu
             _contextMenu.Items.RemoveAt(_contextMenu.Items.Count - 1);
     }
 
-    public override void Show(RControl parent, RPoint location)
+    public override void Show(RControl parent, PointF location)
     {
         _contextMenu.PlacementTarget = ((ControlAdapter)parent).Control;
         _contextMenu.PlacementRectangle = new Rect(Utils.ConvertRound(location), Size.Empty);

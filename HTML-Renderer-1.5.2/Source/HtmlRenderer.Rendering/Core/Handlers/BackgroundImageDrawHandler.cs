@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
@@ -8,18 +8,18 @@ internal sealed class BackgroundImageDrawHandler : IBackgroundImageDrawHandler
 {
     public static readonly BackgroundImageDrawHandler Instance = new();
 
-    public static void DrawBackgroundImage(RGraphics g, IBackgroundRenderData box, IImageLoadHandler imageLoadHandler, RRect rectangle)
+    public static void DrawBackgroundImage(RGraphics g, IBackgroundRenderData box, IImageLoadHandler imageLoadHandler, RectangleF rectangle)
     {
         // image size depends if specific rectangle given in image loader
-        var imgSize = new RSize(imageLoadHandler.Rectangle == RRect.Empty ? imageLoadHandler.Image.Width : imageLoadHandler.Rectangle.Width,
-            imageLoadHandler.Rectangle == RRect.Empty ? imageLoadHandler.Image.Height : imageLoadHandler.Rectangle.Height);
+        var imgSize = new SizeF((float)(imageLoadHandler.Rectangle == RectangleF.Empty ? imageLoadHandler.Image.Width : imageLoadHandler.Rectangle.Width),
+            (float)(imageLoadHandler.Rectangle == RectangleF.Empty ? imageLoadHandler.Image.Height : imageLoadHandler.Rectangle.Height));
 
         var location = GetLocation(box.BackgroundPosition, rectangle, imgSize);
-        var srcRect = imageLoadHandler.Rectangle == RRect.Empty
-            ? new RRect(0, 0, imgSize.Width, imgSize.Height)
-            : new RRect(imageLoadHandler.Rectangle.Left, imageLoadHandler.Rectangle.Top, imgSize.Width, imgSize.Height);
+        var srcRect = imageLoadHandler.Rectangle == RectangleF.Empty
+            ? new RectangleF(0, 0, imgSize.Width, imgSize.Height)
+            : new RectangleF(imageLoadHandler.Rectangle.Left, imageLoadHandler.Rectangle.Top, imgSize.Width, imgSize.Height);
 
-        var destRect = new RRect(location, imgSize);
+        var destRect = new RectangleF(location, imgSize);
 
         // need to clip so repeated image will be cut on rectangle
         var lRectangle = rectangle;
@@ -45,7 +45,7 @@ internal sealed class BackgroundImageDrawHandler : IBackgroundImageDrawHandler
         g.PopClip();
     }
 
-    private static RPoint GetLocation(string backgroundPosition, RRect rectangle, RSize imgSize)
+    private static PointF GetLocation(string backgroundPosition, RectangleF rectangle, SizeF imgSize)
     {
         double left = rectangle.Left;
         if (backgroundPosition.IndexOf("left", StringComparison.OrdinalIgnoreCase) > -1)
@@ -75,10 +75,10 @@ internal sealed class BackgroundImageDrawHandler : IBackgroundImageDrawHandler
             top = rectangle.Top + (rectangle.Height - imgSize.Height) / 2 + .5f;
         }
 
-        return new RPoint(left, top);
+        return new PointF((float)left, (float)top);
     }
 
-    private static void DrawRepeatX(RGraphics g, IImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
+    private static void DrawRepeatX(RGraphics g, IImageLoadHandler imageLoadHandler, RectangleF rectangle, RectangleF srcRect, RectangleF destRect, SizeF imgSize)
     {
         while (destRect.X > rectangle.X)
             destRect.X -= imgSize.Width;
@@ -87,7 +87,7 @@ internal sealed class BackgroundImageDrawHandler : IBackgroundImageDrawHandler
         g.DrawRectangle(brush, rectangle.X, destRect.Y, rectangle.Width, srcRect.Height);
     }
 
-    private static void DrawRepeatY(RGraphics g, IImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
+    private static void DrawRepeatY(RGraphics g, IImageLoadHandler imageLoadHandler, RectangleF rectangle, RectangleF srcRect, RectangleF destRect, SizeF imgSize)
     {
         while (destRect.Y > rectangle.Y)
             destRect.Y -= imgSize.Height;
@@ -96,7 +96,7 @@ internal sealed class BackgroundImageDrawHandler : IBackgroundImageDrawHandler
         g.DrawRectangle(brush, destRect.X, rectangle.Y, srcRect.Width, rectangle.Height);
     }
 
-    private static void DrawRepeat(RGraphics g, IImageLoadHandler imageLoadHandler, RRect rectangle, RRect srcRect, RRect destRect, RSize imgSize)
+    private static void DrawRepeat(RGraphics g, IImageLoadHandler imageLoadHandler, RectangleF rectangle, RectangleF srcRect, RectangleF destRect, SizeF imgSize)
     {
         while (destRect.X > rectangle.X)
             destRect.X -= imgSize.Width;
@@ -108,6 +108,6 @@ internal sealed class BackgroundImageDrawHandler : IBackgroundImageDrawHandler
         g.DrawRectangle(brush, rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
     }
 
-    void IBackgroundImageDrawHandler.DrawBackgroundImage(RGraphics g, IBackgroundRenderData box, IImageLoadHandler imageHandler, RRect rectangle)
+    void IBackgroundImageDrawHandler.DrawBackgroundImage(RGraphics g, IBackgroundRenderData box, IImageLoadHandler imageHandler, RectangleF rectangle)
         => DrawBackgroundImage(g, box, imageHandler, rectangle);
 }

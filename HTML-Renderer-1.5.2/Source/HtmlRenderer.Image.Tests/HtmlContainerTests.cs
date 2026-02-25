@@ -1,5 +1,6 @@
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Image;
+using System.Drawing;
 
 namespace HtmlRenderer.Image.Tests;
 
@@ -34,7 +35,7 @@ public class HtmlContainerTests(RenderingFixture fixture)
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.White);
 
-        var clip = new TheArtOfDev.HtmlRenderer.Adapters.Entities.RRect(0, 0, 500, 500);
+        var clip = new RectangleF(0, 0, 500, 500);
         container.PerformLayout(canvas, clip);
 
         Assert.True(container.ActualSize.Width > 0);

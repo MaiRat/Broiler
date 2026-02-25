@@ -1,6 +1,5 @@
 using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
@@ -52,10 +51,10 @@ internal interface IBordersDrawHandler
     /// <summary>
     /// Draws all visible borders for a box within the given rectangle.
     /// </summary>
-    void DrawBoxBorders(RGraphics g, IBorderRenderData box, RRect rect, bool isFirst, bool isLast);
+    void DrawBoxBorders(RGraphics g, IBorderRenderData box, RectangleF rect, bool isFirst, bool isLast);
 
     /// <summary>
     /// Draws a single border side using the specified brush.
     /// </summary>
-    void DrawBorder(Border border, RGraphics g, IBorderRenderData box, RBrush brush, RRect rectangle);
+    void DrawBorder(Border border, RGraphics g, IBorderRenderData box, RBrush brush, RectangleF rectangle);
 }

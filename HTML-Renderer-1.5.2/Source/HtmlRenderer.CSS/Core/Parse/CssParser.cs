@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 

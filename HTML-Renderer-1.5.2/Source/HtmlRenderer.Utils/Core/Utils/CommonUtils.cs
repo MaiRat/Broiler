@@ -5,7 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -78,7 +78,7 @@ internal static class CommonUtils
         return 0;
     }
 
-    public static RSize Max(RSize size, RSize other) => new(Math.Max(size.Width, other.Width), Math.Max(size.Height, other.Height));
+    public static SizeF Max(SizeF size, SizeF other) => new(Math.Max(size.Width, other.Width), Math.Max(size.Height, other.Height));
 
     public static Uri TryGetUri(string path)
     {

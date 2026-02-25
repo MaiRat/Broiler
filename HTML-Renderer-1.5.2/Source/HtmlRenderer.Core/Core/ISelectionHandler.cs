@@ -1,5 +1,5 @@
 using System;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
 
@@ -17,11 +17,11 @@ namespace TheArtOfDev.HtmlRenderer.Core;
 /// </remarks>
 internal interface ISelectionHandler : IDisposable
 {
-    void HandleMouseDown(object parent, RPoint loc, bool isMouseInContainer);
+    void HandleMouseDown(object parent, PointF loc, bool isMouseInContainer);
     bool HandleMouseUp(object parent, bool leftMouseButton);
-    void HandleMouseMove(object parent, RPoint loc);
+    void HandleMouseMove(object parent, PointF loc);
     void HandleMouseLeave(object parent);
-    void SelectWord(object parent, RPoint loc);
+    void SelectWord(object parent, PointF loc);
     void SelectAll(object parent);
     void CopySelectedHtml();
     string GetSelectedText();

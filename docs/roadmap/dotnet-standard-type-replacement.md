@@ -103,7 +103,7 @@ remain as-is unless the project decides to target a single rendering backend.
 | **P2** | `HtmlUtils.DecodeHtml/EncodeHtml` | `System.Net.WebUtility` | Low | Low (3 files) | Low — verify entity coverage |
 | **P2** | Regex caching | `[GeneratedRegex]` attribute | Medium | Medium (2 files) | Low — compile-time generation |
 | **P3** | `SubString` | `ReadOnlyMemory<char>` | High | Medium (7 files) | Medium — API surface differs |
-| **P3** | `RRect` / `RSize` / `RPoint` | Custom `double`-based or `System.Drawing` `float` types | High | Very High (32+27+21 files) | **High** — precision change if using `float` types |
+| **P3** | `RRect` / `RSize` / `RPoint` | `System.Drawing.RectangleF` / `SizeF` / `PointF` | High | Very High (46 files) | **Completed** — Decision A (accept `float` precision) |
 | **P4** | `CssValueParser` colour parsing | `ColorTranslator.FromHtml()` | Medium | Low | Medium — partial coverage only |
 | **Skip** | Abstract adapters (`RBrush`, `RPen`, `RFont`, `RGraphics`, etc.) | — | — | — | Replacing defeats adapter pattern |
 | **Skip** | Domain types (`CssBox`, `CssData`, `CssLayoutEngine`, etc.) | — | — | — | No standard equivalents exist |
@@ -250,24 +250,45 @@ reduced allocations.
 | `.Substring(start, len)` | `.Slice(start, len).ToString()` |
 | `== null` | `.IsEmpty` |
 
-### Phase 7 — Evaluate Geometric Types (Future, Requires Decision)
+### Phase 7 — Replace Geometric Types with `System.Drawing` ✅ Completed
 
-**Goal:** Decide whether to replace `RRect`, `RSize`, `RPoint` with standard
-types.
+**Goal:** Replace `RRect`, `RSize`, `RPoint` with `System.Drawing.RectangleF`,
+`SizeF`, `PointF` (Decision A — accept float precision).
 
-**Decision required:** The custom types use `double` precision.
-`System.Drawing.RectangleF` / `SizeF` / `PointF` use `float`. Options:
+**Targets:**
+- `RRect.cs`, `RSize.cs`, `RPoint.cs` (deleted) and ~46 referencing files
 
-| Option | Pros | Cons |
-|---|---|---|
-| A. Use `System.Drawing.*F` types | Standard, well-known | Precision loss (`double` → `float`) may affect layout accuracy |
-| B. Use `System.Numerics.Vector2` for point/size | High performance, SIMD | No rectangle type; unconventional API for UI code |
-| C. Keep custom types, modernise implementation | No precision change | Still non-standard |
-| D. Define project-level `readonly record struct` types | Modern C#, `double` precision | Still custom, but minimal and idiomatic |
+**Completed changes:**
+1. Deleted `RRect.cs`, `RSize.cs`, `RPoint.cs` from `HtmlRenderer.Primitives`.
+2. Replaced all `RRect` → `RectangleF`, `RSize` → `SizeF`, `RPoint` → `PointF`
+   across 46 files spanning all modules (Primitives, Utils, Adapters, Core,
+   CSS, Rendering, Dom, Orchestration, HtmlRenderer façade, Image, WPF).
+3. Added `(float)` explicit casts at all construction sites where `double`
+   values are passed to `float` constructor parameters.
+4. Used type aliases (`using PointF = System.Drawing.PointF;` etc.) in WPF
+   files to avoid ambiguity with `System.Windows.Point`/`Size`.
+5. Removed unused `using TheArtOfDev.HtmlRenderer.Adapters.Entities;` imports
+   from all files that no longer reference types in that namespace.
+6. Updated `PrimitivesTests` to validate `RectangleF`/`SizeF`/`PointF`
+   behaviour.
+7. Updated `CommonUtils.Max(SizeF, SizeF)` to use `(float)` casts.
 
-**Recommendation:** Defer to Phase 7. The geometric types are the highest-risk
-replacement due to precision implications and the ~80 files affected. Conduct
-a precision impact analysis before committing to an option.
+**API mapping used:**
+| Custom API | `System.Drawing` API |
+|---|---|
+| `new RRect(x, y, w, h)` | `new RectangleF((float)x, (float)y, (float)w, (float)h)` |
+| `new RRect(location, size)` | `new RectangleF(location.X, location.Y, size.Width, size.Height)` |
+| `RRect.Empty` | `RectangleF.Empty` |
+| `RRect.FromLTRB(…)` | `RectangleF.FromLTRB(…)` |
+| `RRect.Intersect(a, b)` | `RectangleF.Intersect(a, b)` |
+| `RRect.Union(a, b)` | `RectangleF.Union(a, b)` |
+| `new RSize(w, h)` | `new SizeF((float)w, (float)h)` |
+| `RSize.Empty` | `SizeF.Empty` |
+| `RSize.ToPointF()` | `SizeF.ToPointF()` |
+| `new RPoint(x, y)` | `new PointF((float)x, (float)y)` |
+| `PointF.Empty` | `PointF.Empty` |
+| `RPoint + RSize` | `PointF + SizeF` (operator exists) |
+| `RPoint - RSize` | `PointF - SizeF` (operator exists) |
 
 ---
 
@@ -338,4 +359,4 @@ Each phase is considered complete when:
 - [x] Phase 4 — Replace `HtmlUtils.DecodeHtml/EncodeHtml` with `WebUtility`
 - [x] Phase 5 — Convert regex caching to `[GeneratedRegex]` source generation
 - [x] Phase 6 — Replace `SubString` with `ReadOnlyMemory<char>`
-- [ ] Phase 7 — Evaluate and decide on geometric type (`RRect`/`RSize`/`RPoint`) replacement
+- [x] Phase 7 — Replace `RRect`/`RSize`/`RPoint` with `System.Drawing.RectangleF`/`SizeF`/`PointF`

@@ -1,9 +1,9 @@
 using System;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
@@ -13,7 +13,7 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
     private readonly HtmlContainerInt _htmlContainer;
     private readonly RAdapter _adapter;
     private readonly ContextMenuHandler _contextMenuHandler;
-    private RPoint _selectionStartPoint;
+    private PointF _selectionStartPoint;
     private CssRect _selectionStart;
     private CssRect _selectionEnd;
     private int _selectionStartIndex = -1;
@@ -41,19 +41,19 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
 
     #region ISelectionHandler explicit implementation
 
-    void ISelectionHandler.HandleMouseDown(object parent, RPoint loc, bool isMouseInContainer)
+    void ISelectionHandler.HandleMouseDown(object parent, PointF loc, bool isMouseInContainer)
         => HandleMouseDown((RControl)parent, loc, isMouseInContainer);
 
     bool ISelectionHandler.HandleMouseUp(object parent, bool leftMouseButton)
         => HandleMouseUp((RControl)parent, leftMouseButton);
 
-    void ISelectionHandler.HandleMouseMove(object parent, RPoint loc)
+    void ISelectionHandler.HandleMouseMove(object parent, PointF loc)
         => HandleMouseMove((RControl)parent, loc);
 
     void ISelectionHandler.HandleMouseLeave(object parent)
         => HandleMouseLeave((RControl)parent);
 
-    void ISelectionHandler.SelectWord(object parent, RPoint loc)
+    void ISelectionHandler.SelectWord(object parent, PointF loc)
         => SelectWord((RControl)parent, loc);
 
     void ISelectionHandler.SelectAll(object parent)
@@ -71,7 +71,7 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
         control.Invalidate();
     }
 
-    public void SelectWord(RControl control, RPoint loc)
+    public void SelectWord(RControl control, PointF loc)
     {
         if (!_htmlContainer.IsSelectionEnabled)
             return;
@@ -86,7 +86,7 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
         }
     }
 
-    public void HandleMouseDown(RControl parent, RPoint loc, bool isMouseInContainer)
+    public void HandleMouseDown(RControl parent, PointF loc, bool isMouseInContainer)
     {
         bool clear = !isMouseInContainer;
 
@@ -152,7 +152,7 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
         return ignore;
     }
 
-    public void HandleMouseMove(RControl parent, RPoint loc)
+    public void HandleMouseMove(RControl parent, PointF loc)
     {
         if (_htmlContainer.IsSelectionEnabled && _mouseDownInControl && parent.LeftMouseButton)
         {
@@ -234,14 +234,14 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
         _selectionEndOffset = -1;
         _selectionEndIndex = -1;
 
-        _selectionStartPoint = RPoint.Empty;
+        _selectionStartPoint = PointF.Empty;
         _selectionStart = null;
         _selectionEnd = null;
     }
 
     public void Dispose() => _contextMenuHandler.Dispose();
 
-    private void HandleSelection(RControl control, RPoint loc, bool allowPartialSelect)
+    private void HandleSelection(RControl control, PointF loc, bool allowPartialSelect)
     {
         // get the line under the mouse or nearest from the top
         var lineBox = DomUtils.GetCssLineBox(_root, loc);
@@ -335,7 +335,7 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
             SelectAllWords(childBox);
     }
 
-    private bool CheckNonEmptySelection(RPoint loc, bool allowPartialSelect)
+    private bool CheckNonEmptySelection(PointF loc, bool allowPartialSelect)
     {
         // full word selection is never empty
         if (!allowPartialSelect)
@@ -380,7 +380,7 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
         return false;
     }
 
-    private void CalculateWordCharIndexAndOffset(RControl control, CssRect word, RPoint loc, bool selectionStart)
+    private void CalculateWordCharIndexAndOffset(RControl control, CssRect word, PointF loc, bool selectionStart)
     {
         CalculateWordCharIndexAndOffset(control, word, loc, selectionStart, out int selectionIndex, out double selectionOffset);
 
@@ -396,7 +396,7 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
         }
     }
 
-    private static void CalculateWordCharIndexAndOffset(RControl control, CssRect word, RPoint loc, bool inclusive, out int selectionIndex, out double selectionOffset)
+    private static void CalculateWordCharIndexAndOffset(RControl control, CssRect word, PointF loc, bool inclusive, out int selectionIndex, out double selectionOffset)
     {
         selectionIndex = 0;
         selectionOffset = 0f;
