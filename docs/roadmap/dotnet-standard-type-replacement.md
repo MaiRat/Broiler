@@ -334,8 +334,8 @@ Each phase is considered complete when:
 
 - [x] Phase 1 — Replace `RDashStyle` and `RFontStyle` with `System.Drawing` enums
 - [x] Phase 2 — Replace `RColor` with `System.Drawing.Color`
-- [ ] Phase 3 — Replace `ArgChecker` with .NET built-in throw helpers
-- [ ] Phase 4 — Replace `HtmlUtils.DecodeHtml/EncodeHtml` with `WebUtility`
-- [ ] Phase 5 — Convert regex caching to `[GeneratedRegex]` source generation
+- [x] Phase 3 — Replace `ArgChecker` with .NET built-in throw helpers
+- [x] Phase 4 — Replace `HtmlUtils.DecodeHtml/EncodeHtml` with `WebUtility`
+- [x] Phase 5 — Convert regex caching to `[GeneratedRegex]` source generation
 - [x] Phase 6 — Replace `SubString` with `ReadOnlyMemory<char>`
 - [ ] Phase 7 — Evaluate and decide on geometric type (`RRect`/`RSize`/`RPoint`) replacement
