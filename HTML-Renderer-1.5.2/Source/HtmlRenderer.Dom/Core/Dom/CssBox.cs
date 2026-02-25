@@ -463,13 +463,22 @@ internal class CssBox : CssBoxProperties, IDisposable
             }
         }
 
-        ActualBottom = Math.Max(ActualBottom, Location.Y + ActualHeight);
+        // CSS content-box model: 'height' specifies the content height only;
+        // padding and border are additive (CSS2.1 §10.6.3).
+        if (Height != CssConstants.Auto && !string.IsNullOrEmpty(Height))
+        {
+            double borderBoxHeight = ActualHeight + ActualPaddingTop + ActualPaddingBottom + ActualBorderTopWidth + ActualBorderBottomWidth;
+            ActualBottom = Math.Max(ActualBottom, Location.Y + borderBoxHeight);
+        }
 
         // Floats with an explicit CSS height establish a new BFC.
         // Their ActualBottom should reflect the stated height, not
         // content overflow from child floats (CSS2.1 §10.6.1).
         if (Float != CssConstants.None && Height != CssConstants.Auto && !string.IsNullOrEmpty(Height))
-            ActualBottom = Location.Y + ActualHeight;
+        {
+            double borderBoxHeight = ActualHeight + ActualPaddingTop + ActualPaddingBottom + ActualBorderTopWidth + ActualBorderBottomWidth;
+            ActualBottom = Location.Y + borderBoxHeight;
+        }
 
         // Apply position:relative offset after layout (visual only, does not affect flow)
         if (Position == CssConstants.Relative)
