@@ -1,3 +1,4 @@
+using System.Drawing;
 using System;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -116,8 +117,8 @@ internal sealed class DomParser
 
     private void SetTextSelectionStyle(HtmlContainerInt htmlContainer, CssData cssData)
     {
-        htmlContainer.SelectionForeColor = RColor.Empty;
-        htmlContainer.SelectionBackColor = RColor.Empty;
+        htmlContainer.SelectionForeColor = Color.Empty;
+        htmlContainer.SelectionBackColor = Color.Empty;
 
         if (!cssData.ContainsCssBlock("::selection"))
             return;

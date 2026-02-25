@@ -1,3 +1,4 @@
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -6,7 +7,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils;
 
 internal static class RenderUtils
 {
-    public static bool IsColorVisible(RColor color) => color.A > 0;
+    public static bool IsColorVisible(Color color) => color.A > 0;
 
     public static bool ClipGraphicsByOverflow(RGraphics g, CssBox box)
     {
@@ -40,14 +41,14 @@ internal static class RenderUtils
 
     public static void DrawImageLoadingIcon(RGraphics g, IHtmlContainerInt htmlContainer, RRect r)
     {
-        g.DrawRectangle(g.GetPen(RColor.LightGray), r.Left + 3, r.Top + 3, 13, 14);
+        g.DrawRectangle(g.GetPen(Color.LightGray), r.Left + 3, r.Top + 3, 13, 14);
         var image = htmlContainer.GetLoadingImage();
         g.DrawImage(image, new RRect(r.Left + 4, r.Top + 4, image.Width, image.Height));
     }
 
     public static void DrawImageErrorIcon(RGraphics g, IHtmlContainerInt htmlContainer, RRect r)
     {
-        g.DrawRectangle(g.GetPen(RColor.LightGray), r.Left + 2, r.Top + 2, 15, 15);
+        g.DrawRectangle(g.GetPen(Color.LightGray), r.Left + 2, r.Top + 2, 15, 15);
         var image = htmlContainer.GetLoadingFailedImage();
         g.DrawImage(image, new RRect(r.Left + 3, r.Top + 3, image.Width, image.Height));
     }

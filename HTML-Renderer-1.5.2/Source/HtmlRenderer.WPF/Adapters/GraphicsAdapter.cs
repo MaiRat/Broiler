@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using Color = System.Drawing.Color;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 
@@ -134,7 +135,7 @@ internal sealed class GraphicsAdapter : RGraphics
         }
     }
 
-    public override void DrawString(string str, RFont font, RColor color, RPoint point, RSize size, bool rtl)
+    public override void DrawString(string str, RFont font, Color color, RPoint point, RSize size, bool rtl)
     {
         var colorConv = ((BrushAdapter)_adapter.GetSolidBrush(color)).Brush;
 

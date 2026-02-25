@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using Color = System.Drawing.Color;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Utilities;
 
@@ -25,8 +26,8 @@ internal static class Utils
     public static RRect Convert(Rect r) => new(r.X, r.Y, r.Width, r.Height);
     public static Rect Convert(RRect r) => new(r.X, r.Y, r.Width, r.Height);
     public static Rect ConvertRound(RRect r) => new((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
-    public static RColor Convert(Color c) => RColor.FromArgb(c.A, c.R, c.G, c.B);
-    public static Color Convert(RColor c) => Color.FromArgb(c.A, c.R, c.G, c.B);
+    public static Color Convert(System.Windows.Media.Color c) => Color.FromArgb(c.A, c.R, c.G, c.B);
+    public static System.Windows.Media.Color Convert(Color c) => System.Windows.Media.Color.FromArgb(c.A, c.R, c.G, c.B);
 
     public static BitmapEncoder GetBitmapEncoder(string ext)
     {

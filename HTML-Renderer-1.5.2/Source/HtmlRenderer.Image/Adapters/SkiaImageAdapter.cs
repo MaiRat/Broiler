@@ -24,7 +24,7 @@ internal sealed class SkiaImageAdapter : RAdapter
 
     public static SkiaImageAdapter Instance { get; } = new();
 
-    protected override RColor GetColorInt(string colorName)
+    protected override Color GetColorInt(string colorName)
     {
         if (SKColor.TryParse(colorName, out var color))
             return Utilities.Utils.Convert(color);
@@ -32,29 +32,29 @@ internal sealed class SkiaImageAdapter : RAdapter
         // Fallback: try common color names
         return colorName.ToLowerInvariant() switch
         {
-            "white" => RColor.FromArgb(255, 255, 255, 255),
-            "black" => RColor.FromArgb(255, 0, 0, 0),
-            "red" => RColor.FromArgb(255, 255, 0, 0),
-            "green" => RColor.FromArgb(255, 0, 128, 0),
-            "blue" => RColor.FromArgb(255, 0, 0, 255),
-            "yellow" => RColor.FromArgb(255, 255, 255, 0),
-            "orange" => RColor.FromArgb(255, 255, 165, 0),
-            "purple" => RColor.FromArgb(255, 128, 0, 128),
-            "gray" or "grey" => RColor.FromArgb(255, 128, 128, 128),
-            "silver" => RColor.FromArgb(255, 192, 192, 192),
-            "maroon" => RColor.FromArgb(255, 128, 0, 0),
-            "olive" => RColor.FromArgb(255, 128, 128, 0),
-            "lime" => RColor.FromArgb(255, 0, 255, 0),
-            "aqua" or "cyan" => RColor.FromArgb(255, 0, 255, 255),
-            "teal" => RColor.FromArgb(255, 0, 128, 128),
-            "navy" => RColor.FromArgb(255, 0, 0, 128),
-            "fuchsia" or "magenta" => RColor.FromArgb(255, 255, 0, 255),
-            "transparent" => RColor.FromArgb(0, 255, 255, 255),
-            _ => RColor.FromArgb(255, 0, 0, 0), // default to black
+            "white" => Color.FromArgb(255, 255, 255, 255),
+            "black" => Color.FromArgb(255, 0, 0, 0),
+            "red" => Color.FromArgb(255, 255, 0, 0),
+            "green" => Color.FromArgb(255, 0, 128, 0),
+            "blue" => Color.FromArgb(255, 0, 0, 255),
+            "yellow" => Color.FromArgb(255, 255, 255, 0),
+            "orange" => Color.FromArgb(255, 255, 165, 0),
+            "purple" => Color.FromArgb(255, 128, 0, 128),
+            "gray" or "grey" => Color.FromArgb(255, 128, 128, 128),
+            "silver" => Color.FromArgb(255, 192, 192, 192),
+            "maroon" => Color.FromArgb(255, 128, 0, 0),
+            "olive" => Color.FromArgb(255, 128, 128, 0),
+            "lime" => Color.FromArgb(255, 0, 255, 0),
+            "aqua" or "cyan" => Color.FromArgb(255, 0, 255, 255),
+            "teal" => Color.FromArgb(255, 0, 128, 128),
+            "navy" => Color.FromArgb(255, 0, 0, 128),
+            "fuchsia" or "magenta" => Color.FromArgb(255, 255, 0, 255),
+            "transparent" => Color.FromArgb(0, 255, 255, 255),
+            _ => Color.FromArgb(255, 0, 0, 0), // default to black
         };
     }
 
-    protected override RPen CreatePen(RColor color)
+    protected override RPen CreatePen(Color color)
     {
         var paint = new SKPaint
         {
@@ -66,7 +66,7 @@ internal sealed class SkiaImageAdapter : RAdapter
         return new PenAdapter(paint);
     }
 
-    protected override RBrush CreateSolidBrush(RColor color)
+    protected override RBrush CreateSolidBrush(Color color)
     {
         var paint = new SKPaint
         {
@@ -77,7 +77,7 @@ internal sealed class SkiaImageAdapter : RAdapter
         return new BrushAdapter(paint, false);
     }
 
-    protected override RBrush CreateLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle)
+    protected override RBrush CreateLinearGradientBrush(RRect rect, Color color1, Color color2, double angle)
     {
         var radians = angle * Math.PI / 180.0;
         var cos = (float)Math.Cos(radians);

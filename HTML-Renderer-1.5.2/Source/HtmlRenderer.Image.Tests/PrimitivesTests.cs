@@ -1,22 +1,23 @@
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace HtmlRenderer.Image.Tests;
 
 /// <summary>
 /// Unit tests for the HtmlRenderer primitive types:
-/// <see cref="RColor"/>, <see cref="RRect"/>, <see cref="RPoint"/>,
+/// <see cref="Color"/>, <see cref="RRect"/>, <see cref="RPoint"/>,
 /// and <see cref="RSize"/>.
 /// </summary>
 public class PrimitivesTests
 {
     // =================================================================
-    // RColor
+    // Color
     // =================================================================
 
     [Fact]
     public void RColor_FromArgb_Rgb_StoresChannels()
     {
-        var c = RColor.FromArgb(100, 150, 200);
+        var c = Color.FromArgb(100, 150, 200);
         Assert.Equal(100, c.R);
         Assert.Equal(150, c.G);
         Assert.Equal(200, c.B);
@@ -26,7 +27,7 @@ public class PrimitivesTests
     [Fact]
     public void RColor_FromArgb_Argb_StoresAlpha()
     {
-        var c = RColor.FromArgb(128, 10, 20, 30);
+        var c = Color.FromArgb(128, 10, 20, 30);
         Assert.Equal(128, c.A);
         Assert.Equal(10, c.R);
         Assert.Equal(20, c.G);
@@ -36,8 +37,8 @@ public class PrimitivesTests
     [Fact]
     public void RColor_Equality_SameValues_AreEqual()
     {
-        var a = RColor.FromArgb(255, 0, 0);
-        var b = RColor.FromArgb(255, 0, 0);
+        var a = Color.FromArgb(255, 0, 0);
+        var b = Color.FromArgb(255, 0, 0);
         Assert.True(a == b);
         Assert.True(a.Equals(b));
     }
@@ -45,8 +46,8 @@ public class PrimitivesTests
     [Fact]
     public void RColor_Equality_DifferentValues_AreNotEqual()
     {
-        var a = RColor.FromArgb(255, 0, 0);
-        var b = RColor.FromArgb(0, 255, 0);
+        var a = Color.FromArgb(255, 0, 0);
+        var b = Color.FromArgb(0, 255, 0);
         Assert.True(a != b);
         Assert.False(a.Equals(b));
     }
@@ -54,26 +55,26 @@ public class PrimitivesTests
     [Fact]
     public void RColor_PredefinedColors_HaveCorrectValues()
     {
-        Assert.Equal(0, RColor.Black.R);
-        Assert.Equal(0, RColor.Black.G);
-        Assert.Equal(0, RColor.Black.B);
+        Assert.Equal(0, Color.Black.R);
+        Assert.Equal(0, Color.Black.G);
+        Assert.Equal(0, Color.Black.B);
 
-        Assert.Equal(255, RColor.White.R);
-        Assert.Equal(255, RColor.White.G);
-        Assert.Equal(255, RColor.White.B);
+        Assert.Equal(255, Color.White.R);
+        Assert.Equal(255, Color.White.G);
+        Assert.Equal(255, Color.White.B);
     }
 
     [Fact]
     public void RColor_Empty_IsEmpty()
     {
-        Assert.True(RColor.Empty.IsEmpty);
-        Assert.False(RColor.Black.IsEmpty);
+        Assert.True(Color.Empty.IsEmpty);
+        Assert.False(Color.Black.IsEmpty);
     }
 
     [Fact]
     public void RColor_ToString_NonEmpty_ContainsChannels()
     {
-        var c = RColor.FromArgb(255, 128, 64);
+        var c = Color.FromArgb(255, 128, 64);
         string s = c.ToString();
         Assert.Contains("R=255", s);
         Assert.Contains("G=128", s);
@@ -83,15 +84,15 @@ public class PrimitivesTests
     [Fact]
     public void RColor_ToString_Empty_ShowsEmpty()
     {
-        string s = RColor.Empty.ToString();
+        string s = Color.Empty.ToString();
         Assert.Contains("Empty", s);
     }
 
     [Fact]
     public void RColor_InvalidByte_Throws()
     {
-        Assert.Throws<ArgumentException>(() => RColor.FromArgb(256, 0, 0));
-        Assert.Throws<ArgumentException>(() => RColor.FromArgb(-1, 0, 0));
+        Assert.Throws<ArgumentException>(() => Color.FromArgb(256, 0, 0));
+        Assert.Throws<ArgumentException>(() => Color.FromArgb(-1, 0, 0));
     }
 
     // =================================================================

@@ -857,7 +857,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                 g.DrawRectangle(GetSelectionBackBrush(g, false), rect.X, rect.Y, rect.Width, rect.Height);
 
-                if (ContainerInt.SelectionForeColor != RColor.Empty && (word.SelectedStartOffset > 0 || word.SelectedEndIndexOffset > -1))
+                if (ContainerInt.SelectionForeColor != System.Drawing.Color.Empty && (word.SelectedStartOffset > 0 || word.SelectedEndIndexOffset > -1))
                 {
                     g.PushClipExclude(rect);
                     g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new RSize(word.Width, word.Height), isRtl);
@@ -873,7 +873,7 @@ internal class CssBox : CssBoxProperties, IDisposable
             }
             else
             {
-                //                            g.DrawRectangle(HtmlContainer.Adapter.GetPen(RColor.Black), wordPoint.X, wordPoint.Y, word.Width - 1, word.Height - 1);
+                //                            g.DrawRectangle(HtmlContainer.Adapter.GetPen(Color.Black), wordPoint.X, wordPoint.Y, word.Width - 1, word.Height - 1);
                 g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new RSize(word.Width, word.Height), isRtl);
             }
         }
@@ -927,15 +927,15 @@ internal class CssBox : CssBoxProperties, IDisposable
             ContainerInt.RequestRefresh(false);
     }
 
-    protected RColor GetSelectionForeBrush() => ContainerInt.SelectionForeColor != RColor.Empty ? ContainerInt.SelectionForeColor : ActualColor;
+    protected Color GetSelectionForeBrush() => ContainerInt.SelectionForeColor != System.Drawing.Color.Empty ? ContainerInt.SelectionForeColor : ActualColor;
 
     protected RBrush GetSelectionBackBrush(RGraphics g, bool forceAlpha)
     {
         var backColor = ContainerInt.SelectionBackColor;
-        if (backColor != RColor.Empty)
+        if (backColor != System.Drawing.Color.Empty)
         {
             if (forceAlpha && backColor.A > 180)
-                return g.GetSolidBrush(RColor.FromArgb(180, backColor.R, backColor.G, backColor.B));
+                return g.GetSolidBrush(System.Drawing.Color.FromArgb(180, backColor.R, backColor.G, backColor.B));
             else
                 return g.GetSolidBrush(backColor);
         }
@@ -947,7 +947,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
     protected override RFont GetCachedFont(string fontFamily, double fsize, FontStyle st) => ContainerInt.GetFont(fontFamily, fsize, st);
 
-    protected override RColor GetActualColor(string colorStr) => ContainerInt.ParseColor(colorStr);
+    protected override Color GetActualColor(string colorStr) => ContainerInt.ParseColor(colorStr);
 
     protected override RPoint GetActualLocation(string X, string Y)
     {

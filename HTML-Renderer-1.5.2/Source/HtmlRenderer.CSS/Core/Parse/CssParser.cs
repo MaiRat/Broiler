@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -46,7 +47,7 @@ internal sealed class CssParser
 
     public CssBlock ParseCssBlock(string className, string blockSource) => ParseCssBlockImp(className, blockSource);
     public string ParseFontFamily(string value) => ParseFontFamilyProperty(value);
-    public RColor ParseColor(string colorStr) => _valueParser.GetActualColor(colorStr);
+    public Color ParseColor(string colorStr) => _valueParser.GetActualColor(colorStr);
 
 
     private static string RemoveStylesheetComments(string stylesheet)
@@ -872,5 +873,5 @@ internal sealed class CssParser
         return null;
     }
 
-    private string ParseBorderColor(string str, int idx, int length) => _valueParser.TryGetColor(str, idx, length, out RColor color) ? str.Substring(idx, length) : null;
+    private string ParseBorderColor(string str, int idx, int length) => _valueParser.TryGetColor(str, idx, length, out Color color) ? str.Substring(idx, length) : null;
 }

@@ -11,8 +11,8 @@ namespace TheArtOfDev.HtmlRenderer.Adapters;
 
 public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator, IAdapter
 {
-    private readonly Dictionary<RColor, RBrush> _brushesCache = [];
-    private readonly Dictionary<RColor, RPen> _penCache = [];
+    private readonly Dictionary<Color, RBrush> _brushesCache = [];
+    private readonly Dictionary<Color, RPen> _penCache = [];
     private readonly FontsHandler _fontsHandler;
 
     private CssData _defaultCssData;
@@ -23,13 +23,13 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     public CssData DefaultCssData => _defaultCssData ??= CssDataParser.Parse(this, CssDefaults.DefaultStyleSheet);
 
-    public RColor GetColor(string colorName)
+    public Color GetColor(string colorName)
     {
         ArgChecker.AssertArgNotNullOrEmpty(colorName, "colorName");
         return GetColorInt(colorName);
     }
 
-    public RPen GetPen(RColor color)
+    public RPen GetPen(Color color)
     {
         if (!_penCache.TryGetValue(color, out RPen pen))
             _penCache[color] = pen = CreatePen(color);
@@ -37,7 +37,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
         return pen;
     }
 
-    public RBrush GetSolidBrush(RColor color)
+    public RBrush GetSolidBrush(Color color)
     {
         if (!_brushesCache.TryGetValue(color, out RBrush brush))
             _brushesCache[color] = brush = CreateSolidBrush(color);
@@ -45,7 +45,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
         return brush;
     }
 
-    public RBrush GetLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle) => CreateLinearGradientBrush(rect, color1, color2, angle);
+    public RBrush GetLinearGradientBrush(RRect rect, Color color1, Color color2, double angle) => CreateLinearGradientBrush(rect, color1, color2, angle);
 
     public RImage ConvertImage(object image) =>
         // TODO:a remove this by creating better API.
@@ -107,13 +107,13 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     RFont IFontCreator.CreateFont(RFontFamily family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
-    protected abstract RColor GetColorInt(string colorName);
+    protected abstract Color GetColorInt(string colorName);
 
-    protected abstract RPen CreatePen(RColor color);
+    protected abstract RPen CreatePen(Color color);
 
-    protected abstract RBrush CreateSolidBrush(RColor color);
+    protected abstract RBrush CreateSolidBrush(Color color);
 
-    protected abstract RBrush CreateLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle);
+    protected abstract RBrush CreateLinearGradientBrush(RRect rect, Color color1, Color color2, double angle);
 
     protected abstract RImage ConvertImageInt(object image);
 

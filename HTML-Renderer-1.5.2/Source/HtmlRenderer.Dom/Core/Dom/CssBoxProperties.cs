@@ -55,7 +55,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
     private double _actualCornerNe = double.NaN;
     private double _actualCornerSw = double.NaN;
     private double _actualCornerSe = double.NaN;
-    private RColor _actualColor = RColor.Empty;
+    private Color _actualColor = System.Drawing.Color.Empty;
     private double _actualBackgroundGradientAngle = double.NaN;
     private double _actualHeight = double.NaN;
     private double _actualWidth = double.NaN;
@@ -80,12 +80,12 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
     private double _actualTextIndent = double.NaN;
     private double _actualBorderSpacingHorizontal = double.NaN;
     private double _actualBorderSpacingVertical = double.NaN;
-    private RColor _actualBackgroundGradient = RColor.Empty;
-    private RColor _actualBorderTopColor = RColor.Empty;
-    private RColor _actualBorderLeftColor = RColor.Empty;
-    private RColor _actualBorderBottomColor = RColor.Empty;
-    private RColor _actualBorderRightColor = RColor.Empty;
-    private RColor _actualBackgroundColor = RColor.Empty;
+    private Color _actualBackgroundGradient = System.Drawing.Color.Empty;
+    private Color _actualBorderTopColor = System.Drawing.Color.Empty;
+    private Color _actualBorderLeftColor = System.Drawing.Color.Empty;
+    private Color _actualBorderBottomColor = System.Drawing.Color.Empty;
+    private Color _actualBorderRightColor = System.Drawing.Color.Empty;
+    private Color _actualBackgroundColor = System.Drawing.Color.Empty;
     private RFont _actualFont;
 
     #endregion
@@ -144,7 +144,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _borderBottomColor = value;
-            _actualBorderBottomColor = RColor.Empty;
+            _actualBorderBottomColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -154,7 +154,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _borderLeftColor = value;
-            _actualBorderLeftColor = RColor.Empty;
+            _actualBorderLeftColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -164,7 +164,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _borderRightColor = value;
-            _actualBorderRightColor = RColor.Empty;
+            _actualBorderRightColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -174,7 +174,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _borderTopColor = value;
-            _actualBorderTopColor = RColor.Empty;
+            _actualBorderTopColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -311,7 +311,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _color = value;
-            _actualColor = RColor.Empty;
+            _actualColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -661,7 +661,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBorderTopColor
+    public Color ActualBorderTopColor
     {
         get
         {
@@ -674,9 +674,9 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
 
     protected abstract RPoint GetActualLocation(string X, string Y);
 
-    protected abstract RColor GetActualColor(string colorStr);
+    protected abstract Color GetActualColor(string colorStr);
 
-    public RColor ActualBorderLeftColor
+    public Color ActualBorderLeftColor
     {
         get
         {
@@ -687,7 +687,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBorderBottomColor
+    public Color ActualBorderBottomColor
     {
         get
         {
@@ -698,7 +698,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBorderRightColor
+    public Color ActualBorderRightColor
     {
         get
         {
@@ -763,7 +763,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
 
     public double ActualWordSpacing { get; private set; } = double.NaN;
 
-    public RColor ActualColor
+    public Color ActualColor
     {
         get
         {
@@ -774,7 +774,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBackgroundColor
+    public Color ActualBackgroundColor
     {
         get
         {
@@ -785,7 +785,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBackgroundGradient
+    public Color ActualBackgroundGradient
     {
         get
         {

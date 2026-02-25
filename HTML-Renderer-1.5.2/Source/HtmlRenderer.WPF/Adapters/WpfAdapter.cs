@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using FontStyle = System.Drawing.FontStyle;
+using Color = System.Drawing.Color;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
@@ -47,25 +48,25 @@ internal sealed class WpfAdapter : RAdapter
 
     public static WpfAdapter Instance { get; } = new();
 
-    protected override RColor GetColorInt(string colorName)
+    protected override Color GetColorInt(string colorName)
     {
         // check if color name is valid to avoid ColorConverter throwing an exception
         if (!ValidColorNamesLc.Contains(colorName.ToLower()))
-            return RColor.Empty;
+            return Color.Empty;
 
         var convertFromString = ColorConverter.ConvertFromString(colorName) ?? Colors.Black;
-        return Utils.Convert((Color)convertFromString);
+        return Utils.Convert((System.Windows.Media.Color)convertFromString);
     }
 
-    protected override RPen CreatePen(RColor color) => new PenAdapter(GetSolidColorBrush(color));
+    protected override RPen CreatePen(Color color) => new PenAdapter(GetSolidColorBrush(color));
 
-    protected override RBrush CreateSolidBrush(RColor color)
+    protected override RBrush CreateSolidBrush(Color color)
     {
         var solidBrush = GetSolidColorBrush(color);
         return new BrushAdapter(solidBrush);
     }
 
-    protected override RBrush CreateLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle)
+    protected override RBrush CreateLinearGradientBrush(RRect rect, Color color1, Color color2, double angle)
     {
         var startColor = angle <= 180 ? Utils.Convert(color1) : Utils.Convert(color2);
         var endColor = angle <= 180 ? Utils.Convert(color2) : Utils.Convert(color1);
@@ -126,12 +127,12 @@ internal sealed class WpfAdapter : RAdapter
         encoder.Save(stream);
     }
 
-    private static Brush GetSolidColorBrush(RColor color)
+    private static Brush GetSolidColorBrush(Color color)
     {
         Brush solidBrush;
-        if (color == RColor.White)
+        if (color == Color.White)
             solidBrush = Brushes.White;
-        else if (color == RColor.Black)
+        else if (color == Color.Black)
             solidBrush = Brushes.Black;
         else if (color.A < 1)
             solidBrush = Brushes.Transparent;

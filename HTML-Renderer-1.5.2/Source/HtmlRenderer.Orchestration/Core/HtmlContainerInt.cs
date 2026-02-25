@@ -119,8 +119,8 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     public string SelectedText => _selectionHandler.GetSelectedText();
     public string SelectedHtml => _selectionHandler.GetSelectedHtml();
     internal CssBox Root { get; private set; }
-    internal RColor SelectionForeColor { get; set; }
-    internal RColor SelectionBackColor { get; set; }
+    internal Color SelectionForeColor { get; set; }
+    internal Color SelectionBackColor { get; set; }
     public void SetHtml(string htmlSource, CssData baseCssData = null)
     {
         Clear();
@@ -485,9 +485,9 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     void IHtmlContainerInt.ReportError(HtmlRenderErrorType type, string message, Exception exception)
         => ReportError(type, message, exception);
 
-    RColor IHtmlContainerInt.SelectionForeColor => SelectionForeColor;
+    Color IHtmlContainerInt.SelectionForeColor => SelectionForeColor;
 
-    RColor IHtmlContainerInt.SelectionBackColor => SelectionBackColor;
+    Color IHtmlContainerInt.SelectionBackColor => SelectionBackColor;
 
     void IHtmlContainerInt.RaiseHtmlImageLoadEvent(HtmlImageLoadEventArgs args)
         => RaiseHtmlImageLoadEvent(args);
@@ -496,7 +496,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     RFont IHtmlContainerInt.GetFont(string family, double size, FontStyle style) => Adapter.GetFont(family, size, style);
 
-    RColor IHtmlContainerInt.ParseColor(string colorStr) => CssParser.ParseColor(colorStr);
+    Color IHtmlContainerInt.ParseColor(string colorStr) => CssParser.ParseColor(colorStr);
 
     RImage IHtmlContainerInt.ConvertImage(object image) => Adapter.ConvertImage(image);
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Handlers;
@@ -71,7 +72,7 @@ internal sealed class CssBoxImage : CssBox
         {
             RenderUtils.DrawImageLoadingIcon(g, ContainerInt, r);
             if (r.Width > 19 && r.Height > 19)
-                g.DrawRectangle(g.GetPen(RColor.LightGray), r.X, r.Y, r.Width, r.Height);
+                g.DrawRectangle(g.GetPen(System.Drawing.Color.LightGray), r.X, r.Y, r.Width, r.Height);
         }
 
         if (clipped)

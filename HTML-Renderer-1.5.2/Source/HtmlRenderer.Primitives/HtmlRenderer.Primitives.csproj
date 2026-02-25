@@ -11,7 +11,7 @@
     <Title>HTML Renderer Primitives</Title>
     <PackageTags>html render renderer primitives entities</PackageTags>
     <Description>Primitive value types and entities for the HTML Renderer library.
-Contains foundational types such as RColor, RPoint, RRect, RSize, and related enumerations used across all HTML Renderer modules.</Description>
+Contains foundational types such as RPoint, RRect, RSize, and related enumerations used across all HTML Renderer modules.</Description>
     <Summary>Primitive value types for the HTML Renderer library.</Summary>
   </PropertyGroup>
   <ItemGroup>

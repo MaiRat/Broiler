@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -8,7 +9,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.Utils;
 
 internal static class CssUtils
 {
-    public static RColor DefaultSelectionBackcolor { get; } = RColor.FromArgb(0xa9, 0x33, 0x99, 0xFF);
+    public static Color DefaultSelectionBackcolor { get; } = Color.FromArgb(0xa9, 0x33, 0x99, 0xFF);
 
     public static double WhiteSpace(RGraphics g, CssBoxProperties box)
     {
