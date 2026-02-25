@@ -1,9 +1,8 @@
-using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Parse;
 
-internal static class RegexParserUtils
+internal static partial class RegexParserUtils
 {
     public const string CssMediaTypes = @"@media[^\{\}]*\{";
     /// WARNING: Blocks will include blocks inside at-rules.
@@ -18,7 +17,42 @@ internal static class RegexParserUtils
     public const string CssFontWeight = "(normal|bold|bolder|lighter|100|200|300|400|500|600|700|800|900)";
     public const string CssFontSize = "(" + CssLength + "|" + CssPercentage + "|xx-small|x-small|small|medium|large|x-large|xx-large|larger|smaller)";
     public const string CssFontSizeAndLineHeight = CssFontSize + @"(\/" + CssLineHeight + @")?(\s|$)";
-    private static readonly ConcurrentDictionary<string, Regex> _regexes = new();
+
+    [GeneratedRegex(CssMediaTypes, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssMediaTypesRegex();
+
+    [GeneratedRegex(CssBlocks, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssBlocksRegex();
+
+    [GeneratedRegex(CssNumber, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssNumberRegex();
+
+    [GeneratedRegex(CssPercentage, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssPercentageRegex();
+
+    [GeneratedRegex(CssLength, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssLengthRegex();
+
+    [GeneratedRegex(CssLineHeight, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssLineHeightRegex();
+
+    [GeneratedRegex(CssFontFamily, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontFamilyRegex();
+
+    [GeneratedRegex(CssFontStyle, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontStyleRegex();
+
+    [GeneratedRegex(CssFontVariant, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontVariantRegex();
+
+    [GeneratedRegex(CssFontWeight, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontWeightRegex();
+
+    [GeneratedRegex(CssFontSize, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontSizeRegex();
+
+    [GeneratedRegex(CssFontSizeAndLineHeight, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontSizeAndLineHeightRegex();
 
     public static string GetCssAtRules(string stylesheet, ref int startIdx)
     {
@@ -56,15 +90,11 @@ internal static class RegexParserUtils
         return atrule;
     }
 
-    public static MatchCollection Match(string regex, string source)
-    {
-        var r = GetRegex(regex);
-        return r.Matches(source);
-    }
+    public static MatchCollection Match(Regex regex, string source) => regex.Matches(source);
 
-    public static string Search(string regex, string source) => Search(regex, source, out int position);
+    public static string Search(Regex regex, string source) => Search(regex, source, out _);
 
-    public static string Search(string regex, string source, out int position)
+    public static string Search(Regex regex, string source, out int position)
     {
         MatchCollection matches = Match(regex, source);
 
@@ -80,6 +110,4 @@ internal static class RegexParserUtils
 
         return null;
     }
-
-    private static Regex GetRegex(string regex) => _regexes.GetOrAdd(regex, r => new Regex(r, RegexOptions.IgnoreCase | RegexOptions.Singleline));
 }

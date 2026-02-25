@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
 
@@ -7,7 +7,7 @@ internal sealed class HtmlTag
 {
     public HtmlTag(string name, bool isSingle, Dictionary<string, string> attributes = null)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(name, "name");
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         Name = name;
         IsSingle = isSingle;

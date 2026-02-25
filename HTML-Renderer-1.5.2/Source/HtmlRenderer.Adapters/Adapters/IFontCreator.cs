@@ -1,4 +1,4 @@
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
+using System.Drawing;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
@@ -12,10 +12,10 @@ internal interface IFontCreator
     /// <summary>
     /// Creates a font from a family name, size, and style.
     /// </summary>
-    RFont CreateFont(string family, double size, RFontStyle style);
+    RFont CreateFont(string family, double size, FontStyle style);
 
     /// <summary>
     /// Creates a font from a <see cref="RFontFamily"/>, size, and style.
     /// </summary>
-    RFont CreateFont(RFontFamily family, double size, RFontStyle style);
+    RFont CreateFont(RFontFamily family, double size, FontStyle style);
 }

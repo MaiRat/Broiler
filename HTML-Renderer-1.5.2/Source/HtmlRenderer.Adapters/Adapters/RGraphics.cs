@@ -1,7 +1,7 @@
+using System.Drawing;
 using System;
 using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
@@ -13,15 +13,15 @@ public abstract class RGraphics : IDisposable
 
     protected RGraphics(IResourceFactory adapter, RRect initialClip)
     {
-        ArgChecker.AssertArgNotNull(adapter, "adapter");
+        ArgumentNullException.ThrowIfNull(adapter);
 
         _adapter = adapter;
         _clipStack.Push(initialClip);
     }
 
-    public RPen GetPen(RColor color) => _adapter.GetPen(color);
-    public RBrush GetSolidBrush(RColor color) => _adapter.GetSolidBrush(color);
-    public RBrush GetLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle) => _adapter.GetLinearGradientBrush(rect, color1, color2, angle);
+    public RPen GetPen(Color color) => _adapter.GetPen(color);
+    public RBrush GetSolidBrush(Color color) => _adapter.GetSolidBrush(color);
+    public RBrush GetLinearGradientBrush(RRect rect, Color color1, Color color2, double angle) => _adapter.GetLinearGradientBrush(rect, color1, color2, angle);
     public RRect GetClip() => _clipStack.Peek();
     public abstract void PopClip();
     public abstract void PushClip(RRect rect);
@@ -52,7 +52,7 @@ public abstract class RGraphics : IDisposable
     public abstract RGraphicsPath GetGraphicsPath();
     public abstract RSize MeasureString(string str, RFont font);
     public abstract void MeasureString(string str, RFont font, double maxWidth, out int charFit, out double charFitWidth);
-    public abstract void DrawString(String str, RFont font, RColor color, RPoint point, RSize size, bool rtl);
+    public abstract void DrawString(String str, RFont font, Color color, RPoint point, RSize size, bool rtl);
     public abstract void DrawLine(RPen pen, double x1, double y1, double x2, double y2);
     public abstract void DrawRectangle(RPen pen, double x, double y, double width, double height);
     public abstract void DrawRectangle(RBrush brush, double x, double y, double width, double height);

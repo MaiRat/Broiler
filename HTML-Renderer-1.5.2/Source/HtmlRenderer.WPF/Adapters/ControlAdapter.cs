@@ -1,9 +1,9 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
@@ -12,7 +12,7 @@ internal sealed class ControlAdapter : RControl
 {
     public ControlAdapter(Control control) : base(WpfAdapter.Instance)
     {
-        ArgChecker.AssertArgNotNull(control, "control");
+        ArgumentNullException.ThrowIfNull(control);
 
         Control = control;
     }

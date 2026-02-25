@@ -1,4 +1,5 @@
 ﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -20,8 +21,8 @@ internal sealed class ImageDownloader : IDisposable
 
     public void DownloadImage(Uri imageUri, string filePath, bool async, DownloadFileAsyncCallback cachedFileCallback)
     {
-        ArgChecker.AssertArgNotNull(imageUri, "imageUri");
-        ArgChecker.AssertArgNotNull(cachedFileCallback, "cachedFileCallback");
+        ArgumentNullException.ThrowIfNull(imageUri);
+        ArgumentNullException.ThrowIfNull(cachedFileCallback);
 
         // to handle if the file is already been downloaded
         bool download = true;

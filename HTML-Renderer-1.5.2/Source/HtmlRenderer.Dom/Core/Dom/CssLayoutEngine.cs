@@ -10,8 +10,8 @@ internal static class CssLayoutEngine
 {
     public static void MeasureImageSize(CssRectImage imageWord)
     {
-        ArgChecker.AssertArgNotNull(imageWord, "imageWord");
-        ArgChecker.AssertArgNotNull(imageWord.OwnerBox, "imageWord.OwnerBox");
+        ArgumentNullException.ThrowIfNull(imageWord);
+        ArgumentNullException.ThrowIfNull(imageWord.OwnerBox);
 
         var width = new CssLength(imageWord.OwnerBox.Width);
         var height = new CssLength(imageWord.OwnerBox.Height);
@@ -94,8 +94,8 @@ internal static class CssLayoutEngine
 
     public static void CreateLineBoxes(RGraphics g, CssBox blockBox)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
-        ArgChecker.AssertArgNotNull(blockBox, "blockBox");
+        ArgumentNullException.ThrowIfNull(g);
+        ArgumentNullException.ThrowIfNull(blockBox);
 
         blockBox.LineBoxes.Clear();
 
@@ -142,8 +142,8 @@ internal static class CssLayoutEngine
 
     public static void ApplyCellVerticalAlignment(RGraphics g, CssBox cell)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
-        ArgChecker.AssertArgNotNull(cell, "cell");
+        ArgumentNullException.ThrowIfNull(g);
+        ArgumentNullException.ThrowIfNull(cell);
 
         if (cell.VerticalAlign == CssConstants.Top || cell.VerticalAlign == CssConstants.Baseline)
             return;
@@ -292,7 +292,7 @@ internal static class CssLayoutEngine
         }
 
         // handle box that is only a whitespace
-        if (box.Text != null && box.Text.IsWhitespace() && !box.IsImage && box.IsInline && box.Boxes.Count == 0 && box.Words.Count == 0)
+        if (box.Text.Length > 0 && box.Text.Span.IsWhiteSpace() && !box.IsImage && box.IsInline && box.Boxes.Count == 0 && box.Words.Count == 0)
             curx += box.ActualWordSpacing;
 
         // hack to support specific absolute position elements

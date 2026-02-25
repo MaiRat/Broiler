@@ -22,8 +22,8 @@ internal sealed class ImageLoadHandler : IImageLoadHandler
 
     public ImageLoadHandler(IHtmlContainerInt htmlContainer, ActionInt<RImage, RRect, bool> loadCompleteCallback)
     {
-        ArgChecker.AssertArgNotNull(htmlContainer, "htmlContainer");
-        ArgChecker.AssertArgNotNull(loadCompleteCallback, "loadCompleteCallback");
+        ArgumentNullException.ThrowIfNull(htmlContainer);
+        ArgumentNullException.ThrowIfNull(loadCompleteCallback);
 
         _htmlContainer = htmlContainer;
         _loadCompleteCallback = loadCompleteCallback;

@@ -1,3 +1,4 @@
+using System.Drawing;
 using System;
 using System.Globalization;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
@@ -11,7 +12,7 @@ internal sealed class CssValueParser
 
     public CssValueParser(IColorResolver colorResolver)
     {
-        ArgChecker.AssertArgNotNull(colorResolver, "colorResolver");
+        ArgumentNullException.ThrowIfNull(colorResolver);
 
         _colorResolver = colorResolver;
     }
@@ -198,13 +199,13 @@ internal sealed class CssValueParser
 
     public bool IsColorValid(string colorValue) => TryGetColor(colorValue, 0, colorValue.Length, out _);
 
-    public RColor GetActualColor(string colorValue)
+    public Color GetActualColor(string colorValue)
     {
-        TryGetColor(colorValue, 0, colorValue.Length, out RColor color);
+        TryGetColor(colorValue, 0, colorValue.Length, out Color color);
         return color;
     }
 
-    public bool TryGetColor(string str, int idx, int length, out RColor color)
+    public bool TryGetColor(string str, int idx, int length, out Color color)
     {
         try
         {
@@ -233,7 +234,7 @@ internal sealed class CssValueParser
             System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] CssValueParser.TryGetColor failed: {ex.Message}");
         }
         
-        color = RColor.Black;
+        color = Color.Black;
         return false;
     }
 
@@ -251,7 +252,7 @@ internal sealed class CssValueParser
         };
     }
 
-    private static bool GetColorByHex(string str, int idx, int length, out RColor color)
+    private static bool GetColorByHex(string str, int idx, int length, out Color color)
     {
         int r = -1;
         int g = -1;
@@ -275,15 +276,15 @@ internal sealed class CssValueParser
 
         if (r > -1 && g > -1 && b > -1)
         {
-            color = RColor.FromArgb(r, g, b);
+            color = Color.FromArgb(r, g, b);
             return true;
         }
 
-        color = RColor.Empty;
+        color = Color.Empty;
         return false;
     }
 
-    private static bool GetColorByRgb(string str, int idx, int length, out RColor color)
+    private static bool GetColorByRgb(string str, int idx, int length, out Color color)
     {
         int r = -1;
         int g = -1;
@@ -307,15 +308,15 @@ internal sealed class CssValueParser
 
         if (r > -1 && g > -1 && b > -1)
         {
-            color = RColor.FromArgb(r, g, b);
+            color = Color.FromArgb(r, g, b);
             return true;
         }
 
-        color = RColor.Empty;
+        color = Color.Empty;
         return false;
     }
 
-    private static bool GetColorByRgba(string str, int idx, int length, out RColor color)
+    private static bool GetColorByRgba(string str, int idx, int length, out Color color)
     {
         int r = -1;
         int g = -1;
@@ -343,15 +344,15 @@ internal sealed class CssValueParser
 
         if (r > -1 && g > -1 && b > -1 && a > -1)
         {
-            color = RColor.FromArgb(a, r, g, b);
+            color = Color.FromArgb(a, r, g, b);
             return true;
         }
 
-        color = RColor.Empty;
+        color = Color.Empty;
         return false;
     }
 
-    private bool GetColorByName(string str, int idx, int length, out RColor color)
+    private bool GetColorByName(string str, int idx, int length, out Color color)
     {
         color = _colorResolver.GetColor(str.Substring(idx, length));
         return color.A > 0;

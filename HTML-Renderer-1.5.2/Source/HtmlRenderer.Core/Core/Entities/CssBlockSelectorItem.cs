@@ -1,4 +1,4 @@
-using TheArtOfDev.HtmlRenderer.Core.Utils;
+using System;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Entities;
 
@@ -6,7 +6,7 @@ public readonly struct CssBlockSelectorItem
 {
     public CssBlockSelectorItem(string @class, bool directParent)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(@class, "@class");
+        ArgumentException.ThrowIfNullOrEmpty(@class);
 
         Class = @class;
         DirectParent = directParent;

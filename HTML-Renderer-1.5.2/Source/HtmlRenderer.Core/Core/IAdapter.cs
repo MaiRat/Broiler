@@ -1,6 +1,6 @@
+using System.Drawing;
 using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
@@ -24,7 +24,7 @@ internal interface IAdapter : IColorResolver
     /// <summary>
     /// Gets a cached font for the specified family, size, and style.
     /// </summary>
-    RFont GetFont(string family, double size, RFontStyle style);
+    RFont GetFont(string family, double size, FontStyle style);
 
     /// <summary>
     /// Converts a platform-specific image object to an <see cref="RImage"/>.

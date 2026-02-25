@@ -66,8 +66,8 @@ internal sealed class CssLayoutEngineTable
 
     public static void PerformLayout(RGraphics g, CssBox tableBox)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
-        ArgChecker.AssertArgNotNull(tableBox, "tableBox");
+        ArgumentNullException.ThrowIfNull(g);
+        ArgumentNullException.ThrowIfNull(tableBox);
 
         try
         {

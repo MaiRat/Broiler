@@ -1,3 +1,4 @@
+using System.Drawing;
 using System;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -13,8 +14,8 @@ internal sealed class DomParser
 
     public DomParser(CssParser cssParser, IStylesheetLoader stylesheetLoader)
     {
-        ArgChecker.AssertArgNotNull(cssParser, "cssParser");
-        ArgChecker.AssertArgNotNull(stylesheetLoader, "stylesheetLoader");
+        ArgumentNullException.ThrowIfNull(cssParser);
+        ArgumentNullException.ThrowIfNull(stylesheetLoader);
 
         _cssParser = cssParser;
         _stylesheetLoader = stylesheetLoader;
@@ -65,7 +66,7 @@ internal sealed class DomParser
             {
                 CloneCssData(ref cssData, ref cssDataChanged);
                 foreach (var child in box.Boxes)
-                    _cssParser.ParseStyleSheet(cssData, child.Text.CutSubstring());
+                    _cssParser.ParseStyleSheet(cssData, child.Text.ToString());
             }
         }
 
@@ -102,7 +103,7 @@ internal sealed class DomParser
             }
         }
 
-        if (box.TextDecoration != String.Empty && box.Text == null)
+        if (box.TextDecoration != String.Empty && box.Text.IsEmpty)
         {
             foreach (var childBox in box.Boxes)
                 childBox.TextDecoration = box.TextDecoration;
@@ -116,8 +117,8 @@ internal sealed class DomParser
 
     private void SetTextSelectionStyle(HtmlContainerInt htmlContainer, CssData cssData)
     {
-        htmlContainer.SelectionForeColor = RColor.Empty;
-        htmlContainer.SelectionBackColor = RColor.Empty;
+        htmlContainer.SelectionForeColor = Color.Empty;
+        htmlContainer.SelectionBackColor = Color.Empty;
 
         if (!cssData.ContainsCssBlock("::selection"))
             return;
@@ -404,10 +405,10 @@ internal sealed class DomParser
         for (int i = box.Boxes.Count - 1; i >= 0; i--)
         {
             var childBox = box.Boxes[i];
-            if (childBox.Text != null)
+            if (!childBox.Text.IsEmpty)
             {
                 // is the box has text
-                var keepBox = !childBox.Text.IsEmptyOrWhitespace();
+                var keepBox = !childBox.Text.Span.IsWhiteSpace();
 
                 // is the box is pre-formatted
                 keepBox = keepBox || childBox.WhiteSpace == CssConstants.Pre || childBox.WhiteSpace == CssConstants.PreWrap;

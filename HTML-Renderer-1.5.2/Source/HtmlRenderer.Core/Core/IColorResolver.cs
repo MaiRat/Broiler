@@ -1,3 +1,4 @@
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
@@ -9,9 +10,9 @@ namespace TheArtOfDev.HtmlRenderer.Core;
 internal interface IColorResolver
 {
     /// <summary>
-    /// Resolves a color name to its <see cref="RColor"/> value.
+    /// Resolves a color name to its <see cref="Color"/> value.
     /// </summary>
-    RColor GetColor(string colorName);
+    Color GetColor(string colorName);
 
     /// <summary>
     /// Checks whether a font family is available.

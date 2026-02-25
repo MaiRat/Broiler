@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Handlers;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
 public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator, IAdapter
 {
-    private readonly Dictionary<RColor, RBrush> _brushesCache = [];
-    private readonly Dictionary<RColor, RPen> _penCache = [];
+    private readonly Dictionary<Color, RBrush> _brushesCache = [];
+    private readonly Dictionary<Color, RPen> _penCache = [];
     private readonly FontsHandler _fontsHandler;
 
     private CssData _defaultCssData;
@@ -22,13 +22,13 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     public CssData DefaultCssData => _defaultCssData ??= CssDataParser.Parse(this, CssDefaults.DefaultStyleSheet);
 
-    public RColor GetColor(string colorName)
+    public Color GetColor(string colorName)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(colorName, "colorName");
+        ArgumentException.ThrowIfNullOrEmpty(colorName);
         return GetColorInt(colorName);
     }
 
-    public RPen GetPen(RColor color)
+    public RPen GetPen(Color color)
     {
         if (!_penCache.TryGetValue(color, out RPen pen))
             _penCache[color] = pen = CreatePen(color);
@@ -36,7 +36,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
         return pen;
     }
 
-    public RBrush GetSolidBrush(RColor color)
+    public RBrush GetSolidBrush(Color color)
     {
         if (!_brushesCache.TryGetValue(color, out RBrush brush))
             _brushesCache[color] = brush = CreateSolidBrush(color);
@@ -44,7 +44,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
         return brush;
     }
 
-    public RBrush GetLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle) => CreateLinearGradientBrush(rect, color1, color2, angle);
+    public RBrush GetLinearGradientBrush(RRect rect, Color color1, Color color2, double angle) => CreateLinearGradientBrush(rect, color1, color2, angle);
 
     public RImage ConvertImage(object image) =>
         // TODO:a remove this by creating better API.
@@ -58,7 +58,7 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     public void AddFontFamilyMapping(string fromFamily, string toFamily) => _fontsHandler.AddFontFamilyMapping(fromFamily, toFamily);
 
-    public RFont GetFont(string family, double size, RFontStyle style) => _fontsHandler.GetCachedFont(family, size, style);
+    public RFont GetFont(string family, double size, FontStyle style) => _fontsHandler.GetCachedFont(family, size, style);
 
     public RImage GetLoadingImage()
     {
@@ -98,29 +98,29 @@ public abstract class RAdapter : IColorResolver, IResourceFactory, IFontCreator,
 
     public void SaveToFile(RImage image, string name, string extension, RControl control = null) => SaveToFileInt(image, name, extension, control);
 
-    internal RFont CreateFont(string family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+    internal RFont CreateFont(string family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
-    internal RFont CreateFont(RFontFamily family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+    internal RFont CreateFont(RFontFamily family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
-    RFont IFontCreator.CreateFont(string family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+    RFont IFontCreator.CreateFont(string family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
-    RFont IFontCreator.CreateFont(RFontFamily family, double size, RFontStyle style) => CreateFontInt(family, size, style);
+    RFont IFontCreator.CreateFont(RFontFamily family, double size, FontStyle style) => CreateFontInt(family, size, style);
 
-    protected abstract RColor GetColorInt(string colorName);
+    protected abstract Color GetColorInt(string colorName);
 
-    protected abstract RPen CreatePen(RColor color);
+    protected abstract RPen CreatePen(Color color);
 
-    protected abstract RBrush CreateSolidBrush(RColor color);
+    protected abstract RBrush CreateSolidBrush(Color color);
 
-    protected abstract RBrush CreateLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle);
+    protected abstract RBrush CreateLinearGradientBrush(RRect rect, Color color1, Color color2, double angle);
 
     protected abstract RImage ConvertImageInt(object image);
 
     protected abstract RImage ImageFromStreamInt(Stream memoryStream);
 
-    protected abstract RFont CreateFontInt(string family, double size, RFontStyle style);
+    protected abstract RFont CreateFontInt(string family, double size, FontStyle style);
 
-    protected abstract RFont CreateFontInt(RFontFamily family, double size, RFontStyle style);
+    protected abstract RFont CreateFontInt(RFontFamily family, double size, FontStyle style);
 
     protected virtual object GetClipboardDataObjectInt(string html, string plainText) => throw new NotImplementedException();
 

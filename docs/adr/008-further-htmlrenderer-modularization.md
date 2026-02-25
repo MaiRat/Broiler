@@ -11,7 +11,7 @@ assemblies:
 
 | # | Assembly                 | Layer | Contents                                          |
 |---|--------------------------|-------|---------------------------------------------------|
-| 1 | HtmlRenderer.Primitives  | L0    | Value types (RColor, RPoint, RRect, RSize, …)     |
+| 1 | HtmlRenderer.Primitives  | L0    | Value types (RPoint, RRect, RSize, …)              |
 | 2 | HtmlRenderer.Utils       | L1    | Pure utilities (ArgChecker, CommonUtils, …)        |
 | 3 | HtmlRenderer.Adapters    | L2a   | Abstract adapters (RBrush, RPen, RImage, …)        |
 | 4 | HtmlRenderer.Core        | L2b   | Entities, CssData, CssDefaults, interfaces         |

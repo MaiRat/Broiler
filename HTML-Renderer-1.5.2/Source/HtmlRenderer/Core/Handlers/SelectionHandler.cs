@@ -31,7 +31,7 @@ internal sealed class SelectionHandler : ISelectionHandler, Dom.ISelectionHandle
 
     public SelectionHandler(CssBox root)
     {
-        ArgChecker.AssertArgNotNull(root, "root");
+        ArgumentNullException.ThrowIfNull(root);
 
         _root = root;
         _htmlContainer = (HtmlContainerInt)root.ContainerInt;

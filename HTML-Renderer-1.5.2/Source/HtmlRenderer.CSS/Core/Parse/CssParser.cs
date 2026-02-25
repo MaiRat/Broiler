@@ -1,4 +1,6 @@
 ﻿using System;
+using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -17,7 +19,7 @@ internal sealed class CssParser
 
     public CssParser(IColorResolver colorResolver)
     {
-        ArgChecker.AssertArgNotNull(colorResolver, "colorResolver");
+        ArgumentNullException.ThrowIfNull(colorResolver);
 
         _valueParser = new CssValueParser(colorResolver);
         _colorResolver = colorResolver;
@@ -46,7 +48,7 @@ internal sealed class CssParser
 
     public CssBlock ParseCssBlock(string className, string blockSource) => ParseCssBlockImp(className, blockSource);
     public string ParseFontFamily(string value) => ParseFontFamilyProperty(value);
-    public RColor ParseColor(string colorStr) => _valueParser.GetActualColor(colorStr);
+    public Color ParseColor(string colorStr) => _valueParser.GetActualColor(colorStr);
 
 
     private static string RemoveStylesheetComments(string stylesheet)
@@ -184,7 +186,7 @@ internal sealed class CssParser
                 continue;
 
             //Extract specified media types
-            MatchCollection types = RegexParserUtils.Match(RegexParserUtils.CssMediaTypes, atrule);
+            MatchCollection types = RegexParserUtils.Match(RegexParserUtils.CssMediaTypesRegex(), atrule);
 
             if (types.Count != 1)
                 continue;
@@ -205,7 +207,7 @@ internal sealed class CssParser
                     continue;
 
                 //Get blocks inside the at-rule
-                var insideBlocks = RegexParserUtils.Match(RegexParserUtils.CssBlocks, atrule);
+                var insideBlocks = RegexParserUtils.Match(RegexParserUtils.CssBlocksRegex(), atrule);
 
                 //Scan blocks and feed them to the style sheet
                 foreach (Match insideBlock in insideBlocks)
@@ -450,16 +452,16 @@ internal sealed class CssParser
 
     private void ParseFontProperty(string propValue, Dictionary<string, string> properties)
     {
-        string mustBe = RegexParserUtils.Search(RegexParserUtils.CssFontSizeAndLineHeight, propValue, out int mustBePos);
+        string mustBe = RegexParserUtils.Search(RegexParserUtils.CssFontSizeAndLineHeightRegex(), propValue, out int mustBePos);
 
         if (!string.IsNullOrEmpty(mustBe))
         {
             mustBe = mustBe.Trim();
             //Check for style||variant||weight on the left
             string leftSide = propValue.Substring(0, mustBePos);
-            string fontStyle = RegexParserUtils.Search(RegexParserUtils.CssFontStyle, leftSide);
-            string fontVariant = RegexParserUtils.Search(RegexParserUtils.CssFontVariant, leftSide);
-            string fontWeight = RegexParserUtils.Search(RegexParserUtils.CssFontWeight, leftSide);
+            string fontStyle = RegexParserUtils.Search(RegexParserUtils.CssFontStyleRegex(), leftSide);
+            string fontVariant = RegexParserUtils.Search(RegexParserUtils.CssFontVariantRegex(), leftSide);
+            string fontWeight = RegexParserUtils.Search(RegexParserUtils.CssFontWeightRegex(), leftSide);
 
             //Check for family on the right
             string rightSide = propValue.Substring(mustBePos + mustBe.Length);
@@ -872,5 +874,5 @@ internal sealed class CssParser
         return null;
     }
 
-    private string ParseBorderColor(string str, int idx, int length) => _valueParser.TryGetColor(str, idx, length, out RColor color) ? str.Substring(idx, length) : null;
+    private string ParseBorderColor(string str, int idx, int length) => _valueParser.TryGetColor(str, idx, length, out Color color) ? str.Substring(idx, length) : null;
 }

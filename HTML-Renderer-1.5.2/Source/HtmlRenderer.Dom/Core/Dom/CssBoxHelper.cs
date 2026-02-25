@@ -1,4 +1,5 @@
 ﻿using System;
+using System;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -8,7 +9,7 @@ internal static class CssBoxHelper
 {
     public static CssBox CreateBox(HtmlTag tag, CssBox parent = null)
     {
-        ArgChecker.AssertArgNotNull(tag, "tag");
+        ArgumentNullException.ThrowIfNull(tag);
 
         if (tag.Name == HtmlConstants.Img)
         {
@@ -30,7 +31,7 @@ internal static class CssBoxHelper
 
     public static CssBox CreateBox(CssBox parent, HtmlTag tag = null, CssBox before = null)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         var newBox = new CssBox(parent, tag);
         newBox.InheritStyle();
@@ -45,7 +46,7 @@ internal static class CssBoxHelper
 
     public static CssBox CreateBlock(CssBox parent, HtmlTag tag = null, CssBox before = null)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         var newBox = CreateBox(parent, tag, before);
         newBox.Display = CssConstants.Block;

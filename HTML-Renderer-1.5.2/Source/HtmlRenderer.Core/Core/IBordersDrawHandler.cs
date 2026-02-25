@@ -1,3 +1,4 @@
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -23,10 +24,10 @@ internal interface IBorderRenderData
     double ActualBorderBottomWidth { get; }
     double ActualBorderLeftWidth { get; }
 
-    RColor ActualBorderTopColor { get; }
-    RColor ActualBorderRightColor { get; }
-    RColor ActualBorderBottomColor { get; }
-    RColor ActualBorderLeftColor { get; }
+    Color ActualBorderTopColor { get; }
+    Color ActualBorderRightColor { get; }
+    Color ActualBorderBottomColor { get; }
+    Color ActualBorderLeftColor { get; }
 
     double ActualCornerNw { get; }
     double ActualCornerNe { get; }

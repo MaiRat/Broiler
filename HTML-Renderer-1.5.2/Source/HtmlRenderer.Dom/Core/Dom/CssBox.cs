@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
@@ -14,7 +16,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 {
     private CssBox _parentBox;
     protected IHtmlContainerInt _htmlContainer;
-    private SubString _text;
+    private ReadOnlyMemory<char> _text;
 
     internal bool _tableFixed;
 
@@ -135,7 +137,7 @@ internal class CssBox : CssBoxProperties, IDisposable
         }
     }
 
-    public SubString Text
+    public ReadOnlyMemory<char> Text
     {
         get { return _text; }
         set
@@ -243,44 +245,45 @@ internal class CssBox : CssBoxProperties, IDisposable
         bool preserveSpaces = WhiteSpace == CssConstants.Pre || WhiteSpace == CssConstants.PreWrap;
         bool respoctNewline = preserveSpaces || WhiteSpace == CssConstants.PreLine;
 
-        while (startIdx < _text.Length)
+        var textSpan = _text.Span;
+        while (startIdx < textSpan.Length)
         {
-            while (startIdx < _text.Length && _text[startIdx] == '\r')
+            while (startIdx < textSpan.Length && textSpan[startIdx] == '\r')
                 startIdx++;
 
-            if (startIdx < _text.Length)
+            if (startIdx < textSpan.Length)
             {
                 var endIdx = startIdx;
 
-                while (endIdx < _text.Length && char.IsWhiteSpace(_text[endIdx]) && _text[endIdx] != '\n')
+                while (endIdx < textSpan.Length && char.IsWhiteSpace(textSpan[endIdx]) && textSpan[endIdx] != '\n')
                     endIdx++;
 
                 if (endIdx > startIdx)
                 {
                     if (preserveSpaces)
-                        Words.Add(new CssRectWord(this, HtmlUtils.DecodeHtml(_text.Substring(startIdx, endIdx - startIdx)), false, false));
+                        Words.Add(new CssRectWord(this, HtmlUtils.DecodeHtml(_text.Slice(startIdx, endIdx - startIdx).ToString()), false, false));
                 }
                 else
                 {
                     endIdx = startIdx;
 
-                    while (endIdx < _text.Length && !char.IsWhiteSpace(_text[endIdx]) && _text[endIdx] != '-' && WordBreak != CssConstants.BreakAll && !CommonUtils.IsAsianCharecter(_text[endIdx]))
+                    while (endIdx < textSpan.Length && !char.IsWhiteSpace(textSpan[endIdx]) && textSpan[endIdx] != '-' && WordBreak != CssConstants.BreakAll && !CommonUtils.IsAsianCharecter(textSpan[endIdx]))
                         endIdx++;
 
-                    if (endIdx < _text.Length && (_text[endIdx] == '-' || WordBreak == CssConstants.BreakAll || CommonUtils.IsAsianCharecter(_text[endIdx])))
+                    if (endIdx < textSpan.Length && (textSpan[endIdx] == '-' || WordBreak == CssConstants.BreakAll || CommonUtils.IsAsianCharecter(textSpan[endIdx])))
                         endIdx++;
 
                     if (endIdx > startIdx)
                     {
-                        var hasSpaceBefore = !preserveSpaces && startIdx > 0 && Words.Count == 0 && char.IsWhiteSpace(_text[startIdx - 1]);
-                        var hasSpaceAfter = !preserveSpaces && endIdx < _text.Length && char.IsWhiteSpace(_text[endIdx]);
+                        var hasSpaceBefore = !preserveSpaces && startIdx > 0 && Words.Count == 0 && char.IsWhiteSpace(textSpan[startIdx - 1]);
+                        var hasSpaceAfter = !preserveSpaces && endIdx < textSpan.Length && char.IsWhiteSpace(textSpan[endIdx]);
 
-                        Words.Add(new CssRectWord(this, HtmlUtils.DecodeHtml(_text.Substring(startIdx, endIdx - startIdx)), hasSpaceBefore, hasSpaceAfter));
+                        Words.Add(new CssRectWord(this, HtmlUtils.DecodeHtml(_text.Slice(startIdx, endIdx - startIdx).ToString()), hasSpaceBefore, hasSpaceAfter));
                     }
                 }
 
                 // create new-line word so it will effect the layout
-                if (endIdx < _text.Length && _text[endIdx] == '\n')
+                if (endIdx < textSpan.Length && textSpan[endIdx] == '\n')
                 {
                     endIdx++;
 
@@ -515,27 +518,27 @@ internal class CssBox : CssBoxProperties, IDisposable
 
             if (ListStyleType.Equals(CssConstants.Disc, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString("•");
+                _listItemBox.Text = "•".AsMemory();
             }
             else if (ListStyleType.Equals(CssConstants.Circle, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString("o");
+                _listItemBox.Text = "o".AsMemory();
             }
             else if (ListStyleType.Equals(CssConstants.Square, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString("♠");
+                _listItemBox.Text = "♠".AsMemory();
             }
             else if (ListStyleType.Equals(CssConstants.Decimal, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString(GetIndexForList().ToString(CultureInfo.InvariantCulture) + ".");
+                _listItemBox.Text = (GetIndexForList().ToString(CultureInfo.InvariantCulture) + ".").AsMemory();
             }
             else if (ListStyleType.Equals(CssConstants.DecimalLeadingZero, StringComparison.InvariantCultureIgnoreCase))
             {
-                _listItemBox.Text = new SubString(GetIndexForList().ToString("00", CultureInfo.InvariantCulture) + ".");
+                _listItemBox.Text = (GetIndexForList().ToString("00", CultureInfo.InvariantCulture) + ".").AsMemory();
             }
             else
             {
-                _listItemBox.Text = new SubString(CommonUtils.ConvertToAlphaNumber(GetIndexForList(), ListStyleType) + ".");
+                _listItemBox.Text = (CommonUtils.ConvertToAlphaNumber(GetIndexForList(), ListStyleType) + ".").AsMemory();
             }
 
             _listItemBox.ParseToWords();
@@ -855,7 +858,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                 g.DrawRectangle(GetSelectionBackBrush(g, false), rect.X, rect.Y, rect.Width, rect.Height);
 
-                if (ContainerInt.SelectionForeColor != RColor.Empty && (word.SelectedStartOffset > 0 || word.SelectedEndIndexOffset > -1))
+                if (ContainerInt.SelectionForeColor != System.Drawing.Color.Empty && (word.SelectedStartOffset > 0 || word.SelectedEndIndexOffset > -1))
                 {
                     g.PushClipExclude(rect);
                     g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new RSize(word.Width, word.Height), isRtl);
@@ -871,7 +874,7 @@ internal class CssBox : CssBoxProperties, IDisposable
             }
             else
             {
-                //                            g.DrawRectangle(HtmlContainer.Adapter.GetPen(RColor.Black), wordPoint.X, wordPoint.Y, word.Width - 1, word.Height - 1);
+                //                            g.DrawRectangle(HtmlContainer.Adapter.GetPen(Color.Black), wordPoint.X, wordPoint.Y, word.Width - 1, word.Height - 1);
                 g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new RSize(word.Width, word.Height), isRtl);
             }
         }
@@ -907,7 +910,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         var pen = g.GetPen(ActualColor);
         pen.Width = 1;
-        pen.DashStyle = RDashStyle.Solid;
+        pen.DashStyle = DashStyle.Solid;
         g.DrawLine(pen, x1, y, x2, y);
     }
 
@@ -925,15 +928,15 @@ internal class CssBox : CssBoxProperties, IDisposable
             ContainerInt.RequestRefresh(false);
     }
 
-    protected RColor GetSelectionForeBrush() => ContainerInt.SelectionForeColor != RColor.Empty ? ContainerInt.SelectionForeColor : ActualColor;
+    protected Color GetSelectionForeBrush() => ContainerInt.SelectionForeColor != System.Drawing.Color.Empty ? ContainerInt.SelectionForeColor : ActualColor;
 
     protected RBrush GetSelectionBackBrush(RGraphics g, bool forceAlpha)
     {
         var backColor = ContainerInt.SelectionBackColor;
-        if (backColor != RColor.Empty)
+        if (backColor != System.Drawing.Color.Empty)
         {
             if (forceAlpha && backColor.A > 180)
-                return g.GetSolidBrush(RColor.FromArgb(180, backColor.R, backColor.G, backColor.B));
+                return g.GetSolidBrush(System.Drawing.Color.FromArgb(180, backColor.R, backColor.G, backColor.B));
             else
                 return g.GetSolidBrush(backColor);
         }
@@ -943,9 +946,9 @@ internal class CssBox : CssBoxProperties, IDisposable
         }
     }
 
-    protected override RFont GetCachedFont(string fontFamily, double fsize, RFontStyle st) => ContainerInt.GetFont(fontFamily, fsize, st);
+    protected override RFont GetCachedFont(string fontFamily, double fsize, FontStyle st) => ContainerInt.GetFont(fontFamily, fsize, st);
 
-    protected override RColor GetActualColor(string colorStr) => ContainerInt.ParseColor(colorStr);
+    protected override Color GetActualColor(string colorStr) => ContainerInt.ParseColor(colorStr);
 
     protected override RPoint GetActualLocation(string X, string Y)
     {

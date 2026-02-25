@@ -1,4 +1,6 @@
+using System.Drawing;
 using System;
+using System.Drawing.Drawing2D;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -207,26 +209,26 @@ internal sealed class BordersDrawHandler : IBordersDrawHandler
         return path;
     }
 
-    private static RPen GetPen(RGraphics g, string style, RColor color, double width)
+    private static RPen GetPen(RGraphics g, string style, Color color, double width)
     {
         var p = g.GetPen(color);
         p.Width = width;
         switch (style)
         {
             case "solid":
-                p.DashStyle = RDashStyle.Solid;
+                p.DashStyle = DashStyle.Solid;
                 break;
             case "dotted":
-                p.DashStyle = RDashStyle.Dot;
+                p.DashStyle = DashStyle.Dot;
                 break;
             case "dashed":
-                p.DashStyle = RDashStyle.Dash;
+                p.DashStyle = DashStyle.Dash;
                 break;
         }
         return p;
     }
 
-    private static RColor GetColor(Border border, IBorderRenderData box, string style) => border switch
+    private static Color GetColor(Border border, IBorderRenderData box, string style) => border switch
     {
         Border.Top => style == CssConstants.Inset ? Darken(box.ActualBorderTopColor) : box.ActualBorderTopColor,
         Border.Right => style == CssConstants.Outset ? Darken(box.ActualBorderRightColor) : box.ActualBorderRightColor,
@@ -253,7 +255,7 @@ internal sealed class BordersDrawHandler : IBordersDrawHandler
         _ => throw new ArgumentOutOfRangeException(nameof(border)),
     };
 
-    private static RColor Darken(RColor c) => RColor.FromArgb(c.R / 2, c.G / 2, c.B / 2);
+    private static Color Darken(Color c) => Color.FromArgb(c.R / 2, c.G / 2, c.B / 2);
 
     void IBordersDrawHandler.DrawBoxBorders(RGraphics g, IBorderRenderData box, RRect rect, bool isFirst, bool isLast)
         => DrawBoxBorders(g, box, rect, isFirst, isLast);

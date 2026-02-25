@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core;
 
@@ -65,7 +64,7 @@ public sealed class CssData
 
     public void Combine(CssData other)
     {
-        ArgChecker.AssertArgNotNull(other, "other");
+        ArgumentNullException.ThrowIfNull(other);
 
         // for each media block
         foreach (var mediaBlock in other.MediaBlocks)

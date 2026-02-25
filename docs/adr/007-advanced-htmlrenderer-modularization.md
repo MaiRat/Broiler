@@ -36,7 +36,7 @@ This phase adds three more assemblies, bringing the total to **six**:
 
 | # | Assembly                 | Layer | Contents                                         |
 |---|--------------------------|-------|--------------------------------------------------|
-| 1 | HtmlRenderer.Primitives  | L0    | Value types (RColor, RPoint, RRect, RSize, …)    |
+| 1 | HtmlRenderer.Primitives  | L0    | Value types (RPoint, RRect, RSize, …)             |
 | 2 | HtmlRenderer.Utils       | L1    | Pure utilities (ArgChecker, CommonUtils, …)       |
 | 3 | HtmlRenderer.Adapters    | L2a   | Abstract adapters (RBrush, RPen, RImage, …)      |
 | 4 | HtmlRenderer.Core        | L2b   | Entities, CssData, CssDefaults, CssUnit, Border  |
@@ -105,7 +105,7 @@ The critical design element is `IColorResolver`:
 /// </summary>
 public interface IColorResolver
 {
-    RColor GetColor(string colorName);
+    Color GetColor(string colorName);
     bool IsFontExists(string family);
 }
 ```

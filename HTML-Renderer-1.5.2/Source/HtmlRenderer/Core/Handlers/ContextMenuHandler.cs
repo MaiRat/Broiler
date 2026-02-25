@@ -1,11 +1,11 @@
 ﻿using System;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Diagnostics;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
@@ -178,8 +178,8 @@ internal sealed class ContextMenuHandler : IDisposable
 
     public ContextMenuHandler(SelectionHandler selectionHandler, HtmlContainerInt htmlContainer)
     {
-        ArgChecker.AssertArgNotNull(selectionHandler, "selectionHandler");
-        ArgChecker.AssertArgNotNull(htmlContainer, "htmlContainer");
+        ArgumentNullException.ThrowIfNull(selectionHandler);
+        ArgumentNullException.ThrowIfNull(htmlContainer);
 
         _selectionHandler = selectionHandler;
         _htmlContainer = htmlContainer;

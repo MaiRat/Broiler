@@ -218,24 +218,37 @@ source generation.
 **Expected impact:** 2 files changed; improved startup performance and
 reduced allocations.
 
-### Phase 6 — Replace `SubString` with `ReadOnlyMemory<char>` (Future)
+### Phase 6 — Replace `SubString` with `ReadOnlyMemory<char>` ✅ Completed
 
 **Goal:** Replace the custom `SubString` class with modern .NET memory types.
 
 **Targets:**
-- `SubString.cs` and ~7 referencing files
+- `SubString.cs` (deleted) and ~7 referencing files
 
-**Approach:**
-1. Audit all `SubString` usage to determine if `ReadOnlyMemory<char>` or
-   `ReadOnlySpan<char>` is appropriate (span cannot be stored in fields/
-   collections; memory can).
-2. Replace `SubString` properties and methods with equivalent memory APIs.
-3. Update callers to use `AsMemory()` / `AsSpan()`.
+**Completed changes:**
+1. Replaced `SubString` field/property in `CssBox` with `ReadOnlyMemory<char>`.
+2. Updated `HtmlParser` to use `str.AsMemory(start, len)` instead of
+   `new SubString(str, start, len)`.
+3. Updated `DomParser` to use `.IsEmpty`, `.Span.IsWhiteSpace()`, and
+   `.ToString()` instead of SubString-specific methods.
+4. Updated `DomUtils` and `CssLayoutEngine` null/whitespace checks to use
+   `.Length > 0 && .Span.IsWhiteSpace()`.
+5. Rewrote `SubStringTests` to validate `ReadOnlyMemory<char>` behaviour.
+6. Deleted `SubString.cs`.
 
-**Risk:** Medium — `SubString` stores a reference to the original string plus
-offset/length, which `ReadOnlyMemory<char>` does identically. However, the
-API surface differs (`IsEmptyOrWhitespace()`, `CutSubstring()` etc.) and
-callers need careful review.
+**API mapping used:**
+| SubString API | ReadOnlyMemory&lt;char&gt; API |
+|---|---|
+| `new SubString(str)` | `str.AsMemory()` |
+| `new SubString(str, start, len)` | `str.AsMemory(start, len)` |
+| `.Length` | `.Length` |
+| `[idx]` indexer | `.Span[idx]` |
+| `.IsEmpty()` | `.IsEmpty` |
+| `.IsEmptyOrWhitespace()` | `.Span.IsWhiteSpace()` |
+| `.IsWhitespace()` | `.Length > 0 && .Span.IsWhiteSpace()` |
+| `.CutSubstring()` | `.ToString()` |
+| `.Substring(start, len)` | `.Slice(start, len).ToString()` |
+| `== null` | `.IsEmpty` |
 
 ### Phase 7 — Evaluate Geometric Types (Future, Requires Decision)
 
@@ -319,10 +332,10 @@ Each phase is considered complete when:
 
 ## Action Items
 
-- [ ] Phase 1 — Replace `RDashStyle` and `RFontStyle` with `System.Drawing` enums
-- [ ] Phase 2 — Replace `RColor` with `System.Drawing.Color`
-- [ ] Phase 3 — Replace `ArgChecker` with .NET built-in throw helpers
-- [ ] Phase 4 — Replace `HtmlUtils.DecodeHtml/EncodeHtml` with `WebUtility`
-- [ ] Phase 5 — Convert regex caching to `[GeneratedRegex]` source generation
-- [ ] Phase 6 — Replace `SubString` with `ReadOnlyMemory<char>`
+- [x] Phase 1 — Replace `RDashStyle` and `RFontStyle` with `System.Drawing` enums
+- [x] Phase 2 — Replace `RColor` with `System.Drawing.Color`
+- [x] Phase 3 — Replace `ArgChecker` with .NET built-in throw helpers
+- [x] Phase 4 — Replace `HtmlUtils.DecodeHtml/EncodeHtml` with `WebUtility`
+- [x] Phase 5 — Convert regex caching to `[GeneratedRegex]` source generation
+- [x] Phase 6 — Replace `SubString` with `ReadOnlyMemory<char>`
 - [ ] Phase 7 — Evaluate and decide on geometric type (`RRect`/`RSize`/`RPoint`) replacement

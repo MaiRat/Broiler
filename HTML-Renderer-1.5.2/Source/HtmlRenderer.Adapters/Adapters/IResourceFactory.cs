@@ -1,3 +1,4 @@
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
@@ -13,15 +14,15 @@ public interface IResourceFactory
     /// <summary>
     /// Gets a cached pen for the specified colour.
     /// </summary>
-    RPen GetPen(RColor color);
+    RPen GetPen(Color color);
 
     /// <summary>
     /// Gets a cached solid brush for the specified colour.
     /// </summary>
-    RBrush GetSolidBrush(RColor color);
+    RBrush GetSolidBrush(Color color);
 
     /// <summary>
     /// Creates a linear gradient brush.
     /// </summary>
-    RBrush GetLinearGradientBrush(RRect rect, RColor color1, RColor color2, double angle);
+    RBrush GetLinearGradientBrush(RRect rect, Color color1, Color color2, double angle);
 }

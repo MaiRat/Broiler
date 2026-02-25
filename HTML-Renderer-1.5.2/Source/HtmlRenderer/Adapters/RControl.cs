@@ -1,5 +1,5 @@
+using System;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Adapters;
 
@@ -7,7 +7,7 @@ public abstract class RControl
 {
     protected RControl(RAdapter adapter)
     {
-        ArgChecker.AssertArgNotNull(adapter, "adapter");
+        ArgumentNullException.ThrowIfNull(adapter);
         Adapter = adapter;
     }
 

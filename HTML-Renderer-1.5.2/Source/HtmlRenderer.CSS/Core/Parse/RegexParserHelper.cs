@@ -1,9 +1,8 @@
-using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace HtmlRenderer.Parse;
 
-internal static class RegexParserHelper
+internal static partial class RegexParserHelper
 {
     public const string CssComments = @"/\*[^*/]*\*/";
     public const string CssMediaTypes = @"@media[^\{\}]*\{";
@@ -24,7 +23,60 @@ internal static class RegexParserHelper
     public const string CssFontSizeAndLineHeight = CssFontSize + @"(\/" + CssLineHeight + @")?(\s|$)";
     public const string HtmlTag = @"<[^<>]*>";
     public const string HmlTagAttributes = "(?<name>\\b\\w+\\b)\\s*=\\s*(?<value>\"[^\"]*\"|'[^']*'|[^\"'<>\\s]+)";
-    private static readonly ConcurrentDictionary<string, Regex> _regexes = new();
+
+    [GeneratedRegex(CssComments, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssCommentsRegex();
+
+    [GeneratedRegex(CssMediaTypes, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssMediaTypesRegex();
+
+    [GeneratedRegex(CssBlocks, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssBlocksRegex();
+
+    [GeneratedRegex(CssNumber, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssNumberRegex();
+
+    [GeneratedRegex(CssPercentage, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssPercentageRegex();
+
+    [GeneratedRegex(CssLength, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssLengthRegex();
+
+    [GeneratedRegex(CssColors, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssColorsRegex();
+
+    [GeneratedRegex(CssLineHeight, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssLineHeightRegex();
+
+    [GeneratedRegex(CssBorderStyle, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssBorderStyleRegex();
+
+    [GeneratedRegex(CssBorderWidth, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssBorderWidthRegex();
+
+    [GeneratedRegex(CssFontFamily, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontFamilyRegex();
+
+    [GeneratedRegex(CssFontStyle, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontStyleRegex();
+
+    [GeneratedRegex(CssFontVariant, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontVariantRegex();
+
+    [GeneratedRegex(CssFontWeight, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontWeightRegex();
+
+    [GeneratedRegex(CssFontSize, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontSizeRegex();
+
+    [GeneratedRegex(CssFontSizeAndLineHeight, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex CssFontSizeAndLineHeightRegex();
+
+    [GeneratedRegex(HtmlTag, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex HtmlTagRegex();
+
+    [GeneratedRegex(HmlTagAttributes, RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    public static partial Regex HmlTagAttributesRegex();
 
     public static string GetCssAtRules(string stylesheet, ref int startIdx)
     {
@@ -60,15 +112,11 @@ internal static class RegexParserHelper
         return atrule;
     }
 
-    public static MatchCollection Match(string regex, string source)
-    {
-        var r = GetRegex(regex);
-        return r.Matches(source);
-    }
+    public static MatchCollection Match(Regex regex, string source) => regex.Matches(source);
 
-    public static string Search(string regex, string source) => Search(regex, source, out int position);
+    public static string Search(Regex regex, string source) => Search(regex, source, out _);
 
-    public static string Search(string regex, string source, out int position)
+    public static string Search(Regex regex, string source, out int position)
     {
         MatchCollection matches = Match(regex, source);
 
@@ -84,6 +132,4 @@ internal static class RegexParserHelper
 
         return null;
     }
-
-    private static Regex GetRegex(string regex) => _regexes.GetOrAdd(regex, r => new Regex(r, RegexOptions.IgnoreCase | RegexOptions.Singleline));
 }

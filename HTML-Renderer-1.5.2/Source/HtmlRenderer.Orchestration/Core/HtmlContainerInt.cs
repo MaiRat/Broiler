@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
@@ -27,8 +28,8 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     internal HtmlContainerInt(IAdapter adapter, IHandlerFactory handlerFactory)
     {
-        ArgChecker.AssertArgNotNull(adapter, "global");
-        ArgChecker.AssertArgNotNull(handlerFactory, "handlerFactory");
+        ArgumentNullException.ThrowIfNull(adapter);
+        ArgumentNullException.ThrowIfNull(handlerFactory);
 
         Adapter = adapter;
         _handlerFactory = handlerFactory;
@@ -118,8 +119,8 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     public string SelectedText => _selectionHandler.GetSelectedText();
     public string SelectedHtml => _selectionHandler.GetSelectedHtml();
     internal CssBox Root { get; private set; }
-    internal RColor SelectionForeColor { get; set; }
-    internal RColor SelectionBackColor { get; set; }
+    internal Color SelectionForeColor { get; set; }
+    internal Color SelectionBackColor { get; set; }
     public void SetHtml(string htmlSource, CssData baseCssData = null)
     {
         Clear();
@@ -170,7 +171,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public string GetAttributeAt(RPoint location, string attribute)
     {
-        ArgChecker.AssertArgNotNull(attribute, "attribute");
+        ArgumentNullException.ThrowIfNull(attribute);
 
         var cssBox = DomUtils.GetCssBox(Root, OffsetByScroll(location));
         return cssBox != null ? DomUtils.GetAttribute(cssBox, attribute) : null;
@@ -197,7 +198,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public RRect? GetElementRectangle(string elementId)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(elementId, "elementId");
+        ArgumentException.ThrowIfNullOrEmpty(elementId);
 
         var box = DomUtils.GetBoxById(Root, elementId.ToLower());
         return box != null ? CommonUtils.GetFirstValueOrDefault(box.Rectangles, box.Bounds) : (RRect?)null;
@@ -205,7 +206,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void PerformLayout(RGraphics g)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
+        ArgumentNullException.ThrowIfNull(g);
 
         ActualSize = RSize.Empty;
         if (Root == null)
@@ -233,7 +234,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void PerformPaint(RGraphics g)
     {
-        ArgChecker.AssertArgNotNull(g, "g");
+        ArgumentNullException.ThrowIfNull(g);
 
         if (MaxSize.Height > 0)
         {
@@ -251,7 +252,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseDown(object parent, RPoint location)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -265,7 +266,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseUp(object parent, RPoint location, RMouseEvent e)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -293,7 +294,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseDoubleClick(object parent, RPoint location)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -308,7 +309,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseMove(object parent, RPoint location)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -345,7 +346,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleMouseLeave(object parent)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
+        ArgumentNullException.ThrowIfNull(parent);
 
         try
         {
@@ -359,8 +360,8 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     public void HandleKeyDown(object parent, RKeyEvent e)
     {
-        ArgChecker.AssertArgNotNull(parent, "parent");
-        ArgChecker.AssertArgNotNull(e, "e");
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(e);
 
         try
         {
@@ -470,8 +471,8 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
 
     internal void AddHoverBox(CssBox box, CssBlock block)
     {
-        ArgChecker.AssertArgNotNull(box, "box");
-        ArgChecker.AssertArgNotNull(block, "block");
+        ArgumentNullException.ThrowIfNull(box);
+        ArgumentNullException.ThrowIfNull(block);
 
         _hoverBoxes ??= [];
         _hoverBoxes.Add(new HoverBoxBlock(box, block));
@@ -484,18 +485,18 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     void IHtmlContainerInt.ReportError(HtmlRenderErrorType type, string message, Exception exception)
         => ReportError(type, message, exception);
 
-    RColor IHtmlContainerInt.SelectionForeColor => SelectionForeColor;
+    Color IHtmlContainerInt.SelectionForeColor => SelectionForeColor;
 
-    RColor IHtmlContainerInt.SelectionBackColor => SelectionBackColor;
+    Color IHtmlContainerInt.SelectionBackColor => SelectionBackColor;
 
     void IHtmlContainerInt.RaiseHtmlImageLoadEvent(HtmlImageLoadEventArgs args)
         => RaiseHtmlImageLoadEvent(args);
 
     RPoint IHtmlContainerInt.RootLocation => Root?.Location ?? RPoint.Empty;
 
-    RFont IHtmlContainerInt.GetFont(string family, double size, RFontStyle style) => Adapter.GetFont(family, size, style);
+    RFont IHtmlContainerInt.GetFont(string family, double size, FontStyle style) => Adapter.GetFont(family, size, style);
 
-    RColor IHtmlContainerInt.ParseColor(string colorStr) => CssParser.ParseColor(colorStr);
+    Color IHtmlContainerInt.ParseColor(string colorStr) => CssParser.ParseColor(colorStr);
 
     RImage IHtmlContainerInt.ConvertImage(object image) => Adapter.ConvertImage(image);
 

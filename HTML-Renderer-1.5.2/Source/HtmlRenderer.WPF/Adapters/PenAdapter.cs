@@ -1,13 +1,13 @@
-﻿using System.Windows.Media;
+﻿using DashStyle = System.Drawing.Drawing2D.DashStyle;
+using System.Windows.Media;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
 
 internal sealed class PenAdapter(Brush brush) : RPen
 {
     private double _width;
-    private DashStyle _dashStyle = DashStyles.Solid;
+    private System.Windows.Media.DashStyle _dashStyle = DashStyles.Solid;
 
     public override double Width
     {
@@ -15,17 +15,17 @@ internal sealed class PenAdapter(Brush brush) : RPen
         set { _width = value; }
     }
 
-    public override RDashStyle DashStyle
+    public override DashStyle DashStyle
     {
         set
         {
             _dashStyle = value switch
             {
-                RDashStyle.Solid => DashStyles.Solid,
-                RDashStyle.Dash => DashStyles.Dash,
-                RDashStyle.Dot => DashStyles.Dot,
-                RDashStyle.DashDot => DashStyles.DashDot,
-                RDashStyle.DashDotDot => DashStyles.DashDotDot,
+                DashStyle.Solid => DashStyles.Solid,
+                DashStyle.Dash => DashStyles.Dash,
+                DashStyle.Dot => DashStyles.Dot,
+                DashStyle.DashDot => DashStyles.DashDot,
+                DashStyle.DashDotDot => DashStyles.DashDotDot,
                 _ => DashStyles.Solid,
             };
         }

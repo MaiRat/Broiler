@@ -1,3 +1,4 @@
+using System.Drawing;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
@@ -64,7 +65,7 @@ internal sealed class GraphicsAdapter(SKCanvas canvas, RRect initialClip, bool d
         }
     }
 
-    public override void DrawString(string str, RFont font, RColor color, RPoint point, RSize size, bool rtl)
+    public override void DrawString(string str, RFont font, Color color, RPoint point, RSize size, bool rtl)
     {
         var fontAdapter = (FontAdapter)font;
         using var paint = new SKPaint();

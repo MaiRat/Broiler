@@ -1,132 +1,120 @@
-using TheArtOfDev.HtmlRenderer.Core.Utils;
+using System;
 
 namespace HtmlRenderer.Image.Tests;
 
 /// <summary>
-/// Unit tests for the <see cref="SubString"/> lightweight substring wrapper.
+/// Unit tests for <see cref="ReadOnlyMemory{T}"/>-based text handling
+/// that replaced the former SubString class.
 /// </summary>
 public class SubStringTests
 {
     [Fact]
-    public void Constructor_FullString_CapturesEntireString()
+    public void AsMemory_FullString_CapturesEntireString()
     {
-        var sub = new SubString("hello world");
-        Assert.Equal(11, sub.Length);
-        Assert.Equal("hello world", sub.CutSubstring());
+        var mem = "hello world".AsMemory();
+        Assert.Equal(11, mem.Length);
+        Assert.Equal("hello world", mem.ToString());
     }
 
     [Fact]
-    public void Constructor_Range_CapturesSubstring()
+    public void AsMemory_Range_CapturesSubstring()
     {
-        var sub = new SubString("hello world", 6, 5);
-        Assert.Equal(5, sub.Length);
-        Assert.Equal("world", sub.CutSubstring());
+        var mem = "hello world".AsMemory(6, 5);
+        Assert.Equal(5, mem.Length);
+        Assert.Equal("world", mem.ToString());
     }
 
     [Fact]
-    public void Indexer_ReturnsCorrectCharacter()
+    public void Span_Indexer_ReturnsCorrectCharacter()
     {
-        var sub = new SubString("abcdef", 2, 3);
-        Assert.Equal('c', sub[0]);
-        Assert.Equal('d', sub[1]);
-        Assert.Equal('e', sub[2]);
-    }
-
-    [Fact]
-    public void Indexer_OutOfRange_Throws()
-    {
-        var sub = new SubString("abc", 0, 3);
-        Assert.Throws<ArgumentOutOfRangeException>(() => _ = sub[-1]);
+        var mem = "abcdef".AsMemory(2, 3);
+        Assert.Equal('c', mem.Span[0]);
+        Assert.Equal('d', mem.Span[1]);
+        Assert.Equal('e', mem.Span[2]);
     }
 
     [Fact]
     public void IsEmpty_ZeroLength_ReturnsTrue()
     {
-        var sub = new SubString("abc", 1, 0);
-        Assert.True(sub.IsEmpty());
+        var mem = "abc".AsMemory(1, 0);
+        Assert.True(mem.IsEmpty);
     }
 
     [Fact]
     public void IsEmpty_NonZeroLength_ReturnsFalse()
     {
-        var sub = new SubString("abc", 0, 3);
-        Assert.False(sub.IsEmpty());
+        var mem = "abc".AsMemory(0, 3);
+        Assert.False(mem.IsEmpty);
     }
 
     [Fact]
-    public void IsWhitespace_AllSpaces_ReturnsTrue()
+    public void Span_IsWhiteSpace_AllSpaces_ReturnsTrue()
     {
-        var sub = new SubString("   ", 0, 3);
-        Assert.True(sub.IsWhitespace());
+        var mem = "   ".AsMemory(0, 3);
+        Assert.True(mem.Span.IsWhiteSpace());
     }
 
     [Fact]
-    public void IsWhitespace_Empty_ReturnsFalse()
+    public void Span_IsWhiteSpace_Empty_ReturnsTrue()
     {
-        var sub = new SubString("abc", 0, 0);
-        Assert.False(sub.IsWhitespace());
+        var mem = "abc".AsMemory(0, 0);
+        Assert.True(mem.Span.IsWhiteSpace());
     }
 
     [Fact]
-    public void IsEmptyOrWhitespace_Whitespace_ReturnsTrue()
+    public void Span_IsWhiteSpace_MixedWhitespace_ReturnsTrue()
     {
-        var sub = new SubString("  \t  ", 0, 5);
-        Assert.True(sub.IsEmptyOrWhitespace());
+        var mem = "  \t  ".AsMemory(0, 5);
+        Assert.True(mem.Span.IsWhiteSpace());
     }
 
     [Fact]
-    public void IsEmptyOrWhitespace_NonWhitespace_ReturnsFalse()
+    public void Span_IsWhiteSpace_NonWhitespace_ReturnsFalse()
     {
-        var sub = new SubString("abc", 0, 3);
-        Assert.False(sub.IsEmptyOrWhitespace());
+        var mem = "abc".AsMemory(0, 3);
+        Assert.False(mem.Span.IsWhiteSpace());
     }
 
     [Fact]
-    public void Substring_ExtractsCorrectly()
+    public void Slice_ExtractsCorrectly()
     {
-        var sub = new SubString("hello world", 0, 11);
-        Assert.Equal("world", sub.Substring(6, 5));
+        var mem = "hello world".AsMemory(0, 11);
+        Assert.Equal("world", mem.Slice(6, 5).ToString());
     }
 
     [Fact]
-    public void Substring_InvalidRange_Throws()
+    public void Slice_InvalidRange_Throws()
     {
-        var sub = new SubString("hello", 0, 5);
-        Assert.Throws<ArgumentOutOfRangeException>(() => sub.Substring(3, 5));
+        var mem = "hello".AsMemory(0, 5);
+        Assert.Throws<ArgumentOutOfRangeException>(() => mem.Slice(3, 5));
     }
 
     [Fact]
-    public void CutSubstring_EmptyLength_ReturnsEmpty()
+    public void ToString_EmptyLength_ReturnsEmpty()
     {
-        var sub = new SubString("abc", 1, 0);
-        Assert.Equal(string.Empty, sub.CutSubstring());
+        var mem = "abc".AsMemory(1, 0);
+        Assert.Equal(string.Empty, mem.ToString());
     }
 
     [Fact]
-    public void Constructor_NullFullString_Throws()
+    public void AsMemory_InvalidStartIndex_Throws()
     {
-        Assert.Throws<ArgumentNullException>(() => new SubString(null!));
+        Assert.Throws<ArgumentOutOfRangeException>(() => "abc".AsMemory(-1, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => "abc".AsMemory(5, 1));
     }
 
     [Fact]
-    public void Constructor_InvalidStartIndex_Throws()
+    public void AsMemory_InvalidLength_Throws()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SubString("abc", -1, 2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SubString("abc", 5, 1));
-    }
-
-    [Fact]
-    public void Constructor_InvalidLength_Throws()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SubString("abc", 0, -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SubString("abc", 1, 5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => "abc".AsMemory(0, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => "abc".AsMemory(1, 5));
     }
 
     [Fact]
     public void ToString_IncludesContent()
     {
-        var sub = new SubString("hello", 0, 5);
-        string str = sub.ToString();
+        var mem = "hello".AsMemory(0, 5);
+        string str = mem.ToString();
         Assert.Contains("hello", str);
     }
 }

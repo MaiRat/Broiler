@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Controls;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 using TheArtOfDev.HtmlRenderer.WPF.Utilities;
 
 namespace TheArtOfDev.HtmlRenderer.WPF.Adapters;
@@ -20,8 +19,8 @@ internal sealed class ContextMenuAdapter : RContextMenu
 
     public override void AddItem(string text, bool enabled, EventHandler onClick)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(text, "text");
-        ArgChecker.AssertArgNotNull(onClick, "onClick");
+        ArgumentException.ThrowIfNullOrEmpty(text);
+        ArgumentNullException.ThrowIfNull(onClick);
 
         var item = new MenuItem { Header = text, IsEnabled = enabled };
         item.Click += new RoutedEventHandler(onClick);

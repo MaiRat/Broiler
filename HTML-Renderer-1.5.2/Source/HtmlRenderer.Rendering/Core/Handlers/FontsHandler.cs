@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Adapters.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Handlers;
 
@@ -11,11 +10,11 @@ internal sealed class FontsHandler
     private readonly IFontCreator _fontCreator;
     private readonly Dictionary<string, string> _fontsMapping = new(StringComparer.InvariantCultureIgnoreCase);
     private readonly Dictionary<string, RFontFamily> _existingFontFamilies = new(StringComparer.InvariantCultureIgnoreCase);
-    private readonly Dictionary<string, Dictionary<double, Dictionary<RFontStyle, RFont>>> _fontsCache = new(StringComparer.InvariantCultureIgnoreCase);
+    private readonly Dictionary<string, Dictionary<double, Dictionary<FontStyle, RFont>>> _fontsCache = new(StringComparer.InvariantCultureIgnoreCase);
 
     public FontsHandler(IFontCreator fontCreator)
     {
-        ArgChecker.AssertArgNotNull(fontCreator, "fontCreator");
+        ArgumentNullException.ThrowIfNull(fontCreator);
 
         _fontCreator = fontCreator;
     }
@@ -35,20 +34,20 @@ internal sealed class FontsHandler
 
     public void AddFontFamily(RFontFamily fontFamily)
     {
-        ArgChecker.AssertArgNotNull(fontFamily, "family");
+        ArgumentNullException.ThrowIfNull(fontFamily);
 
         _existingFontFamilies[fontFamily.Name] = fontFamily;
     }
 
     public void AddFontFamilyMapping(string fromFamily, string toFamily)
     {
-        ArgChecker.AssertArgNotNullOrEmpty(fromFamily, "fromFamily");
-        ArgChecker.AssertArgNotNullOrEmpty(toFamily, "toFamily");
+        ArgumentException.ThrowIfNullOrEmpty(fromFamily);
+        ArgumentException.ThrowIfNullOrEmpty(toFamily);
 
         _fontsMapping[fromFamily] = toFamily;
     }
 
-    public RFont GetCachedFont(string family, double size, RFontStyle style)
+    public RFont GetCachedFont(string family, double size, FontStyle style)
     {
         var font = TryGetFont(family, size, style);
 
@@ -74,13 +73,13 @@ internal sealed class FontsHandler
         return font;
     }
 
-    private RFont TryGetFont(string family, double size, RFontStyle style)
+    private RFont TryGetFont(string family, double size, FontStyle style)
     {
         RFont font = null;
 
-        if (_fontsCache.TryGetValue(family, out Dictionary<double, Dictionary<RFontStyle, RFont>> a))
+        if (_fontsCache.TryGetValue(family, out Dictionary<double, Dictionary<FontStyle, RFont>> a))
         {
-            if (a.TryGetValue(size, out Dictionary<RFontStyle, RFont> b))
+            if (a.TryGetValue(size, out Dictionary<FontStyle, RFont> b))
             {
                 if (b.TryGetValue(style, out RFont value))
                     font = value;
@@ -92,13 +91,13 @@ internal sealed class FontsHandler
         }
         else
         {
-            _fontsCache[family] = new Dictionary<double, Dictionary<RFontStyle, RFont>> { [size] = [] };
+            _fontsCache[family] = new Dictionary<double, Dictionary<FontStyle, RFont>> { [size] = [] };
         }
 
         return font;
     }
 
-    private RFont CreateFont(string family, double size, RFontStyle style)
+    private RFont CreateFont(string family, double size, FontStyle style)
     {
         RFontFamily fontFamily;
 
@@ -113,8 +112,8 @@ internal sealed class FontsHandler
             // handle possibility of no requested style exists for the font, use regular then
             System.Diagnostics.Debug.WriteLine($"[HtmlRenderer] FontsHandler.GetCachedFont style fallback for '{family}': {ex.Message}");
             return _existingFontFamilies.TryGetValue(family, out fontFamily)
-                ? _fontCreator.CreateFont(fontFamily, size, RFontStyle.Regular)
-                : _fontCreator.CreateFont(family, size, RFontStyle.Regular);
+                ? _fontCreator.CreateFont(fontFamily, size, FontStyle.Regular)
+                : _fontCreator.CreateFont(family, size, FontStyle.Regular);
         }
     }
 }

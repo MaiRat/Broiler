@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.IO;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Adapters.Entities;
@@ -50,12 +51,12 @@ internal interface IHtmlContainerInt
     /// <summary>
     /// The selection foreground colour.
     /// </summary>
-    RColor SelectionForeColor { get; }
+    Color SelectionForeColor { get; }
 
     /// <summary>
     /// The selection background colour.
     /// </summary>
-    RColor SelectionBackColor { get; }
+    Color SelectionBackColor { get; }
 
     /// <summary>
     /// Requests the container to refresh/repaint.
@@ -81,13 +82,13 @@ internal interface IHtmlContainerInt
     /// Gets a cached font for the specified family, size, and style.
     /// Wraps the adapter's font creation/caching.
     /// </summary>
-    RFont GetFont(string family, double size, RFontStyle style);
+    RFont GetFont(string family, double size, FontStyle style);
 
     /// <summary>
-    /// Parses a colour string and returns the corresponding <see cref="RColor"/>.
+    /// Parses a colour string and returns the corresponding <see cref="Color"/>.
     /// Wraps the CSS parser's colour resolution.
     /// </summary>
-    RColor ParseColor(string colorStr);
+    Color ParseColor(string colorStr);
 
     /// <summary>
     /// Raises the image-load event on the container.

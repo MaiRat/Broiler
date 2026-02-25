@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TheArtOfDev.HtmlRenderer.Adapters;
@@ -54,7 +55,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
     private double _actualCornerNe = double.NaN;
     private double _actualCornerSw = double.NaN;
     private double _actualCornerSe = double.NaN;
-    private RColor _actualColor = RColor.Empty;
+    private Color _actualColor = System.Drawing.Color.Empty;
     private double _actualBackgroundGradientAngle = double.NaN;
     private double _actualHeight = double.NaN;
     private double _actualWidth = double.NaN;
@@ -79,12 +80,12 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
     private double _actualTextIndent = double.NaN;
     private double _actualBorderSpacingHorizontal = double.NaN;
     private double _actualBorderSpacingVertical = double.NaN;
-    private RColor _actualBackgroundGradient = RColor.Empty;
-    private RColor _actualBorderTopColor = RColor.Empty;
-    private RColor _actualBorderLeftColor = RColor.Empty;
-    private RColor _actualBorderBottomColor = RColor.Empty;
-    private RColor _actualBorderRightColor = RColor.Empty;
-    private RColor _actualBackgroundColor = RColor.Empty;
+    private Color _actualBackgroundGradient = System.Drawing.Color.Empty;
+    private Color _actualBorderTopColor = System.Drawing.Color.Empty;
+    private Color _actualBorderLeftColor = System.Drawing.Color.Empty;
+    private Color _actualBorderBottomColor = System.Drawing.Color.Empty;
+    private Color _actualBorderRightColor = System.Drawing.Color.Empty;
+    private Color _actualBackgroundColor = System.Drawing.Color.Empty;
     private RFont _actualFont;
 
     #endregion
@@ -143,7 +144,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _borderBottomColor = value;
-            _actualBorderBottomColor = RColor.Empty;
+            _actualBorderBottomColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -153,7 +154,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _borderLeftColor = value;
-            _actualBorderLeftColor = RColor.Empty;
+            _actualBorderLeftColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -163,7 +164,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _borderRightColor = value;
-            _actualBorderRightColor = RColor.Empty;
+            _actualBorderRightColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -173,7 +174,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _borderTopColor = value;
-            _actualBorderTopColor = RColor.Empty;
+            _actualBorderTopColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -185,7 +186,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         get { return _cornerRadius; }
         set
         {
-            MatchCollection r = RegexParserUtils.Match(RegexParserUtils.CssLength, value);
+            MatchCollection r = RegexParserUtils.Match(RegexParserUtils.CssLengthRegex(), value);
 
             switch (r.Count)
             {
@@ -310,7 +311,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         set
         {
             _color = value;
-            _actualColor = RColor.Empty;
+            _actualColor = System.Drawing.Color.Empty;
         }
     }
 
@@ -360,7 +361,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         get { return _fontSize; }
         set
         {
-            string length = RegexParserUtils.Search(RegexParserUtils.CssLength, value);
+            string length = RegexParserUtils.Search(RegexParserUtils.CssLengthRegex(), value);
 
             if (length != null)
             {
@@ -660,7 +661,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBorderTopColor
+    public Color ActualBorderTopColor
     {
         get
         {
@@ -673,9 +674,9 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
 
     protected abstract RPoint GetActualLocation(string X, string Y);
 
-    protected abstract RColor GetActualColor(string colorStr);
+    protected abstract Color GetActualColor(string colorStr);
 
-    public RColor ActualBorderLeftColor
+    public Color ActualBorderLeftColor
     {
         get
         {
@@ -686,7 +687,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBorderBottomColor
+    public Color ActualBorderBottomColor
     {
         get
         {
@@ -697,7 +698,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBorderRightColor
+    public Color ActualBorderRightColor
     {
         get
         {
@@ -762,7 +763,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
 
     public double ActualWordSpacing { get; private set; } = double.NaN;
 
-    public RColor ActualColor
+    public Color ActualColor
     {
         get
         {
@@ -773,7 +774,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBackgroundColor
+    public Color ActualBackgroundColor
     {
         get
         {
@@ -784,7 +785,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    public RColor ActualBackgroundGradient
+    public Color ActualBackgroundGradient
     {
         get
         {
@@ -820,13 +821,13 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
                 if (string.IsNullOrEmpty(FontSize))
                     FontSize = CssConstants.FontSize.ToString(CultureInfo.InvariantCulture) + "pt";
 
-                RFontStyle st = RFontStyle.Regular;
+                FontStyle st = System.Drawing.FontStyle.Regular;
 
-                if (FontStyle == CssConstants.Italic || FontStyle == CssConstants.Oblique)
-                    st |= RFontStyle.Italic;
+                if (this.FontStyle == CssConstants.Italic || this.FontStyle == CssConstants.Oblique)
+                    st |= System.Drawing.FontStyle.Italic;
 
                 if (FontWeight != CssConstants.Normal && FontWeight != CssConstants.Lighter && !string.IsNullOrEmpty(FontWeight) && FontWeight != CssConstants.Inherit)
-                    st |= RFontStyle.Bold;
+                    st |= System.Drawing.FontStyle.Bold;
 
                 double parentSize = CssConstants.FontSize;
 
@@ -857,7 +858,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         }
     }
 
-    protected abstract RFont GetCachedFont(string fontFamily, double fsize, RFontStyle st);
+    protected abstract RFont GetCachedFont(string fontFamily, double fsize, FontStyle st);
 
     public double ActualLineHeight
     {
@@ -887,7 +888,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         {
             if (double.IsNaN(_actualBorderSpacingHorizontal))
             {
-                MatchCollection matches = RegexParserUtils.Match(RegexParserUtils.CssLength, BorderSpacing);
+                MatchCollection matches = RegexParserUtils.Match(RegexParserUtils.CssLengthRegex(), BorderSpacing);
 
                 if (matches.Count == 0)
                 {
@@ -909,7 +910,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         {
             if (double.IsNaN(_actualBorderSpacingVertical))
             {
-                MatchCollection matches = RegexParserUtils.Match(RegexParserUtils.CssLength, BorderSpacing);
+                MatchCollection matches = RegexParserUtils.Match(RegexParserUtils.CssLengthRegex(), BorderSpacing);
 
                 if (matches.Count == 0)
                 {
@@ -965,7 +966,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
         if (WordSpacing == CssConstants.Normal)
             return;
 
-        string len = RegexParserUtils.Search(RegexParserUtils.CssLength, WordSpacing);
+        string len = RegexParserUtils.Search(RegexParserUtils.CssLengthRegex(), WordSpacing);
         ActualWordSpacing += CssValueParser.ParseLength(len, 1, GetEmHeight());
     }
 
