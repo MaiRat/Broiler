@@ -220,15 +220,17 @@ internal static class CssBoxHelper
     {
         if (box.Float != CssConstants.None)
         {
-            // When the float has an explicit CSS height, use the box height
-            // instead of ActualBottom which may be expanded by child overflow.
-            double boxBottom;
+            // When the float has an explicit CSS height, compute the full
+            // border-box bottom (content + padding + border) per CSS2.1
+            // content-box model.  For auto-height floats, use ActualBottom
+            // plus the bottom border (existing convention).
+            double bottom;
             if (box.Height != CssConstants.Auto && !string.IsNullOrEmpty(box.Height))
-                boxBottom = box.Location.Y + box.ActualHeight;
+                bottom = box.Location.Y + box.ActualHeight
+                    + box.ActualPaddingTop + box.ActualPaddingBottom
+                    + box.ActualBorderTopWidth + box.ActualBorderBottomWidth;
             else
-                boxBottom = box.ActualBottom;
-
-            double bottom = boxBottom + box.ActualBorderBottomWidth;
+                bottom = box.ActualBottom + box.ActualBorderBottomWidth;
             maxBottom = Math.Max(maxBottom, bottom);
             considered ??= new List<(string, double)>();
             considered.Add((box.HtmlTag?.Name ?? box.Display, bottom));

@@ -37,6 +37,7 @@
     <Content Include="..\..\acid\acid1\split\section7-form-line-height.html" Link="TestData\split\section7-form-line-height.html" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\split\section8-clear-both.html" Link="TestData\split\section8-clear-both.html" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\split\section9-percentage-width.html" Link="TestData\split\section9-percentage-width.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\split\section10-dd-height-clearance.html" Link="TestData\split\section10-dd-height-clearance.html" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

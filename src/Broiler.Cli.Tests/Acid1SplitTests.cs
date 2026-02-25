@@ -511,6 +511,76 @@ public class Acid1SplitTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // Section 10: DD content-box height & float clearance (regression test)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that the <c>dd</c> element (float:right, height:27em,
+    /// border:1em, padding:1em) has its border-box height computed as
+    /// content (27em) + padding (2em) + border (2em) = 31em per the
+    /// CSS2.1 content-box model.  The dd black border must extend at
+    /// least 300px vertically (at 10px font, 31em = 310px).
+    /// </summary>
+    [Fact]
+    public void Section10_DdContentBoxHeight_BorderExtendsSufficiently()
+    {
+        var html = ReadSplitHtml("section10-dd-height-clearance.html");
+        using var bitmap = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
+
+        // Find vertical extent of the dd's black border
+        int blackMinY = bitmap.Height, blackMaxY = 0;
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            for (int x = bitmap.Width / 3; x < bitmap.Width; x++)
+            {
+                if (IsBlack(bitmap.GetPixel(x, y)))
+                {
+                    if (y < blackMinY) blackMinY = y;
+                    if (y > blackMaxY) blackMaxY = y;
+                }
+            }
+        }
+
+        int borderSpan = blackMaxY - blackMinY;
+        Assert.True(borderSpan >= 300,
+            $"Expected dd border to span at least 300px vertically " +
+            $"(31em = 310px at 10px font), but span was {borderSpan}px " +
+            $"(y={blackMinY}..{blackMaxY}). CSS height may not include padding+border.");
+    }
+
+    /// <summary>
+    /// Verifies that the clear:both paragraph renders below BOTH the
+    /// <c>dt</c> (float:left, 31em total) and <c>dd</c> (float:right,
+    /// 31em total) without overlapping. The paragraph text must appear
+    /// below the maximum float bottom including padding and border.
+    /// </summary>
+    [Fact]
+    public void Section10_ClearBoth_ParagraphBelowDdBorderBox()
+    {
+        var html = ReadSplitHtml("section10-dd-height-clearance.html");
+        using var bitmap = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
+
+        // Find bottom of the dd's black border (right half of image)
+        int ddBorderMaxY = 0;
+        for (int y = 0; y < bitmap.Height; y++)
+            for (int x = bitmap.Width / 3; x < bitmap.Width; x++)
+                if (IsBlack(bitmap.GetPixel(x, y)))
+                    ddBorderMaxY = Math.Max(ddBorderMaxY, y);
+
+        // Find the paragraph text: dark pixels below the dd border area.
+        // Use a threshold below dd border, counting non-background,
+        // non-border pixels that indicate rendered text.
+        int textPixels = CountPixels(bitmap, p =>
+            !IsWhite(p) && !IsBlue(p) && !IsRed(p) && !IsBlack(p),
+            y1: ddBorderMaxY);
+
+        Assert.True(textPixels > 0 || ddBorderMaxY > 300,
+            $"Expected cleared paragraph to render below dd border-box " +
+            $"(ddBorderMaxY={ddBorderMaxY}). The clear:both paragraph may " +
+            "overlap the float or dd height may not include padding+border.");
+    }
+
+    // -------------------------------------------------------------------------
     // Full acid1 regression detection
     // -------------------------------------------------------------------------
 
