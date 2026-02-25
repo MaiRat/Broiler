@@ -451,6 +451,135 @@ public class Acid1ProgrammaticTests
     }
 
     // -----------------------------------------------------------------
+    // 5b. Float collision with all prior floats
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that a <c>float: left</c> element checks ALL prior left
+    /// floats for collision, not just the immediate previous sibling.
+    /// Three floats are placed with a non-float block between the second
+    /// and third; the third float must still stack beside the first two.
+    /// </summary>
+    [Fact]
+    public void Float_LeftFloat_ChecksAllPriorFloats()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 300px; }
+        </style></head><body>
+            <div style='float: left; width: 80px; height: 40px; background-color: red;'>a</div>
+            <div style='float: left; width: 80px; height: 40px; background-color: rgb(0,0,255);'>b</div>
+            <div style='float: left; width: 80px; height: 40px; background-color: green;'>c</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+        Assert.NotNull(greenBounds);
+
+        // All three should be on the same row (80+80+80=240 < 300).
+        Assert.True(Math.Abs(redBounds.Value.minY - blueBounds.Value.minY) < 5,
+            "First two floats should be on the same row.");
+        Assert.True(Math.Abs(redBounds.Value.minY - greenBounds.Value.minY) < 5,
+            "Third float should also be on the same row (all fit in 300px).");
+
+        // Green should be to the right of blue.
+        Assert.True(greenBounds.Value.minX >= blueBounds.Value.maxX - 2,
+            $"Third float should be to the right of second (green minX={greenBounds.Value.minX}, blue maxX={blueBounds.Value.maxX}).");
+    }
+
+    /// <summary>
+    /// Verifies that when multiple <c>float: left</c> elements overflow
+    /// the container, the wrapping float moves below the tallest
+    /// overlapping float (iterative collision resolution).
+    /// </summary>
+    [Fact]
+    public void Float_LeftFloat_IterativeCollisionResolution()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 200px; }
+        </style></head><body>
+            <div style='float: left; width: 100px; height: 60px; background-color: red;'>a</div>
+            <div style='float: left; width: 100px; height: 40px; background-color: rgb(0,0,255);'>b</div>
+            <div style='float: left; width: 150px; height: 30px; background-color: green;'>c</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 300, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+        Assert.NotNull(greenBounds);
+
+        // Red and blue fit on first row (100+100=200).
+        Assert.True(Math.Abs(redBounds.Value.minY - blueBounds.Value.minY) < 5,
+            "First two floats should be on the same row.");
+
+        // Green (150px) doesn't fit on the first row. It should wrap
+        // below the tallest float on that row (red at 60px, not blue at 40px).
+        Assert.True(greenBounds.Value.minY >= redBounds.Value.maxY - 2,
+            $"Third float should be below the tallest first-row float " +
+            $"(green top={greenBounds.Value.minY}, red bottom={redBounds.Value.maxY}).");
+    }
+
+    /// <summary>
+    /// Verifies that explicit CSS width is not reduced by margins.
+    /// An element with <c>width: 100px; margin: 0 20px</c> should
+    /// render at exactly 100px content width.
+    /// </summary>
+    [Fact]
+    public void ExplicitWidth_NotReducedByMargins()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; }
+        </style></head><body>
+            <div style='width: 100px; margin: 0 20px; height: 20px; background-color: red;'>x</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
+
+        var bounds = GetColorBounds(bitmap, IsRed);
+        Assert.NotNull(bounds);
+        int redWidth = bounds.Value.maxX - bounds.Value.minX + 1;
+
+        // Width should be 100px, not 100-40=60px.
+        Assert.True(redWidth >= 95 && redWidth <= 105,
+            $"Element with width:100px and margin:0 20px should be ~100px wide, " +
+            $"but measured {redWidth}px. Margins may be incorrectly reducing box width.");
+    }
+
+    /// <summary>
+    /// Verifies that max-width constrains the computed width.
+    /// </summary>
+    [Fact]
+    public void MaxWidth_ConstrainsComputedWidth()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 400px; }
+        </style></head><body>
+            <div style='width: 300px; max-width: 150px; height: 20px; background-color: red;'>x</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 500, 100);
+
+        var bounds = GetColorBounds(bitmap, IsRed);
+        Assert.NotNull(bounds);
+        int redWidth = bounds.Value.maxX - bounds.Value.minX + 1;
+
+        // max-width: 150px should constrain the 300px width.
+        Assert.True(redWidth >= 140 && redWidth <= 160,
+            $"Element with width:300px and max-width:150px should be ~150px wide, " +
+            $"but measured {redWidth}px. max-width may not be applied.");
+    }
+
+    // -----------------------------------------------------------------
     // 6. Full Acid1 regression detection
     // -----------------------------------------------------------------
 

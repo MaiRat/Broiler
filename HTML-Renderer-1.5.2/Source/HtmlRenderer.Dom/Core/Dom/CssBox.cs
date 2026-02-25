@@ -322,14 +322,27 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                 if (Width != CssConstants.Auto && !string.IsNullOrEmpty(Width))
                 {
-                    width = CssValueParser.ParseLength(Width, width, GetEmHeight());
+                    double containingWidth = width;
+                    width = CssValueParser.ParseLength(Width, containingWidth, GetEmHeight());
+
+                    // Apply max-width constraint before adding padding/border
+                    if (MaxWidth != "none" && !string.IsNullOrEmpty(MaxWidth))
+                    {
+                        double maxW = CssValueParser.ParseLength(MaxWidth, containingWidth, GetEmHeight());
+                        if (width > maxW) width = maxW;
+                    }
+
                     width += ActualPaddingLeft + ActualPaddingRight + ActualBorderLeftWidth + ActualBorderRightWidth;
                 }
 
                 Size = new SizeF((float)width, Size.Height);
 
-                // must be separate because the margin can be calculated by percentage of the width
-                Size = new SizeF((float)(width - ActualMarginLeft - ActualMarginRight), Size.Height);
+                // Margins reduce the box width only for auto-width elements.
+                // For explicit widths, margins affect position only (CSS1 box model).
+                if (Width == CssConstants.Auto || string.IsNullOrEmpty(Width))
+                {
+                    Size = new SizeF((float)(width - ActualMarginLeft - ActualMarginRight), Size.Height);
+                }
             }
 
             if (Display != CssConstants.TableCell)
@@ -342,31 +355,64 @@ internal class CssBox : CssBoxProperties, IDisposable
                     double top = (prevSibling == null && ParentBox != null ? ParentBox.ClientTop : ParentBox == null ? Location.Y : 0) + MarginTopCollapse(prevSibling) + (prevSibling != null ? prevSibling.ActualBottom + prevSibling.ActualBorderBottomWidth : 0);
 
                     // --- Float positioning ---
-                    if (Float != CssConstants.None && prevSibling != null && prevSibling.Float != CssConstants.None)
+                    if (Float != CssConstants.None)
                     {
-                        // A floated element following another float: stay at the same vertical level
-                        top = prevSibling.Location.Y;
-                    }
+                        // Align Y with previous float sibling if consecutive
+                        if (prevSibling != null && prevSibling.Float != CssConstants.None)
+                            top = prevSibling.Location.Y;
 
-                    if (Float == CssConstants.Left && prevSibling != null && prevSibling.Float == CssConstants.Left)
-                    {
-                        // Place to the right of the previous float:left sibling
-                        left = prevSibling.Location.X + prevSibling.Size.Width + prevSibling.ActualBorderRightWidth + ActualMarginLeft;
-
-                        // Wrap to next row if exceeding container width
+                        double containerLeft = ContainingBlock.Location.X + ContainingBlock.ActualPaddingLeft + ContainingBlock.ActualBorderLeftWidth;
                         double containerRight = ContainingBlock.ClientLeft + ContainingBlock.AvailableWidth;
-                        if (left + Size.Width > containerRight)
+                        double floatHeight = Math.Max(ActualHeight, 1);
+
+                        if (Float == CssConstants.Left)
                         {
-                            left = ContainingBlock.Location.X + ContainingBlock.ActualPaddingLeft + ActualMarginLeft + ContainingBlock.ActualBorderLeftWidth;
-                            top = prevSibling.ActualBottom + prevSibling.ActualBorderBottomWidth;
+                            // Iteratively resolve collisions with all prior left floats
+                            for (int iter = 0; iter < 100; iter++)
+                            {
+                                left = containerLeft + ActualMarginLeft;
+
+                                if (ParentBox != null)
+                                {
+                                    foreach (var sibling in ParentBox.Boxes)
+                                    {
+                                        if (sibling == this) break;
+                                        if (sibling.Float == CssConstants.Left && sibling.Display != CssConstants.None)
+                                        {
+                                            double fBottom = sibling.ActualBottom + sibling.ActualBorderBottomWidth;
+                                            if (top < fBottom && top + floatHeight > sibling.Location.Y)
+                                                left = Math.Max(left, sibling.Location.X + sibling.Size.Width + ActualMarginLeft);
+                                        }
+                                    }
+                                }
+
+                                if (left + Size.Width <= containerRight)
+                                    break;
+
+                                // Move below the lowest overlapping float
+                                double maxBottom = top;
+                                if (ParentBox != null)
+                                {
+                                    foreach (var sibling in ParentBox.Boxes)
+                                    {
+                                        if (sibling == this) break;
+                                        if (sibling.Float != CssConstants.None && sibling.Display != CssConstants.None)
+                                        {
+                                            double fBottom = sibling.ActualBottom + sibling.ActualBorderBottomWidth;
+                                            if (top < fBottom && top + floatHeight > sibling.Location.Y)
+                                                maxBottom = Math.Max(maxBottom, fBottom);
+                                        }
+                                    }
+                                }
+
+                                if (maxBottom <= top) break;
+                                top = maxBottom;
+                            }
                         }
-                    }
-                    else if (Float == CssConstants.Right)
-                    {
-                        // Position at the right edge of the containing block.
-                        // Size.Width already includes padding and border, so only
-                        // subtract the right margin to align the margin edge.
-                        left = ContainingBlock.ClientLeft + ContainingBlock.AvailableWidth - Size.Width;
+                        else if (Float == CssConstants.Right)
+                        {
+                            left = containerRight - Size.Width - ActualMarginRight;
+                        }
                     }
 
                     // Handle clear property
