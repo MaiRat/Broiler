@@ -415,7 +415,7 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
     /// <summary>The resolved <c>src</c> attribute for image elements, or null if not applicable.</summary>
     public string? ImageSource { get; set; }
 
-    #endregion CSS Propertier
+    #endregion CSS Properties
 
     public PointF Location
     {
