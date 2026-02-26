@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Drawing;
+using System.Text.Json.Serialization;
 
 namespace TheArtOfDev.HtmlRenderer.Core.IR;
 
@@ -9,6 +10,7 @@ namespace TheArtOfDev.HtmlRenderer.Core.IR;
 /// </summary>
 /// <remarks>
 /// Phase 1: Type definitions only. Not yet populated by the rendering pipeline.
+/// Phase 3: Populated by <c>PaintWalker</c> from a <see cref="Fragment"/> tree.
 /// </remarks>
 public sealed class DisplayList
 {
@@ -18,6 +20,14 @@ public sealed class DisplayList
 /// <summary>
 /// Base class for all display list drawing primitives.
 /// </summary>
+[JsonDerivedType(typeof(FillRectItem), "FillRect")]
+[JsonDerivedType(typeof(DrawBorderItem), "DrawBorder")]
+[JsonDerivedType(typeof(DrawTextItem), "DrawText")]
+[JsonDerivedType(typeof(DrawImageItem), "DrawImage")]
+[JsonDerivedType(typeof(ClipItem), "Clip")]
+[JsonDerivedType(typeof(RestoreItem), "Restore")]
+[JsonDerivedType(typeof(OpacityItem), "Opacity")]
+[JsonDerivedType(typeof(DrawLineItem), "DrawLine")]
 public abstract class DisplayItem
 {
     public RectangleF Bounds { get; init; }
