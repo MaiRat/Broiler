@@ -128,16 +128,16 @@ Covers Phase 2 CSS specifications:
 - **CSS Value Parsing** (1 test): rgb() in border-color shorthand
 - **Media Queries** (1 test): @media print vs @media screen coexistence
 
-### 3. Acid1 CSS1 Conformance Tests (~77 tests)
+### 3. Acid1 CSS1 Conformance Tests (77 tests)
 
 Tests validating the rendering engine against the W3C CSS1 Acid1 test
 (`acid/acid1/acid1.html`). Organized into three test classes:
 
-- **Acid1CaptureTests** (~30 tests): Visual regression, structural validation,
+- **Acid1CaptureTests** (30 tests): Visual regression, structural validation,
   image format checks, and similarity scoring against the reference image.
-- **Acid1ProgrammaticTests** (~25 tests): Layout, float positioning, margin
+- **Acid1ProgrammaticTests** (25 tests): Layout, float positioning, margin
   collapsing, percentage widths, clear behaviour, and border-box computation.
-- **Acid1SplitTests** (~22 tests): Isolated section tests (10 sections)
+- **Acid1SplitTests** (22 tests): Isolated section tests (10 sections)
   targeting individual CSS1 features for precise regression diagnostics.
 
 Run all Acid1 tests:
