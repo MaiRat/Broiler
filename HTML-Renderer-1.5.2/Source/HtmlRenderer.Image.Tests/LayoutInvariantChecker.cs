@@ -118,16 +118,18 @@ public static class LayoutInvariantChecker
         if (line.Height < 0)
             violations.Add($"{path}.Height is negative ({line.Height})");
 
-        // Baseline within line height (if line height is positive)
-        if (line.Height > 0 && (line.Baseline < 0 || line.Baseline > line.Height))
+        // Baseline within line height (if line height is positive).
+        // FragmentTreeBuilder currently sets Baseline = 0 as a default, so we
+        // only flag truly out-of-range values (negative or exceeding height).
+        if (line.Height > 0 && line.Baseline < 0)
         {
-            // Note: baseline == 0 is acceptable (e.g. when builder sets it to 0)
-            // Only flag if it's outside the valid range and non-zero
-            if (line.Baseline != 0)
-            {
-                violations.Add(
-                    $"{path}.Baseline ({line.Baseline}) is outside [0, {line.Height}]");
-            }
+            violations.Add(
+                $"{path}.Baseline ({line.Baseline}) is negative");
+        }
+        if (line.Height > 0 && line.Baseline > line.Height)
+        {
+            violations.Add(
+                $"{path}.Baseline ({line.Baseline}) exceeds line Height ({line.Height})");
         }
 
         // Check inline fragments

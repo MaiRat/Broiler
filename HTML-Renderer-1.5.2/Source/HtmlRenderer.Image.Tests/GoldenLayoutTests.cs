@@ -160,9 +160,9 @@ public class GoldenLayoutTests
             // Write new baseline
             Directory.CreateDirectory(Path.GetDirectoryName(goldenPath)!);
             File.WriteAllText(goldenPath, actualJson);
-            // Skip test – new baseline was written; re-run to validate
-            Assert.Fail($"Golden file created at {goldenPath}. Re-run the test to validate.");
-            return;
+            // Fail with a clear message — re-run the test to validate against the new baseline.
+            // xUnit 2.x does not support Assert.Skip; upgrade to xUnit v3 to use Skip.
+            Assert.Fail($"New golden baseline created at {goldenPath}. Re-run to validate.");
         }
 
         var expectedJson = File.ReadAllText(goldenPath);
