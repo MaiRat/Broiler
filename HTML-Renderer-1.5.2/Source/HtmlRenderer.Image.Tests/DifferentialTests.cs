@@ -22,6 +22,7 @@ namespace HtmlRenderer.Image.Tests;
 [Trait("Category", "Differential")]
 public class DifferentialTests : IAsyncLifetime
 {
+    // Initialised by xUnit via IAsyncLifetime.InitializeAsync() before any test runs.
     private ChromiumRenderer _chromium = null!;
     private DifferentialTestRunner _runner = null!;
     private static readonly DifferentialTestConfig Config = DifferentialTestConfig.Default;
