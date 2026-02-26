@@ -62,3 +62,4 @@ fuzz-failures/
 
 # Differential test outputs (Phase 6)
 **/DifferentialReports/
+**/Acid1DifferentialReports/
