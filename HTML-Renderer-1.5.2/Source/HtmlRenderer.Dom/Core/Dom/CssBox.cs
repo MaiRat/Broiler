@@ -369,6 +369,10 @@ internal class CssBox : CssBoxProperties, IDisposable
                         // those nested inside non-BFC siblings (CSS2.1 §9.5.1).
                         var precedingFloats = CollectPrecedingFloatsInBfc(this);
 
+                        System.Console.Error.WriteLine($"[FLOAT-DBG] tag={HtmlTag?.Name} id={HtmlTag?.TryGetAttribute("id")} float={Float} Size.Width={Size.Width:F3} containerLeft={containerLeft:F3} containerRight={containerRight:F3} floatHeight={floatHeight:F3} top={top:F3} ActualMarginLeft={ActualMarginLeft:F3} ActualMarginRight={ActualMarginRight:F3} ActualHeight={ActualHeight:F3} precedingFloats={precedingFloats.Count}");
+                        foreach (var pf in precedingFloats)
+                            System.Console.Error.WriteLine($"  [FLOAT-DBG]   preceding: tag={pf.HtmlTag?.Name} id={pf.HtmlTag?.TryGetAttribute("id")} loc=({pf.Location.X:F3},{pf.Location.Y:F3}) size=({pf.Size.Width:F3},{pf.Size.Height:F3}) ActualBottom={pf.ActualBottom:F3} ActualBorderBottomWidth={pf.ActualBorderBottomWidth:F3} ActualMarginRight={pf.ActualMarginRight:F3}");
+
                         if (Float == CssConstants.Left)
                         {
                             // Iteratively resolve collisions with all prior left floats
@@ -386,6 +390,8 @@ internal class CssBox : CssBoxProperties, IDisposable
                                     }
                                 }
 
+                                System.Console.Error.WriteLine($"  [FLOAT-DBG]   iter={iter} left={left:F3} left+Size.Width={left + Size.Width:F3} containerRight={containerRight:F3} fits={left + Size.Width <= containerRight}");
+
                                 if (left + Size.Width <= containerRight)
                                     break;
 
@@ -398,6 +404,7 @@ internal class CssBox : CssBoxProperties, IDisposable
                                         maxBottom = Math.Max(maxBottom, fBottom);
                                 }
 
+                                System.Console.Error.WriteLine($"  [FLOAT-DBG]   wrap: maxBottom={maxBottom:F3} top={top:F3}");
                                 if (maxBottom <= top) break;
                                 top = maxBottom;
                             }
@@ -406,6 +413,8 @@ internal class CssBox : CssBoxProperties, IDisposable
                         {
                             left = containerRight - Size.Width - ActualMarginRight;
                         }
+
+                        System.Console.Error.WriteLine($"  [FLOAT-DBG]   FINAL: left={left:F3} top={top:F3}");
                     }
 
                     // Handle clear property
