@@ -225,7 +225,7 @@ golden-file comparison of the Fragment tree.
 
 ## Phase 4 – Paint / DisplayList Testing
 
-**Status:** Pending (can start independently of Phase 3)
+**Status:** Complete
 
 **Goal:** Separate paint bugs from layout bugs by testing the DisplayList
 output independently.
@@ -237,11 +237,11 @@ output independently.
 
 ### Tasks
 
-- [ ] **Add `DisplayList.ToJson()` convenience method** – Wrapper around
+- [x] **Add `DisplayList.ToJson()` convenience method** – Wrapper around
       `System.Text.Json.JsonSerializer.Serialize()` with deterministic settings
       (ordered properties, indented, no trailing commas).
 
-- [ ] **Add golden DisplayList tests** (5–10 cases):
+- [x] **Add golden DisplayList tests** (5–10 cases):
   1. Single coloured `<div>` → `FillRectItem` only
   2. `<div>` with border → `FillRectItem` + `DrawBorderItem`
   3. Text paragraph → `DrawTextItem` entries
@@ -253,14 +253,14 @@ output independently.
   9. Float with background → correct paint-order position
   10. Border with radius → `DrawBorderItem` with corner radii
 
-- [ ] **Implement paint invariant checker**:
+- [x] **Implement paint invariant checker**:
   - Every `ClipItem` has a matching `RestoreItem` (balanced nesting)
   - No negative `Width` or `Height` on rect-based items
   - All coordinates are finite (no NaN/Inf)
   - `DrawTextItem` has non-empty `Text` and valid `FontSize`
   - Deterministic ordering (same Fragment input → same DisplayList)
 
-- [ ] **Integrate with existing `RenderingStagesTests`** – Add invariant
+- [x] **Integrate with existing `RenderingStagesTests`** – Add invariant
       assertions to the existing Painter tests.
 
 ### Deliverables
@@ -292,7 +292,7 @@ output independently.
 
 ## Phase 5 – Pixel Regression (End-to-End)
 
-**Status:** Pending (depends on Phases 2 and 4)
+**Status:** Complete
 
 **Goal:** Controlled pixel testing with deterministic rendering and baseline
 image diffing.
@@ -304,25 +304,25 @@ image diffing.
 
 ### Tasks
 
-- [ ] **Implement deterministic render mode**:
+- [x] **Implement deterministic render mode**:
   - Fixed DPI (96 or 72)
   - Fixed font fallback chain (bundled test fonts)
   - Disabled anti-aliasing or deterministic AA
   - Fixed viewport size (e.g., 800×600)
 
-- [ ] **Build screenshot + diff mechanism**:
+- [x] **Build screenshot + diff mechanism**:
   - Render HTML → PNG at fixed settings
   - Compare against baseline PNG using per-pixel diff
   - Configurable threshold (default: 0.1% pixel difference)
   - Generate diff image highlighting changed pixels
 
-- [ ] **Integrate WPT reftest subset**:
+- [x] **Integrate WPT reftest subset**:
   - Select 20–50 WPT reftests covering supported CSS features
   - Render both test and reference page
   - Compare pixel output
   - Track pass/fail rates over time
 
-- [ ] **Failure classification** – When a pixel test fails:
+- [x] **Failure classification** – When a pixel test fails:
   1. Check if Fragment tree changed → **layout diff**
   2. Check if DisplayList changed → **paint diff**
   3. If neither changed → **pure raster diff**
