@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Linq;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.IR;
@@ -1293,5 +1294,257 @@ public class IRTypesTests
             Assert.Equal(list1.Items[i].GetType(), list2.Items[i].GetType());
             Assert.Equal(list1.Items[i].Bounds, list2.Items[i].Bounds);
         }
+    }
+
+    // =================================================================
+    // Phase 3 — Background image support
+    // =================================================================
+
+    [Fact]
+    public void Fragment_BackgroundImageHandle_DefaultsToNull()
+    {
+        var fragment = new Fragment();
+        Assert.Null(fragment.BackgroundImageHandle);
+    }
+
+    [Fact]
+    public void Fragment_BackgroundImageHandle_CanBeSet()
+    {
+        var sentinel = new object();
+        var fragment = new Fragment { BackgroundImageHandle = sentinel };
+        Assert.Same(sentinel, fragment.BackgroundImageHandle);
+    }
+
+    [Fact]
+    public void PaintWalker_BackgroundImage_EmitsDrawImageItem()
+    {
+        var sentinel = new object();
+        var fragment = new Fragment
+        {
+            Location = new PointF(10, 20),
+            Size = new SizeF(100, 50),
+            Border = new BoxEdges(2, 2, 2, 2),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            BackgroundImageHandle = sentinel,
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        var imageItem = Assert.Single(displayList.Items.OfType<DrawImageItem>());
+        Assert.Same(sentinel, imageItem.ImageHandle);
+        // Image rect should be inside borders (padding box)
+        Assert.Equal(12, imageItem.DestRect.X, 0.01);
+        Assert.Equal(22, imageItem.DestRect.Y, 0.01);
+        Assert.Equal(96, imageItem.DestRect.Width, 0.01);
+        Assert.Equal(46, imageItem.DestRect.Height, 0.01);
+    }
+
+    [Fact]
+    public void PaintWalker_NoBackgroundImage_NoDrawImageItem()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 50),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        Assert.DoesNotContain(displayList.Items, i => i is DrawImageItem);
+    }
+
+    // =================================================================
+    // Phase 3 — Replaced image (img) support
+    // =================================================================
+
+    [Fact]
+    public void Fragment_ImageHandle_DefaultsToNull()
+    {
+        var fragment = new Fragment();
+        Assert.Null(fragment.ImageHandle);
+    }
+
+    [Fact]
+    public void Fragment_ImageHandle_CanBeSet()
+    {
+        var sentinel = new object();
+        var fragment = new Fragment
+        {
+            ImageHandle = sentinel,
+            ImageSourceRect = new RectangleF(0, 0, 50, 50),
+        };
+        Assert.Same(sentinel, fragment.ImageHandle);
+        Assert.Equal(new RectangleF(0, 0, 50, 50), fragment.ImageSourceRect);
+    }
+
+    [Fact]
+    public void PaintWalker_ReplacedImage_EmitsDrawImageItem()
+    {
+        var sentinel = new object();
+        var fragment = new Fragment
+        {
+            Location = new PointF(5, 10),
+            Size = new SizeF(80, 60),
+            Border = new BoxEdges(1, 1, 1, 1),
+            Padding = new BoxEdges(2, 2, 2, 2),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            ImageHandle = sentinel,
+            ImageSourceRect = RectangleF.Empty,
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        var imageItem = Assert.Single(displayList.Items.OfType<DrawImageItem>());
+        Assert.Same(sentinel, imageItem.ImageHandle);
+        // Dest rect should be inside border + padding
+        Assert.Equal(Math.Floor(5.0 + 1.0 + 2.0), imageItem.DestRect.X, 0.01);
+        Assert.Equal(Math.Floor(10.0 + 1.0 + 2.0), imageItem.DestRect.Y, 0.01);
+    }
+
+    [Fact]
+    public void PaintWalker_ReplacedImage_WithSourceRect_EmitsSourceRect()
+    {
+        var sentinel = new object();
+        var srcRect = new RectangleF(10, 20, 30, 40);
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 100),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            ImageHandle = sentinel,
+            ImageSourceRect = srcRect,
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        var imageItem = Assert.Single(displayList.Items.OfType<DrawImageItem>());
+        Assert.Equal(srcRect, imageItem.SourceRect);
+    }
+
+    // =================================================================
+    // Phase 3 — Selection rendering
+    // =================================================================
+
+    [Fact]
+    public void InlineFragment_Selected_DefaultsToFalse()
+    {
+        var inline = new InlineFragment();
+        Assert.False(inline.Selected);
+        Assert.Equal(-1, inline.SelectedStartOffset);
+        Assert.Equal(-1, inline.SelectedEndOffset);
+    }
+
+    [Fact]
+    public void InlineFragment_Selected_CanBeSet()
+    {
+        var inline = new InlineFragment
+        {
+            Selected = true,
+            SelectedStartOffset = 5.0,
+            SelectedEndOffset = 20.0,
+        };
+        Assert.True(inline.Selected);
+        Assert.Equal(5.0, inline.SelectedStartOffset);
+        Assert.Equal(20.0, inline.SelectedEndOffset);
+    }
+
+    [Fact]
+    public void PaintWalker_Selection_EmitsSelectionFillRect()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(200, 50),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            Lines = new[]
+            {
+                new LineFragment
+                {
+                    X = 0, Y = 0, Width = 200, Height = 20,
+                    Inlines = new[]
+                    {
+                        new InlineFragment
+                        {
+                            X = 10, Y = 5, Width = 50, Height = 15,
+                            Text = "Hello",
+                            Style = new ComputedStyle { FontFamily = "Arial", FontSize = "12pt", ActualColor = Color.Black },
+                            Selected = true,
+                        },
+                    },
+                },
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        // Should have a FillRectItem for selection highlight
+        var selectionFills = displayList.Items.OfType<FillRectItem>().ToList();
+        Assert.Contains(selectionFills, f => f.Color.A > 0 && f.Bounds.X == 10);
+    }
+
+    [Fact]
+    public void PaintWalker_PartialSelection_RespectsOffsets()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(200, 50),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            Lines = new[]
+            {
+                new LineFragment
+                {
+                    X = 0, Y = 0, Width = 200, Height = 20,
+                    Inlines = new[]
+                    {
+                        new InlineFragment
+                        {
+                            X = 10, Y = 5, Width = 100, Height = 15,
+                            Text = "Hello World",
+                            Style = new ComputedStyle { FontFamily = "Arial", FontSize = "12pt", ActualColor = Color.Black },
+                            Selected = true,
+                            SelectedStartOffset = 20.0,
+                            SelectedEndOffset = 60.0,
+                        },
+                    },
+                },
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        var selectionFills = displayList.Items.OfType<FillRectItem>().ToList();
+        // Selection rect should start at inline.X + startOffset = 10 + 20 = 30
+        var selRect = selectionFills.FirstOrDefault(f => f.Color.A > 0 && Math.Abs(f.Bounds.X - 30) < 0.01);
+        Assert.NotNull(selRect);
+        // Width should be endOffset - startOffset = 60 - 20 = 40
+        Assert.Equal(40, selRect.Bounds.Width, 0.01);
+    }
+
+    [Fact]
+    public void PaintWalker_NoSelection_NoExtraFillRect()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(200, 50),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            Lines = new[]
+            {
+                new LineFragment
+                {
+                    X = 0, Y = 0, Width = 200, Height = 20,
+                    Inlines = new[]
+                    {
+                        new InlineFragment
+                        {
+                            X = 10, Y = 5, Width = 50, Height = 15,
+                            Text = "Hello",
+                            Style = new ComputedStyle { FontFamily = "Arial", FontSize = "12pt", ActualColor = Color.Black },
+                            Selected = false,
+                        },
+                    },
+                },
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        // Only DrawTextItem expected, no FillRectItem for selection
+        Assert.DoesNotContain(displayList.Items, i => i is FillRectItem);
     }
 }

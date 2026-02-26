@@ -45,6 +45,15 @@ public sealed class Fragment
 
     /// <summary>Stack level (z-index or implicit order).</summary>
     public int StackLevel { get; init; }
+
+    /// <summary>Platform-specific background image handle (Phase 3).</summary>
+    public object? BackgroundImageHandle { get; init; }
+
+    /// <summary>Platform-specific image handle for replaced elements like &lt;img&gt; (Phase 3).</summary>
+    public object? ImageHandle { get; init; }
+
+    /// <summary>Source rectangle for <see cref="ImageHandle"/> (Phase 3).</summary>
+    public RectangleF ImageSourceRect { get; init; }
 }
 
 /// <summary>
@@ -74,4 +83,13 @@ public sealed class InlineFragment
 
     /// <summary>Platform-specific font handle resolved during layout (Phase 3).</summary>
     public object? FontHandle { get; init; }
+
+    /// <summary>Whether this inline is selected (Phase 3).</summary>
+    public bool Selected { get; init; }
+
+    /// <summary>Horizontal start offset of partial selection within the inline, or -1 if fully selected (Phase 3).</summary>
+    public double SelectedStartOffset { get; init; } = -1;
+
+    /// <summary>Horizontal end offset of partial selection within the inline, or -1 if fully selected (Phase 3).</summary>
+    public double SelectedEndOffset { get; init; } = -1;
 }

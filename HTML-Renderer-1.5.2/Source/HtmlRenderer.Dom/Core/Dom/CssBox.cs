@@ -23,6 +23,12 @@ internal class CssBox : CssBoxProperties, IDisposable
     private CssBox _listItemBox;
     private IImageLoadHandler _imageLoadHandler;
 
+    /// <summary>
+    /// Returns the loaded background image handle, or null if no background image is loaded.
+    /// Used by <c>FragmentTreeBuilder</c> to capture background images for the new paint path.
+    /// </summary>
+    internal object LoadedBackgroundImage => _imageLoadHandler?.Image;
+
     public CssBox(CssBox parentBox, HtmlTag tag)
     {
         if (parentBox != null)

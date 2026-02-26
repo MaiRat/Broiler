@@ -15,6 +15,16 @@ namespace TheArtOfDev.HtmlRenderer.Core;
 /// </remarks>
 internal static class PaintWalker
 {
+    /// <summary>Default selection highlight color (semi-transparent blue).</summary>
+    private static readonly Color SelectionHighlightColor = Color.FromArgb(0x69, 0x33, 0x99, 0xFF);
+
+    /// <summary>
+    /// Sentinel value indicating that a selection offset is not constrained
+    /// (i.e. the entire inline is selected on that side). Matches the convention
+    /// used by <c>CssRect.SelectedStartOffset</c> / <c>SelectedEndOffset</c>.
+    /// </summary>
+    private const double FullSelectionOffset = -1;
+
     /// <summary>
     /// Paints the given <see cref="Fragment"/> tree and returns a flat <see cref="DisplayList"/>.
     /// </summary>
@@ -60,8 +70,17 @@ internal static class PaintWalker
         // Background color
         EmitBackground(fragment, items);
 
+        // Background image
+        EmitBackgroundImage(fragment, items);
+
         // Borders
         EmitBorders(fragment, items);
+
+        // Replaced image (e.g. <img> elements)
+        EmitReplacedImage(fragment, items);
+
+        // Selection highlights (before text so highlight is behind text)
+        EmitSelection(fragment, items);
 
         // Text (inline fragments from line boxes)
         EmitText(fragment, items);
@@ -95,6 +114,91 @@ internal static class PaintWalker
         else if (style.ActualBackgroundColor.A > 0)
         {
             items.Add(new FillRectItem { Bounds = bounds, Color = style.ActualBackgroundColor });
+        }
+    }
+
+    private static void EmitBackgroundImage(Fragment fragment, List<DisplayItem> items)
+    {
+        if (fragment.BackgroundImageHandle == null)
+            return;
+
+        var bounds = fragment.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+            return;
+
+        // Background image covers the padding box (inside borders)
+        var border = fragment.Border;
+        var imgRect = new RectangleF(
+            bounds.X + (float)border.Left,
+            bounds.Y + (float)border.Top,
+            bounds.Width - (float)(border.Left + border.Right),
+            bounds.Height - (float)(border.Top + border.Bottom));
+
+        if (imgRect.Width > 0 && imgRect.Height > 0)
+        {
+            items.Add(new DrawImageItem
+            {
+                Bounds = imgRect,
+                ImageHandle = fragment.BackgroundImageHandle,
+                SourceRect = RectangleF.Empty,
+                DestRect = imgRect,
+            });
+        }
+    }
+
+    private static void EmitReplacedImage(Fragment fragment, List<DisplayItem> items)
+    {
+        if (fragment.ImageHandle == null)
+            return;
+
+        var bounds = fragment.Bounds;
+        var border = fragment.Border;
+        var padding = fragment.Padding;
+
+        // Image dest rect: inside border + padding (matching CssBoxImage.PaintImp)
+        var r = new RectangleF(
+            (float)Math.Floor(bounds.X + border.Left + padding.Left),
+            (float)Math.Floor(bounds.Y + border.Top + padding.Top),
+            bounds.Width - (float)(border.Left + border.Right + padding.Left + padding.Right),
+            bounds.Height - (float)(border.Top + border.Bottom + padding.Top + padding.Bottom));
+
+        if (r.Width > 0 && r.Height > 0)
+        {
+            items.Add(new DrawImageItem
+            {
+                Bounds = r,
+                ImageHandle = fragment.ImageHandle,
+                SourceRect = fragment.ImageSourceRect,
+                DestRect = r,
+            });
+        }
+    }
+
+    private static void EmitSelection(Fragment fragment, List<DisplayItem> items)
+    {
+        if (fragment.Lines == null || fragment.Lines.Count == 0)
+            return;
+
+        foreach (var line in fragment.Lines)
+        {
+            foreach (var inline in line.Inlines)
+            {
+                if (!inline.Selected)
+                    continue;
+
+                // Selection highlight rectangle
+                var left = inline.SelectedStartOffset > FullSelectionOffset ? (float)inline.SelectedStartOffset : 0f;
+                var width = inline.SelectedEndOffset > FullSelectionOffset ? (float)inline.SelectedEndOffset - left : inline.Width - left;
+
+                if (width <= 0)
+                    continue;
+
+                items.Add(new FillRectItem
+                {
+                    Bounds = new RectangleF(inline.X + left, inline.Y, width, line.Height),
+                    Color = SelectionHighlightColor,
+                });
+            }
         }
     }
 
