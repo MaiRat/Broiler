@@ -892,4 +892,112 @@ public class Acid1ProgrammaticTests
             $"than to the known-failure image ({simToFail:P1}). " +
             "The comparison mechanism cannot reliably detect rendering defects.");
     }
+
+    // -----------------------------------------------------------------
+    // 8. Border shorthand: bare zero
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that <c>border: 0</c> correctly zeroes out the border
+    /// width, even when a preceding rule sets a non-zero border.
+    /// CSS2.1 allows unitless <c>0</c> as a valid <c>&lt;length&gt;</c>.
+    /// </summary>
+    [Fact]
+    public void BorderShorthand_BareZero_ZeroesBorderWidth()
+    {
+        // The <li> rule sets a 5px border; the #bar override uses border: 0.
+        // If the shorthand parse fails, #bar inherits the 5px border and is
+        // 10px wider than expected (80+10+80 > 160 → wraps, 80+0+80 ≤ 160 → fits).
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 200px; }
+            ul { margin: 0; padding: 0; border: 0; }
+            li { display: block; float: left; width: 40px; height: 30px;
+                 margin: 0; padding: 5px; border: 5px solid black;
+                 background-color: red; }
+            #bar { background-color: rgb(0,0,255); border: 0; width: 60px; }
+        </style></head><body>
+        <ul>
+            <li>a</li>
+            <li id='bar'>b</li>
+            <li>c</li>
+        </ul>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 250, 150);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+
+        // All three floats should fit on the same row:
+        //   li:   40 + 10(pad) + 10(border) = 60px
+        //   #bar: 60 + 10(pad) + 0(border)  = 70px
+        //   li:   60px
+        //   Total: 60 + 70 + 60 = 190px ≤ 200px
+        // The first red and blue should be at the same Y level (within border-width tolerance).
+        Assert.True(Math.Abs(redBounds.Value.minY - blueBounds.Value.minY) < 10,
+            $"Red li (top={redBounds.Value.minY}) and blue #bar (top={blueBounds.Value.minY}) " +
+            "should be on the same row. 'border: 0' may not be zeroing border width.");
+
+        // Blue (#bar) must appear to the right of the first red li.
+        Assert.True(blueBounds.Value.minX > redBounds.Value.minX + 30,
+            $"Blue #bar (minX={blueBounds.Value.minX}) should be to the right of " +
+            $"first red li (minX={redBounds.Value.minX}). " +
+            "Bare '0' in border shorthand may not be parsed as a valid width.");
+    }
+
+    /// <summary>
+    /// Verifies Acid1 float packing: in the <c>dd</c> container,
+    /// the first li, #bar, and third li all fit on the first row.
+    /// </summary>
+    [Fact]
+    public void Acid1_ThreeFloatsOnFirstRow_PackCorrectly()
+    {
+        // Simplified Acid1 structure: dd > ul > li + li#bar + li
+        // Container width 340px; first li 80px, #bar ~160px, third li 80px
+        // Total ≈ 320px < 340px → all three fit on one row.
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; width: 340px; }
+            ul { margin: 0; border: 0; padding: 0; }
+            li { display: block; float: left; color: black;
+                 height: 9em; width: 5em; margin: 0;
+                 border: .5em solid black; padding: 1em;
+                 background-color: #FC0; }
+            #bar { background-color: green; color: white;
+                   width: 41.17%; border: 0; margin: 0 1em; }
+        </style></head><body>
+        <ul>
+            <li>the way</li>
+            <li id='bar'>the world ends</li>
+            <li>i grow old</li>
+        </ul>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 200);
+
+        var goldBounds = GetColorBounds(bitmap, IsGold);
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+
+        Assert.NotNull(goldBounds);
+        Assert.NotNull(greenBounds);
+
+        // Green (#bar) must be to the right of the first gold li.
+        Assert.True(greenBounds.Value.minX > goldBounds.Value.minX + 30,
+            $"Green #bar (minX={greenBounds.Value.minX}) should be to the right of " +
+            $"first gold li (minX={goldBounds.Value.minX}).");
+
+        // The rightmost gold region (third li) must be to the right of green.
+        Assert.True(goldBounds.Value.maxX > greenBounds.Value.maxX,
+            $"Third gold li (maxX={goldBounds.Value.maxX}) should extend past " +
+            $"green #bar (maxX={greenBounds.Value.maxX}). " +
+            "All three floats should pack on the same row.");
+
+        // All elements should be at roughly the same Y level (within border-width tolerance).
+        Assert.True(Math.Abs(goldBounds.Value.minY - greenBounds.Value.minY) < 10,
+            $"Gold li (top={goldBounds.Value.minY}) and green #bar (top={greenBounds.Value.minY}) " +
+            "should be at the same vertical level.");
+    }
 }

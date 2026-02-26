@@ -797,6 +797,10 @@ internal sealed class CssParser
 
     private static string ParseBorderWidth(string str, int idx, int length)
     {
+        // CSS2.1: '0' is a valid <length> that requires no unit.
+        if (length == 1 && str[idx] == '0')
+            return "0";
+
         if ((length > 2 && char.IsDigit(str[idx])) || (length > 3 && str[idx] == '.'))
         {
             string unit = null;
