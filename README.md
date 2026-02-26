@@ -113,6 +113,24 @@ verifies the rendering pipeline remains functional on every change.
 - [x] Enable DOM interaction via yantra
 - [x] Support advanced HTML/CSS features
 
+### Testing
+
+Run the full test suite:
+
+```bash
+dotnet test Broiler.slnx
+```
+
+Run the Acid1 CSS1 conformance tests:
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1"
+```
+
+See [docs/acid1-testing.md](docs/acid1-testing.md) for detailed Acid1 test
+documentation and [docs/testing-guide.md](docs/testing-guide.md) for the
+complete testing guide.
+
 ## DOM Interaction
 
 Broiler exposes a `document` object to JavaScript executed via YantraJS,

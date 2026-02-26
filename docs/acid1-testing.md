@@ -1,0 +1,162 @@
+# Acid1 Test Suite
+
+## Overview
+
+The [Acid1 test](https://www.w3.org/Style/CSS/Test/CSS1/current/test5526c.htm)
+is the W3C CSS1 conformance test. It exercises fundamental CSS1 features
+including floats, clears, percentage widths, background colours, borders, and
+the content-box model. A fully CSS1-conformant renderer should produce output
+indistinguishable from the
+[reference rendering](https://www.w3.org/Style/CSS/Test/CSS1/current/sec5526c.gif).
+
+Broiler's Acid1 test suite validates the HTML-Renderer engine against this
+standard using three complementary test classes and a reference image.
+
+## Quick Start
+
+Run **all** Acid1 tests with a single command:
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1"
+```
+
+## Prerequisites
+
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| .NET SDK | 8.0+ | Build and test runner |
+| SkiaSharp | (bundled) | Image rendering backend |
+| xUnit | 2.5+ | Test framework |
+
+All dependencies are declared in the project files and restored automatically
+by `dotnet restore`. No additional setup is required.
+
+### Verify Prerequisites
+
+```bash
+dotnet --version          # Must be 8.0 or later
+dotnet restore Broiler.slnx
+dotnet build Broiler.slnx
+```
+
+## Test Classes
+
+### Acid1CaptureTests (~30 tests)
+
+Visual regression and structural tests for `acid/acid1/acid1.html`. Tests
+include HTML structure validation, CSS rule verification, pixel-level
+rendering checks, image format validation, and similarity scoring against the
+reference image.
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1CaptureTests"
+```
+
+### Acid1ProgrammaticTests (~25 tests)
+
+Programmatic layout and box-model tests that render HTML snippets extracted
+from the Acid1 test and verify float positioning, margin collapsing,
+percentage width resolution, clear behaviour, and border-box computation.
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1ProgrammaticTests"
+```
+
+### Acid1SplitTests (~22 tests)
+
+Split tests that isolate each CSS1 feature from the full Acid1 page into
+individual HTML files (sections 1–10). Each section targets a specific
+rendering feature for precise diagnostics.
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1SplitTests"
+```
+
+| Section | File | CSS1 Feature |
+|---------|------|-------------|
+| 1 | `section1-body-border.html` | Body border, html/body backgrounds |
+| 2 | `section2-dt-float-left.html` | `dt` float:left, percentage width |
+| 3 | `section3-dd-float-right.html` | `dd` float:right alongside `dt` |
+| 4 | `section4-li-float-left.html` | `li` float:left stacking |
+| 5 | `section5-blockquote-float.html` | `blockquote` float:left, asymmetric borders |
+| 6 | `section6-h1-float.html` | `h1` float:left, black background |
+| 7 | `section7-form-line-height.html` | Form `line-height: 1.9` |
+| 8 | `section8-clear-both.html` | `clear: both` paragraph |
+| 9 | `section9-percentage-width.html` | Percentage widths (10.638%, 41.17%) |
+| 10 | `section10-dd-height-clearance.html` | `dd` content-box height and float clearance |
+
+## Test Data
+
+| File | Location | Description |
+|------|----------|-------------|
+| `acid1.html` | `acid/acid1/acid1.html` | The W3C CSS1 conformance test page |
+| `acid1.png` | `acid/acid1/acid1.png` | Reference rendering for similarity scoring |
+| `acid1-fail.png` | `acid/acid1/acid1-fail.png` | Known-bad rendering for comparison validation |
+| Split sections | `acid/acid1/split/` | 10 isolated HTML files (see table above) |
+
+Test data is copied to the build output directory via MSBuild `<Content>`
+items in `Broiler.Cli.Tests.csproj` and is available at
+`TestData/acid1.html`, `TestData/acid1.png`, and `TestData/split/` at
+runtime.
+
+## CI Integration
+
+Acid1 tests run automatically on every push and pull request as part of the
+main CI pipeline (`.github/workflows/build.yml`). They are included in the
+`dotnet test` step and also run as a dedicated Acid1 verification step:
+
+```yaml
+- name: Acid1 Tests
+  run: dotnet test src/Broiler.Cli.Tests/ --no-build --configuration Release --filter "FullyQualifiedName~Acid1"
+```
+
+## Running Locally
+
+### Full Acid1 Suite
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1"
+```
+
+### Single Test Class
+
+```bash
+# Capture tests only
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1CaptureTests"
+
+# Programmatic layout tests only
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1ProgrammaticTests"
+
+# Split section tests only
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1SplitTests"
+```
+
+### Single Test
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1SplitTests.Section1_BodyBorder_HtmlHasBlueBackground"
+```
+
+### Verbose Output
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1" --verbosity detailed
+```
+
+## Current Status
+
+The Acid1 test suite currently achieves approximately **45% similarity** with
+the W3C reference rendering. The remaining differences are attributed to
+known limitations in the HTML-Renderer float-layout algorithm (see
+`acid/acid1/split/README.md` for details). The regression floor is set at
+**43%** — any drop below this threshold fails the test and indicates a
+rendering regression.
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Build fails | Run `dotnet restore Broiler.slnx` first |
+| Test data not found | Ensure the project was built: `dotnet build Broiler.slnx` |
+| Flaky test in parallel run | Run the specific test in isolation (see Single Test above) |
+| Similarity below threshold | Run split tests to identify which section regressed |
