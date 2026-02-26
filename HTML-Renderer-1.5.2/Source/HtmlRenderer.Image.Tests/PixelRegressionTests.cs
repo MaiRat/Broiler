@@ -229,7 +229,8 @@ public class PixelRegressionTests
     {
         var baselinePath = Path.Combine(BaselineDir, $"{testName}.png");
 
-        using var actual = PixelDiffRunner.RenderDeterministic(html, Config);
+        // Render once, capturing Fragment tree and DisplayList for failure classification
+        using var actual = PixelDiffRunner.RenderDeterministic(html, Config, out var fragment, out var displayList);
 
         if (!File.Exists(baselinePath))
         {
@@ -256,7 +257,7 @@ public class PixelRegressionTests
                 diffData.SaveTo(diffStream);
             }
 
-            // Classify the failure
+            // Classify the failure using the already-captured trees
             string? baselineFragmentJson = null;
             string? baselineDisplayListJson = null;
             var fragmentJsonPath = Path.Combine(BaselineDir, $"{testName}_fragment.json");
@@ -269,8 +270,15 @@ public class PixelRegressionTests
             var classification = "unknown";
             if (baselineFragmentJson != null || baselineDisplayListJson != null)
             {
-                classification = PixelDiffRunner.ClassifyFailure(html,
-                    baselineFragmentJson, baselineDisplayListJson, Config).ToString();
+                string? actualFragmentJson = fragment != null ? FragmentJsonDumper.ToJson(fragment) : null;
+                string? actualDisplayListJson = displayList?.ToJson();
+
+                if (!string.Equals(actualFragmentJson, baselineFragmentJson, StringComparison.Ordinal))
+                    classification = FailureClassification.LayoutDiff.ToString();
+                else if (!string.Equals(actualDisplayListJson, baselineDisplayListJson, StringComparison.Ordinal))
+                    classification = FailureClassification.PaintDiff.ToString();
+                else
+                    classification = FailureClassification.RasterDiff.ToString();
             }
 
             Assert.Fail(
