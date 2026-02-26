@@ -146,7 +146,7 @@ Float collision and table layout are the highest-risk areas.
 
 ## Phase 3 — Paint Consumes Only FragmentTree
 
-**Status**: ✅ Complete (PaintWalker handles background images, replaced images, selection; old path retained as fallback)
+**Status**: ✅ Complete (all steps including deferred steps 8 and 9)
 
 **Goal**: `PaintImp()` reads from `Fragment` records instead of `CssBox`
 fields. The `DisplayList` becomes the sole output of paint.
@@ -190,37 +190,51 @@ fields. The `DisplayList` becomes the sole output of paint.
      capture selection state from `CssRect` during fragment building.
    - `PaintWalker.EmitSelection()` emits `FillRectItem` for selection highlights.
 
-8. **Remove `CssBox.Paint()` / `PaintImp()`** methods.
-   - Deferred: old paint path retained as fallback until full validation.
+8. ✅ **Remove `CssBox.Paint()` / `PaintImp()`** methods.
+   - Removed `Paint()`, `PaintImp()`, `PaintBackground()`, `PaintWords()`,
+     `PaintDecoration()`, `GetSelectionForeBrush()`, `GetSelectionBackBrush()`
+     from `CssBox`; removed `PaintImp()` overrides from `CssBoxImage` and
+     `CssBoxHr`. Removed `UseNewPaintPath` feature flag — `PaintWalker` is now
+     the only paint path.
+   - Fixed `PaintWalker` to use per-line-box rectangles (`Fragment.InlineRects`)
+     for inline element backgrounds/borders, and to resolve `text-decoration`
+     from anonymous inline children.
 
-9. **Replace direct `RGraphics` calls** in `BordersDrawHandler` and
+9. ✅ **Replace direct `RGraphics` calls** in `BordersDrawHandler` and
    `BackgroundImageDrawHandler` with `DisplayItem` emission.
-   - Deferred: handlers still used by old paint path; new path bypasses
-     them via `PaintWalker` → `DisplayItem` emission.
+   - With the old paint path removed, these handlers are no longer invoked
+     from the paint code. `PaintWalker.EmitBorders()`,
+     `PaintWalker.EmitBackground()`, and `PaintWalker.EmitBackgroundImage()`
+     produce `DisplayItem` entries that `RGraphicsRasterBackend` renders.
 
 ### New/Modified Files
 
 | File | Change |
 |------|--------|
-| `HtmlRenderer.Orchestration/Core/IR/PaintWalker.cs` | ✦ new — background images, replaced images, selection |
+| `HtmlRenderer.Orchestration/Core/IR/PaintWalker.cs` | ✎ inline rects, text decoration fix |
 | `HtmlRenderer.Orchestration/Core/IR/RGraphicsRasterBackend.cs` | ✦ new |
 | `HtmlRenderer.Core/Core/IR/DisplayList.cs` | ✎ extended |
-| `HtmlRenderer.Core/Core/IR/Fragment.cs` | ✎ BackgroundImageHandle, ImageHandle, ImageSourceRect, selection props |
-| `HtmlRenderer.Orchestration/Core/IR/FragmentTreeBuilder.cs` | ✎ captures images and selection |
-| `HtmlRenderer.Dom/Core/Dom/CssBox.cs` | ✎ LoadedBackgroundImage property |
-| `HtmlRenderer.Orchestration/Core/HtmlContainerInt.cs` | ✎ new paint path |
+| `HtmlRenderer.Core/Core/IR/Fragment.cs` | ✎ BackgroundImageHandle, ImageHandle, ImageSourceRect, selection props, InlineRects |
+| `HtmlRenderer.Orchestration/Core/IR/FragmentTreeBuilder.cs` | ✎ captures images, selection, and inline rects |
+| `HtmlRenderer.Dom/Core/Dom/CssBox.cs` | ✎ LoadedBackgroundImage property; removed Paint/PaintImp/PaintBackground/PaintWords/PaintDecoration |
+| `HtmlRenderer.Dom/Core/Dom/CssBoxImage.cs` | ✎ removed PaintImp override |
+| `HtmlRenderer.Dom/Core/Dom/CssBoxHr.cs` | ✎ removed PaintImp override |
+| `HtmlRenderer.Orchestration/Core/HtmlContainerInt.cs` | ✎ removed UseNewPaintPath; always uses PaintWalker |
 | `HtmlRenderer.Image.Tests/IRTypesTests.cs` | ✎ 37 new tests |
 
 ### Verification
 
-- ✅ All 218 tests pass (181 existing + 37 new Phase 1–3 tests).
+- ✅ All 218 HtmlRenderer.Image.Tests pass (including 37 Phase 1–3 tests).
+- ✅ All 193 Broiler.Cli.Tests pass.
 - ✅ DisplayList JSON serialization with polymorphic type discriminators.
 - ✅ Snapshot stability test.
-- Old paint path unaffected (feature flag defaults to off).
+- ✅ Old `CssBox.Paint()` path removed; `PaintWalker` is the sole paint path.
 
 **Effort**: ~5–8 days.
-**Risk**: High — replaces the entire paint path. Feature flag
-(`UseNewPaintPath`) provides parallel old-path fallback until fully validated.
+**Risk**: High — replaced the entire paint path. Inline element backgrounds
+and text-decoration required special handling in `PaintWalker` (per-line-box
+rectangles via `Fragment.InlineRects`, anonymous inline child decoration
+resolution).
 
 ---
 
