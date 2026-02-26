@@ -365,6 +365,10 @@ internal class CssBox : CssBoxProperties, IDisposable
                         double containerRight = ContainingBlock.ClientLeft + ContainingBlock.AvailableWidth;
                         double floatHeight = Math.Max(ActualHeight, 1);
 
+                        // Collect all preceding floats in the BFC, including
+                        // those nested inside non-BFC siblings (CSS2.1 §9.5.1).
+                        var precedingFloats = CollectPrecedingFloatsInBfc(this);
+
                         if (Float == CssConstants.Left)
                         {
                             // Iteratively resolve collisions with all prior left floats
@@ -372,17 +376,13 @@ internal class CssBox : CssBoxProperties, IDisposable
                             {
                                 left = containerLeft + ActualMarginLeft;
 
-                                if (ParentBox != null)
+                                foreach (var floatBox in precedingFloats)
                                 {
-                                    foreach (var sibling in ParentBox.Boxes)
+                                    if (floatBox.Float == CssConstants.Left)
                                     {
-                                        if (sibling == this) break;
-                                        if (sibling.Float == CssConstants.Left && sibling.Display != CssConstants.None)
-                                        {
-                                            double fBottom = sibling.ActualBottom + sibling.ActualBorderBottomWidth;
-                                            if (top < fBottom && top + floatHeight > sibling.Location.Y)
-                                                left = Math.Max(left, sibling.Location.X + sibling.Size.Width + ActualMarginLeft);
-                                        }
+                                        double fBottom = floatBox.ActualBottom + floatBox.ActualBorderBottomWidth;
+                                        if (top < fBottom && top + floatHeight > floatBox.Location.Y)
+                                            left = Math.Max(left, floatBox.Location.X + floatBox.Size.Width + ActualMarginLeft);
                                     }
                                 }
 
@@ -391,18 +391,11 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                                 // Move below the lowest overlapping float
                                 double maxBottom = top;
-                                if (ParentBox != null)
+                                foreach (var floatBox in precedingFloats)
                                 {
-                                    foreach (var sibling in ParentBox.Boxes)
-                                    {
-                                        if (sibling == this) break;
-                                        if (sibling.Float != CssConstants.None && sibling.Display != CssConstants.None)
-                                        {
-                                            double fBottom = sibling.ActualBottom + sibling.ActualBorderBottomWidth;
-                                            if (top < fBottom && top + floatHeight > sibling.Location.Y)
-                                                maxBottom = Math.Max(maxBottom, fBottom);
-                                        }
-                                    }
+                                    double fBottom = floatBox.ActualBottom + floatBox.ActualBorderBottomWidth;
+                                    if (top < fBottom && top + floatHeight > floatBox.Location.Y)
+                                        maxBottom = Math.Max(maxBottom, fBottom);
                                 }
 
                                 if (maxBottom <= top) break;
@@ -720,14 +713,63 @@ internal class CssBox : CssBoxProperties, IDisposable
             margin = Height == "auto" ? Math.Max(ActualMarginBottom, lastChildBottomMargin) : lastChildBottomMargin;
         }
 
+        // CSS2.1 §10.6.3 / §10.6.7: Floated children contribute to the
+        // height of their parent only when the parent establishes a new
+        // block formatting context (BFC).  Non-BFC blocks (e.g. a plain
+        // <ul> inside a floated <dd>) must not include descendant floats
+        // in their height calculation.
+        bool isBfc = Float != CssConstants.None
+            || Display == CssConstants.InlineBlock
+            || Display == CssConstants.TableCell
+            || (Overflow != null && Overflow != CssConstants.Visible);
+
         // Use the maximum ActualBottom across all children to handle
         // floated children that may not be the last in source order.
         double maxChildBottom = 0;
         
         foreach (var child in Boxes)
+        {
+            if (!isBfc && child.Float != CssConstants.None)
+            {
+                continue;
+            }
+
             maxChildBottom = Math.Max(maxChildBottom, child.ActualBottom + child.ActualBorderBottomWidth);
+        }
 
         return Math.Max(ActualBottom, maxChildBottom + margin + ActualPaddingBottom + ActualBorderBottomWidth);
+    }
+
+    /// <summary>
+    /// Collects all float boxes in the same block formatting context that
+    /// precede <paramref name="box"/> in the DOM tree. This includes floats
+    /// nested inside non-BFC siblings (e.g., floated <c>li</c> elements
+    /// inside a non-floated <c>ul</c>).
+    /// </summary>
+    private static List<CssBox> CollectPrecedingFloatsInBfc(CssBox box)
+    {
+        var result = new List<CssBox>();
+        if (box.ParentBox == null) return result;
+
+        foreach (var sibling in box.ParentBox.Boxes)
+        {
+            if (sibling == box) break;
+            CollectFloatsInSubtree(sibling, result);
+        }
+        return result;
+    }
+
+    private static void CollectFloatsInSubtree(CssBox root, List<CssBox> result)
+    {
+        if (root.Float != CssConstants.None && root.Display != CssConstants.None)
+        {
+            result.Add(root);
+            // Float establishes a new BFC – don't recurse into descendants.
+            return;
+        }
+
+        foreach (var child in root.Boxes)
+            CollectFloatsInSubtree(child, result);
     }
 
     internal void OffsetTop(double amount)
