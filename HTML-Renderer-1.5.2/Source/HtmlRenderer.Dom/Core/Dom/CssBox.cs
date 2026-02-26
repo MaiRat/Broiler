@@ -526,23 +526,26 @@ internal class CssBox : CssBoxProperties, IDisposable
 
     private int GetIndexForList()
     {
-        bool reversed = !string.IsNullOrEmpty(ParentBox.GetAttribute("reversed"));
+        // Phase 2: Read list attributes from CssBoxProperties instead of GetAttribute().
+        bool reversed = ParentBox.ListReversed;
 
-        if (!int.TryParse(ParentBox.GetAttribute("start"), out int index))
+        int index;
+        if (ParentBox.ListStart.HasValue)
         {
-            if (reversed)
+            index = ParentBox.ListStart.Value;
+        }
+        else if (reversed)
+        {
+            index = 0;
+            foreach (CssBox b in ParentBox.Boxes)
             {
-                index = 0;
-                foreach (CssBox b in ParentBox.Boxes)
-                {
-                    if (b.Display == CssConstants.ListItem)
-                        index++;
-                }
+                if (b.Display == CssConstants.ListItem)
+                    index++;
             }
-            else
-            {
-                index = 1;
-            }
+        }
+        else
+        {
+            index = 1;
         }
 
         foreach (CssBox b in ParentBox.Boxes)
