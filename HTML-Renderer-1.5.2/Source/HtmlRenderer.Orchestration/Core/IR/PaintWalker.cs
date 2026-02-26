@@ -300,7 +300,9 @@ internal static class PaintWalker
         // In the box tree, text-decoration may be on the block or on anonymous inline children.
         string decoration = fragment.Style.TextDecoration;
 
-        // If the block fragment doesn't have decoration, check children and inlines
+        // If the block fragment doesn't have decoration, check children and inlines.
+        // First child with a decoration wins (consistent with old CssBox.PaintDecoration
+        // which only supported a single TextDecoration per box).
         if (string.IsNullOrEmpty(decoration) || decoration == "none")
         {
             // Check if any child fragment has text-decoration
