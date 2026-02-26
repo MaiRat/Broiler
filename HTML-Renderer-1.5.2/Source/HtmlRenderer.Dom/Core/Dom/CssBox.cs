@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Globalization;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
-using TheArtOfDev.HtmlRenderer.Core.Handlers;
 using TheArtOfDev.HtmlRenderer.Core.Parse;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -171,54 +169,6 @@ internal class CssBox : CssBoxProperties, IDisposable
         catch (Exception ex)
         {
             ContainerInt.ReportError(HtmlRenderErrorType.Layout, "Exception in box layout", ex);
-        }
-    }
-
-    public void Paint(RGraphics g)
-    {
-        try
-        {
-            if (Display != CssConstants.None && Visibility == CssConstants.Visible)
-            {
-                // use initial clip to draw blocks with Position = fixed. I.e. ignrore page margins
-                if (Position == CssConstants.Fixed)
-                    g.SuspendClipping();
-
-                // don't call paint if the rectangle of the box is not in visible rectangle
-                bool visible = Rectangles.Count == 0;
-
-                if (!visible)
-                {
-                    var clip = g.GetClip();
-                    var rect = ContainingBlock.ClientRectangle;
-
-                    rect.X -= 2;
-                    rect.Width += 2;
-
-                    if (!IsFixed)
-                    {
-                        //rect.Offset(new PointF(-HtmlContainer.Location.X, -HtmlContainer.Location.Y));
-                        rect.Offset(ContainerInt.ScrollOffset);
-                    }
-
-                    clip.Intersect(rect);
-
-                    if (clip != RectangleF.Empty)
-                        visible = true;
-                }
-
-                if (visible)
-                    PaintImp(g);
-
-                if (Position == CssConstants.Fixed)
-                {
-                    g.ResumeClipping();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            ContainerInt.ReportError(HtmlRenderErrorType.Paint, "Exception in box paint", ex);
         }
     }
 
@@ -823,208 +773,6 @@ internal class CssBox : CssBoxProperties, IDisposable
         Location = new PointF((float)(Location.X + amount), Location.Y);
     }
 
-    protected virtual void PaintImp(RGraphics g)
-    {
-        if (Display == CssConstants.None || Display == CssConstants.TableCell && EmptyCells == CssConstants.Hide && IsSpaceOrEmpty)
-            return;
-
-        var clipped = RenderUtils.ClipGraphicsByOverflow(g, this);
-
-        var areas = Rectangles.Count == 0 ? [Bounds] : new List<RectangleF>(Rectangles.Values);
-        var clip = g.GetClip();
-        RectangleF[] rects = areas.ToArray();
-        PointF offset = PointF.Empty;
-
-        if (!IsFixed)
-            offset = ContainerInt.ScrollOffset;
-
-        for (int i = 0; i < rects.Length; i++)
-        {
-            var actualRect = rects[i];
-            actualRect.Offset(offset);
-
-            if (CssBoxHelper.IsRectVisible(actualRect, clip))
-            {
-                PaintBackground(g, actualRect, i == 0, i == rects.Length - 1);
-                BordersDrawHandler.DrawBoxBorders(g, this, actualRect, i == 0, i == rects.Length - 1);
-            }
-        }
-
-        PaintWords(g, offset);
-
-        for (int i = 0; i < rects.Length; i++)
-        {
-            var actualRect = rects[i];
-            actualRect.Offset(offset);
-
-            if (CssBoxHelper.IsRectVisible(actualRect, clip))
-                PaintDecoration(g, actualRect, i == 0, i == rects.Length - 1);
-        }
-
-        // split paint to handle z-order
-        foreach (CssBox b in Boxes)
-        {
-            if (b.Position != CssConstants.Absolute && !b.IsFixed)
-                b.Paint(g);
-        }
-
-        foreach (CssBox b in Boxes)
-        {
-            if (b.Position == CssConstants.Absolute)
-                b.Paint(g);
-        }
-
-        foreach (CssBox b in Boxes)
-        {
-            if (b.IsFixed)
-                b.Paint(g);
-        }
-
-        if (clipped)
-            g.PopClip();
-
-        _listItemBox?.Paint(g);
-    }
-
-    protected void PaintBackground(RGraphics g, RectangleF rect, bool isFirst, bool isLast)
-    {
-        if (rect.Width <= 0 || rect.Height <= 0)
-            return;
-
-        RBrush brush = null;
-
-        if (BackgroundGradient != CssConstants.None)
-        {
-            brush = g.GetLinearGradientBrush(rect, ActualBackgroundColor, ActualBackgroundGradient, ActualBackgroundGradientAngle);
-        }
-        else if (RenderUtils.IsColorVisible(ActualBackgroundColor))
-        {
-            brush = g.GetSolidBrush(ActualBackgroundColor);
-        }
-
-        if (brush != null)
-        {
-            // TODO:a handle it correctly (tables background)
-            // if (isLast)
-            //  rectangle.Width -= ActualWordSpacing + CssUtils.GetWordEndWhitespace(ActualFont);
-
-            RGraphicsPath roundrect = null;
-            if (IsRounded)
-                roundrect = RenderUtils.GetRoundRect(g, rect, ActualCornerNw, ActualCornerNe, ActualCornerSe, ActualCornerSw);
-
-            Object prevMode = null;
-            if (ContainerInt != null && !ContainerInt.AvoidGeometryAntialias && IsRounded)
-                prevMode = g.SetAntiAliasSmoothingMode();
-
-            if (roundrect != null)
-            {
-                g.DrawPath(brush, roundrect);
-            }
-            else
-            {
-                g.DrawRectangle(brush, Math.Ceiling(rect.X), Math.Ceiling(rect.Y), rect.Width, rect.Height);
-            }
-
-            g.ReturnPreviousSmoothingMode(prevMode);
-
-            roundrect?.Dispose();
-            brush.Dispose();
-        }
-
-        if (_imageLoadHandler != null && _imageLoadHandler.Image != null && isFirst)
-            BackgroundImageDrawHandler.DrawBackgroundImage(g, this, _imageLoadHandler, rect);
-    }
-
-    private void PaintWords(RGraphics g, PointF offset)
-    {
-        if (Width.Length == 0)
-            return;
-
-        var isRtl = Direction == CssConstants.Rtl;
-
-        foreach (var word in Words)
-        {
-            if (word.IsLineBreak)
-                continue;
-
-            var clip = g.GetClip();
-            var wordRect = word.Rectangle;
-
-            wordRect.Offset(offset);
-            clip.Intersect(wordRect);
-
-            if (clip == RectangleF.Empty)
-                continue;
-
-            var wordPoint = new PointF((float)(word.Left + offset.X), (float)(word.Top + offset.Y));
-
-            if (word.Selected)
-            {
-                // handle paint selected word background and with partial word selection
-                var wordLine = DomUtils.GetCssLineBoxByWord(word);
-                var left = word.SelectedStartOffset > -1 ? word.SelectedStartOffset : (wordLine.Words[0] != word && word.HasSpaceBefore ? -ActualWordSpacing : 0);
-                var padWordRight = word.HasSpaceAfter && !wordLine.IsLastSelectedWord(word);
-                var width = word.SelectedEndOffset > -1 ? word.SelectedEndOffset : word.Width + (padWordRight ? ActualWordSpacing : 0);
-                var rect = new RectangleF((float)(word.Left + offset.X + left), (float)(word.Top + offset.Y), (float)(width - left), (float)wordLine.LineHeight);
-
-                g.DrawRectangle(GetSelectionBackBrush(g, false), rect.X, rect.Y, rect.Width, rect.Height);
-
-                if (ContainerInt.SelectionForeColor != System.Drawing.Color.Empty && (word.SelectedStartOffset > 0 || word.SelectedEndIndexOffset > -1))
-                {
-                    g.PushClipExclude(rect);
-                    g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new SizeF((float)word.Width, (float)word.Height), isRtl);
-                    g.PopClip();
-                    g.PushClip(rect);
-                    g.DrawString(word.Text, ActualFont, GetSelectionForeBrush(), wordPoint, new SizeF((float)word.Width, (float)word.Height), isRtl);
-                    g.PopClip();
-                }
-                else
-                {
-                    g.DrawString(word.Text, ActualFont, GetSelectionForeBrush(), wordPoint, new SizeF((float)word.Width, (float)word.Height), isRtl);
-                }
-            }
-            else
-            {
-                //                            g.DrawRectangle(HtmlContainer.Adapter.GetPen(Color.Black), wordPoint.X, wordPoint.Y, word.Width - 1, word.Height - 1);
-                g.DrawString(word.Text, ActualFont, ActualColor, wordPoint, new SizeF((float)word.Width, (float)word.Height), isRtl);
-            }
-        }
-    }
-
-    protected void PaintDecoration(RGraphics g, RectangleF rectangle, bool isFirst, bool isLast)
-    {
-        if (string.IsNullOrEmpty(TextDecoration) || TextDecoration == CssConstants.None)
-            return;
-
-        double y = 0f;
-        if (TextDecoration == CssConstants.Underline)
-        {
-            y = Math.Round(rectangle.Top + ActualFont.UnderlineOffset);
-        }
-        else if (TextDecoration == CssConstants.LineThrough)
-        {
-            y = rectangle.Top + rectangle.Height / 2f;
-        }
-        else if (TextDecoration == CssConstants.Overline)
-        {
-            y = rectangle.Top;
-        }
-        y -= ActualPaddingBottom - ActualBorderBottomWidth;
-
-        double x1 = rectangle.X;
-        if (isFirst)
-            x1 += ActualPaddingLeft + ActualBorderLeftWidth;
-
-        double x2 = rectangle.Right;
-        if (isLast)
-            x2 -= ActualPaddingRight + ActualBorderRightWidth;
-
-        var pen = g.GetPen(ActualColor);
-        pen.Width = 1;
-        pen.DashStyle = DashStyle.Solid;
-        g.DrawLine(pen, x1, y, x2, y);
-    }
-
     internal void OffsetRectangle(CssLineBox lineBox, double gap)
     {
         if (Rectangles.TryGetValue(lineBox, out RectangleF r))
@@ -1037,24 +785,6 @@ internal class CssBox : CssBoxProperties, IDisposable
     {
         if (image != null && async)
             ContainerInt.RequestRefresh(false);
-    }
-
-    protected Color GetSelectionForeBrush() => ContainerInt.SelectionForeColor != System.Drawing.Color.Empty ? ContainerInt.SelectionForeColor : ActualColor;
-
-    protected RBrush GetSelectionBackBrush(RGraphics g, bool forceAlpha)
-    {
-        var backColor = ContainerInt.SelectionBackColor;
-        if (backColor != System.Drawing.Color.Empty)
-        {
-            if (forceAlpha && backColor.A > 180)
-                return g.GetSolidBrush(System.Drawing.Color.FromArgb(180, backColor.R, backColor.G, backColor.B));
-            else
-                return g.GetSolidBrush(backColor);
-        }
-        else
-        {
-            return g.GetSolidBrush(CssUtils.DefaultSelectionBackcolor);
-        }
     }
 
     protected override RFont GetCachedFont(string fontFamily, double fsize, FontStyle st) => ContainerInt.GetFont(fontFamily, fsize, st);

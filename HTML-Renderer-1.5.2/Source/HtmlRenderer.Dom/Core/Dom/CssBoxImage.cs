@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Core.Handlers;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Dom;
@@ -19,64 +18,6 @@ internal sealed class CssBoxImage : CssBox
     }
 
     public RImage Image => _imageWord.Image;
-
-    protected override void PaintImp(RGraphics g)
-    {
-        // load image if it is in visible rectangle
-        if (_imageLoadHandler == null)
-        {
-            _imageLoadHandler = ContainerInt.CreateImageLoadHandler(OnLoadImageComplete);
-            _imageLoadHandler.LoadImage(GetAttribute("src"), HtmlTag?.Attributes);
-        }
-
-        var rect = CommonUtils.GetFirstValueOrDefault(Rectangles);
-        PointF offset = PointF.Empty;
-
-        if (!IsFixed)
-            offset = ContainerInt.ScrollOffset;
-
-        rect.Offset(offset);
-
-        var clipped = RenderUtils.ClipGraphicsByOverflow(g, this);
-
-        PaintBackground(g, rect, true, true);
-        BordersDrawHandler.DrawBoxBorders(g, this, rect, true, true);
-
-        RectangleF r = _imageWord.Rectangle;
-        r.Offset(offset);
-        r.Height -= (float)(ActualBorderTopWidth + ActualBorderBottomWidth + ActualPaddingTop + ActualPaddingBottom);
-        r.Y += (float)(ActualBorderTopWidth + ActualPaddingTop);
-        r.X = (float)Math.Floor(r.X);
-        r.Y = (float)Math.Floor(r.Y);
-
-        if (_imageWord.Image != null)
-        {
-            if (r.Width > 0 && r.Height > 0)
-            {
-                if (_imageWord.ImageRectangle == RectangleF.Empty)
-                    g.DrawImage(_imageWord.Image, r);
-                else
-                    g.DrawImage(_imageWord.Image, r, _imageWord.ImageRectangle);
-
-                if (_imageWord.Selected)
-                    g.DrawRectangle(GetSelectionBackBrush(g, true), _imageWord.Left + offset.X, _imageWord.Top + offset.Y, _imageWord.Width + 2, DomUtils.GetCssLineBoxByWord(_imageWord).LineHeight);
-            }
-        }
-        else if (_imageLoadingComplete)
-        {
-            if (_imageLoadingComplete && r.Width > 19 && r.Height > 19)
-                RenderUtils.DrawImageErrorIcon(g, ContainerInt, r);
-        }
-        else
-        {
-            RenderUtils.DrawImageLoadingIcon(g, ContainerInt, r);
-            if (r.Width > 19 && r.Height > 19)
-                g.DrawRectangle(g.GetPen(System.Drawing.Color.LightGray), r.X, r.Y, r.Width, r.Height);
-        }
-
-        if (clipped)
-            g.PopClip();
-    }
 
     internal override void MeasureWordsSize(RGraphics g)
     {

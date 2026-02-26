@@ -99,21 +99,27 @@ internal static class PaintWalker
     private static void EmitBackground(Fragment fragment, List<DisplayItem> items)
     {
         var style = fragment.Style;
-        var bounds = fragment.Bounds;
 
-        if (bounds.Width <= 0 || bounds.Height <= 0)
-            return;
+        // Determine the set of rectangles to paint: per-line rects for inline elements,
+        // or the single fragment bounds for block elements.
+        var rects = GetPaintRects(fragment);
 
-        // Background gradient
-        if (style.ActualBackgroundGradient.A > 0 &&
-            style.ActualBackgroundGradient != style.ActualBackgroundColor)
+        foreach (var rect in rects)
         {
-            // Emit primary color; gradient rendering deferred to raster backend
-            items.Add(new FillRectItem { Bounds = bounds, Color = style.ActualBackgroundColor });
-        }
-        else if (style.ActualBackgroundColor.A > 0)
-        {
-            items.Add(new FillRectItem { Bounds = bounds, Color = style.ActualBackgroundColor });
+            if (rect.Width <= 0 || rect.Height <= 0)
+                continue;
+
+            // Background gradient
+            if (style.ActualBackgroundGradient.A > 0 &&
+                style.ActualBackgroundGradient != style.ActualBackgroundColor)
+            {
+                // Emit primary color; gradient rendering deferred to raster backend
+                items.Add(new FillRectItem { Bounds = rect, Color = style.ActualBackgroundColor });
+            }
+            else if (style.ActualBackgroundColor.A > 0)
+            {
+                items.Add(new FillRectItem { Bounds = rect, Color = style.ActualBackgroundColor });
+            }
         }
     }
 
@@ -206,10 +212,6 @@ internal static class PaintWalker
     {
         var style = fragment.Style;
         var border = fragment.Border;
-        var bounds = fragment.Bounds;
-
-        if (bounds.Width <= 0 || bounds.Height <= 0)
-            return;
 
         bool hasTop = HasBorder(style.BorderTopStyle, border.Top);
         bool hasRight = HasBorder(style.BorderRightStyle, border.Right);
@@ -219,25 +221,37 @@ internal static class PaintWalker
         if (!hasTop && !hasRight && !hasBottom && !hasLeft)
             return;
 
-        items.Add(new DrawBorderItem
+        var rects = GetPaintRects(fragment);
+
+        for (int i = 0; i < rects.Count; i++)
         {
-            Bounds = bounds,
-            Widths = border,
-            TopColor = hasTop ? style.ActualBorderTopColor : Color.Empty,
-            RightColor = hasRight ? style.ActualBorderRightColor : Color.Empty,
-            BottomColor = hasBottom ? style.ActualBorderBottomColor : Color.Empty,
-            LeftColor = hasLeft ? style.ActualBorderLeftColor : Color.Empty,
-            // Style kept for Phase 1 backward compat; per-side styles are authoritative
-            Style = style.BorderTopStyle ?? "solid",
-            TopStyle = style.BorderTopStyle ?? "none",
-            RightStyle = style.BorderRightStyle ?? "none",
-            BottomStyle = style.BorderBottomStyle ?? "none",
-            LeftStyle = style.BorderLeftStyle ?? "none",
-            CornerNw = style.ActualCornerNw,
-            CornerNe = style.ActualCornerNe,
-            CornerSe = style.ActualCornerSe,
-            CornerSw = style.ActualCornerSw,
-        });
+            var rect = rects[i];
+            if (rect.Width <= 0 || rect.Height <= 0)
+                continue;
+
+            bool isFirst = i == 0;
+            bool isLast = i == rects.Count - 1;
+
+            items.Add(new DrawBorderItem
+            {
+                Bounds = rect,
+                Widths = border,
+                TopColor = hasTop ? style.ActualBorderTopColor : Color.Empty,
+                RightColor = (hasRight && isLast) ? style.ActualBorderRightColor : Color.Empty,
+                BottomColor = hasBottom ? style.ActualBorderBottomColor : Color.Empty,
+                LeftColor = (hasLeft && isFirst) ? style.ActualBorderLeftColor : Color.Empty,
+                // Style kept for Phase 1 backward compat; per-side styles are authoritative
+                Style = style.BorderTopStyle ?? "solid",
+                TopStyle = style.BorderTopStyle ?? "none",
+                RightStyle = (isLast) ? (style.BorderRightStyle ?? "none") : "none",
+                BottomStyle = style.BorderBottomStyle ?? "none",
+                LeftStyle = (isFirst) ? (style.BorderLeftStyle ?? "none") : "none",
+                CornerNw = style.ActualCornerNw,
+                CornerNe = style.ActualCornerNe,
+                CornerSe = style.ActualCornerSe,
+                CornerSw = style.ActualCornerSw,
+            });
+        }
     }
 
     private static void EmitText(Fragment fragment, List<DisplayItem> items)
@@ -282,38 +296,62 @@ internal static class PaintWalker
         if (fragment.Lines == null || fragment.Lines.Count == 0)
             return;
 
-        var style = fragment.Style;
-        if (string.IsNullOrEmpty(style.TextDecoration) || style.TextDecoration == "none")
+        // Check text-decoration on the fragment itself and on its inline children.
+        // In the box tree, text-decoration may be on the block or on anonymous inline children.
+        string decoration = fragment.Style.TextDecoration;
+
+        // If the block fragment doesn't have decoration, check children and inlines
+        if (string.IsNullOrEmpty(decoration) || decoration == "none")
+        {
+            // Check if any child fragment has text-decoration
+            foreach (var child in fragment.Children)
+            {
+                if (!string.IsNullOrEmpty(child.Style.TextDecoration) && child.Style.TextDecoration != "none")
+                {
+                    decoration = child.Style.TextDecoration;
+                    break;
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(decoration) || decoration == "none")
             return;
 
-        var bounds = fragment.Bounds;
-        var border = fragment.Border;
-        var padding = fragment.Padding;
+        var rects = GetPaintRects(fragment);
 
-        float x1 = bounds.X + (float)padding.Left + (float)border.Left;
-        float x2 = bounds.Right - (float)padding.Right - (float)border.Right;
-
-        foreach (var line in fragment.Lines)
+        foreach (var rect in rects)
         {
-            float y;
-            if (style.TextDecoration == "underline")
-                y = line.Y + line.Height * 0.85f; // approximate underline offset (~85% of line height)
-            else if (style.TextDecoration == "line-through")
-                y = line.Y + line.Height / 2f; // center of line
-            else if (style.TextDecoration == "overline")
-                y = line.Y; // top of line
-            else
+            if (rect.Width <= 0 || rect.Height <= 0)
                 continue;
 
-            items.Add(new DrawLineItem
+            var border = fragment.Border;
+            var padding = fragment.Padding;
+
+            float x1 = rect.X + (float)padding.Left + (float)border.Left;
+            float x2 = rect.Right - (float)padding.Right - (float)border.Right;
+
+            foreach (var line in fragment.Lines)
             {
-                Bounds = new RectangleF(x1, y, x2 - x1, 1),
-                Start = new PointF(x1, y),
-                End = new PointF(x2, y),
-                Color = style.ActualColor,
-                Width = 1,
-                DashStyle = "solid",
-            });
+                float y;
+                if (decoration == "underline")
+                    y = line.Y + line.Height * 0.85f; // approximate underline offset (~85% of line height)
+                else if (decoration == "line-through")
+                    y = line.Y + line.Height / 2f; // center of line
+                else if (decoration == "overline")
+                    y = line.Y; // top of line
+                else
+                    continue;
+
+                items.Add(new DrawLineItem
+                {
+                    Bounds = new RectangleF(x1, y, x2 - x1, 1),
+                    Start = new PointF(x1, y),
+                    End = new PointF(x2, y),
+                    Color = fragment.Style.ActualColor,
+                    Width = 1,
+                    DashStyle = "solid",
+                });
+            }
         }
     }
 
@@ -393,5 +431,17 @@ internal static class PaintWalker
 
         return double.TryParse(numeric, System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : fallback;
+    }
+
+    /// <summary>
+    /// Returns the list of rectangles to paint for a fragment. For inline elements
+    /// that have per-line-box rectangles, returns those; otherwise returns
+    /// the single <see cref="Fragment.Bounds"/> rectangle.
+    /// </summary>
+    private static IReadOnlyList<RectangleF> GetPaintRects(Fragment fragment)
+    {
+        if (fragment.InlineRects != null && fragment.InlineRects.Count > 0)
+            return fragment.InlineRects;
+        return [fragment.Bounds];
     }
 }

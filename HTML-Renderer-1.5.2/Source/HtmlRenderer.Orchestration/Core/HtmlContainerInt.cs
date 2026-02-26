@@ -33,17 +33,10 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     internal Fragment LatestFragmentTree { get; private set; }
 
     /// <summary>
-    /// The most recent display list produced by the new paint path.
-    /// Phase 3: populated when <see cref="UseNewPaintPath"/> is enabled.
+    /// The most recent display list produced by the paint path.
+    /// Populated after each <see cref="PerformPaint"/> call.
     /// </summary>
     internal DisplayList LatestDisplayList { get; private set; }
-
-    /// <summary>
-    /// When <c>true</c>, <see cref="PerformPaint"/> uses the new
-    /// <see cref="PaintWalker"/> + <see cref="IRasterBackend"/> path
-    /// instead of <c>CssBox.Paint()</c>. Default is <c>false</c>.
-    /// </summary>
-    internal bool UseNewPaintPath { get; set; }
 
     internal HtmlContainerInt(IAdapter adapter, IHandlerFactory handlerFactory)
     {
@@ -250,7 +243,7 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
             LoadComplete?.Invoke(this, EventArgs.Empty);
         }
 
-        // Phase 1/3: Build fragment tree after layout — consumed by PaintWalker when UseNewPaintPath is enabled.
+        // Build fragment tree after layout — consumed by PaintWalker during paint.
         LatestFragmentTree = FragmentTreeBuilder.Build(Root);
     }
 
@@ -267,16 +260,12 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
             g.PushClip(new RectangleF(MarginLeft, MarginTop, PageSize.Width, PageSize.Height));
         }
 
-        if (UseNewPaintPath && LatestFragmentTree != null)
+        if (LatestFragmentTree != null)
         {
-            // Phase 3: New paint path — Fragment tree → DisplayList → RGraphics
+            // Paint path: Fragment tree → DisplayList → RGraphics
             var displayList = PaintWalker.Paint(LatestFragmentTree);
             LatestDisplayList = displayList;
             RGraphicsRasterBackend.Instance.Render(displayList, g);
-        }
-        else
-        {
-            Root?.Paint(g);
         }
 
         g.PopClip();
