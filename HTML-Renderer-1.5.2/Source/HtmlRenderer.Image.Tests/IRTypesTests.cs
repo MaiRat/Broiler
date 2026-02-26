@@ -276,6 +276,7 @@ public class IRTypesTests
 
         var fragmentTree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(fragmentTree);
+        LayoutInvariantChecker.AssertValid(fragmentTree);
     }
 
     [Fact]
@@ -299,6 +300,7 @@ public class IRTypesTests
 
         var fragmentTree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(fragmentTree);
+        LayoutInvariantChecker.AssertValid(fragmentTree);
         Assert.True(fragmentTree.Children.Count > 0, "Root fragment should have children");
     }
 
@@ -319,6 +321,7 @@ public class IRTypesTests
 
         var fragmentTree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(fragmentTree);
+        LayoutInvariantChecker.AssertValid(fragmentTree);
         Assert.NotNull(fragmentTree.Style);
         Assert.Equal("block", fragmentTree.Style.Display);
     }
@@ -340,6 +343,7 @@ public class IRTypesTests
 
         var fragmentTree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(fragmentTree);
+        LayoutInvariantChecker.AssertValid(fragmentTree);
         Assert.True(fragmentTree.Size.Width > 0, "Fragment width should be positive");
         Assert.True(fragmentTree.Size.Height > 0, "Fragment height should be positive");
     }
@@ -361,6 +365,7 @@ public class IRTypesTests
 
         var fragmentTree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(fragmentTree);
+        LayoutInvariantChecker.AssertValid(fragmentTree);
 
         // The styled div is a child of the root; find the fragment with padding/border
         var styledFragment = FindFragmentWithPadding(fragmentTree);
@@ -535,6 +540,7 @@ public class IRTypesTests
 
         var tree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(tree);
+        LayoutInvariantChecker.AssertValid(tree);
         var imgFragment = FindFragmentByKind(tree, BoxKind.ReplacedImage);
         Assert.NotNull(imgFragment);
     }
@@ -555,6 +561,7 @@ public class IRTypesTests
 
         var tree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(tree);
+        LayoutInvariantChecker.AssertValid(tree);
         var tableFragment = FindFragmentByKind(tree, BoxKind.Table);
         Assert.NotNull(tableFragment);
     }
@@ -575,6 +582,7 @@ public class IRTypesTests
 
         var tree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(tree);
+        LayoutInvariantChecker.AssertValid(tree);
         var olFragment = FindFragmentByKind(tree, BoxKind.OrderedList);
         Assert.NotNull(olFragment);
         Assert.Equal(3, olFragment.Style.ListStart);
@@ -597,6 +605,7 @@ public class IRTypesTests
 
         var tree = container.HtmlContainerInt.LatestFragmentTree;
         Assert.NotNull(tree);
+        LayoutInvariantChecker.AssertValid(tree);
         var hrFragment = FindFragmentByKind(tree, BoxKind.HorizontalRule);
         Assert.NotNull(hrFragment);
     }
