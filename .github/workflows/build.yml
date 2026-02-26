@@ -32,6 +32,11 @@ jobs:
     - name: Test
       run: dotnet test Broiler.slnx --no-build --configuration Release --verbosity normal --filter "Category!=Differential"
 
+    - name: Acid1 Tests
+      # Dedicated Acid1 step for clear pass/fail visibility in CI.
+      # These tests also run as part of the main Test step above.
+      run: dotnet test src/Broiler.Cli.Tests/ --no-build --configuration Release --verbosity normal --filter "FullyQualifiedName~Acid1"
+
     - name: Image Capture Test
       run: dotnet run --project src/Broiler.Cli --no-build --configuration Release -- --capture-image https://www.heise.de/ --output capture.png --timeout 60
 

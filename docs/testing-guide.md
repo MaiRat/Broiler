@@ -59,7 +59,14 @@ dotnet test src/Broiler.Cli.Tests/ \
 # Image comparison tests
 dotnet test HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/ \
   --filter "FullyQualifiedName~ImageComparerTests"
+
+# Acid1 CSS1 conformance tests (all 3 test classes)
+dotnet test src/Broiler.Cli.Tests/ \
+  --filter "FullyQualifiedName~Acid1"
 ```
+
+> **Acid1 testing:** For comprehensive documentation on running and
+> understanding the Acid1 test suite, see [acid1-testing.md](acid1-testing.md).
 
 ## Test Categories
 
@@ -121,7 +128,27 @@ Covers Phase 2 CSS specifications:
 - **CSS Value Parsing** (1 test): rgb() in border-color shorthand
 - **Media Queries** (1 test): @media print vs @media screen coexistence
 
-### 3. Rendering Analytics Tests (11 tests)
+### 3. Acid1 CSS1 Conformance Tests (77 tests)
+
+Tests validating the rendering engine against the W3C CSS1 Acid1 test
+(`acid/acid1/acid1.html`). Organized into three test classes:
+
+- **Acid1CaptureTests** (30 tests): Visual regression, structural validation,
+  image format checks, and similarity scoring against the reference image.
+- **Acid1ProgrammaticTests** (25 tests): Layout, float positioning, margin
+  collapsing, percentage widths, clear behaviour, and border-box computation.
+- **Acid1SplitTests** (22 tests): Isolated section tests (10 sections)
+  targeting individual CSS1 features for precise regression diagnostics.
+
+Run all Acid1 tests:
+
+```bash
+dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1"
+```
+
+See [acid1-testing.md](acid1-testing.md) for full details.
+
+### 4. Rendering Analytics Tests (11 tests)
 
 - **Performance**: Simple and large document render timing
 - **Dimensions**: Auto-sized rendering respects maxWidth, wider content
@@ -133,7 +160,7 @@ Covers Phase 2 CSS specifications:
 - **Consistency**: Same HTML produces identical output, different HTML
   produces different output
 
-### 4. CLI Output Validation Tests (6 tests)
+### 5. CLI Output Validation Tests (6 tests)
 
 - HTML capture preserves title and special characters
 - PNG capture produces valid PNG with correct magic bytes
