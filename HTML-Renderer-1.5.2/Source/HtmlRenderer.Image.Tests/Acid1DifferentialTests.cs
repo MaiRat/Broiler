@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using TheArtOfDev.HtmlRenderer.Core.IR;
+using TheArtOfDev.HtmlRenderer.Image;
 
 namespace HtmlRenderer.Image.Tests;
 
@@ -170,6 +171,123 @@ public class Acid1DifferentialTests : IAsyncLifetime
             $"Threshold: {Config.DiffThreshold:P2}. " +
             $"Classification: {report.Classification?.ToString() ?? "N/A"}. " +
             $"Report: {ReportDir}");
+    }
+
+    private static string GetSourceDirectory([CallerFilePath] string path = "")
+    {
+        return Path.GetDirectoryName(path)!;
+    }
+}
+
+/// <summary>
+/// Repeated render validation tests for the Acid1 test suite.
+/// These tests render the same HTML multiple times to verify rendering
+/// determinism and catch intermittent layout bugs.
+/// </summary>
+[Collection("Rendering")]
+[Trait("Category", "Differential")]
+public class Acid1RepeatedRenderTests
+{
+    private const int RepeatCount = 3;
+    private static readonly DeterministicRenderConfig RenderConfig = DeterministicRenderConfig.Default;
+
+    private static readonly string Acid1Dir = Path.Combine(
+        GetSourceDirectory(), "..", "..", "..", "acid", "acid1");
+
+    /// <summary>
+    /// Renders the full <c>acid1.html</c> multiple times and asserts that
+    /// each render produces a pixel-identical output, ensuring float layout
+    /// and other CSS1 features are deterministic.
+    /// </summary>
+    [Fact]
+    public void Acid1Full_RepeatedRender_IsDeterministic()
+    {
+        var html = File.ReadAllText(Path.Combine(Acid1Dir, "acid1.html"));
+        AssertDeterministicRender(html);
+    }
+
+    /// <summary>
+    /// Repeated render of Section 2 (dt float:left) to verify float-left
+    /// positioning is deterministic across runs.
+    /// </summary>
+    [Fact]
+    public void Section2_DtFloatLeft_RepeatedRender_IsDeterministic()
+    {
+        var html = ReadSplitHtml("section2-dt-float-left.html");
+        AssertDeterministicRender(html);
+    }
+
+    /// <summary>
+    /// Repeated render of Section 3 (dd float:right) to verify the fixed
+    /// right-float collision detection produces consistent output.
+    /// </summary>
+    [Fact]
+    public void Section3_DdFloatRight_RepeatedRender_IsDeterministic()
+    {
+        var html = ReadSplitHtml("section3-dd-float-right.html");
+        AssertDeterministicRender(html);
+    }
+
+    /// <summary>
+    /// Repeated render of Section 4 (li float:left stacking) to verify
+    /// multiple left float stacking is deterministic.
+    /// </summary>
+    [Fact]
+    public void Section4_LiFloatLeft_RepeatedRender_IsDeterministic()
+    {
+        var html = ReadSplitHtml("section4-li-float-left.html");
+        AssertDeterministicRender(html);
+    }
+
+    /// <summary>
+    /// Repeated render of Section 5 (blockquote float:left with asymmetric
+    /// borders) to verify the combined float+border layout is deterministic.
+    /// </summary>
+    [Fact]
+    public void Section5_BlockquoteFloat_RepeatedRender_IsDeterministic()
+    {
+        var html = ReadSplitHtml("section5-blockquote-float.html");
+        AssertDeterministicRender(html);
+    }
+
+    /// <summary>
+    /// Repeated render of Section 6 (h1 float:left) to verify float
+    /// positioning consistency.
+    /// </summary>
+    [Fact]
+    public void Section6_H1Float_RepeatedRender_IsDeterministic()
+    {
+        var html = ReadSplitHtml("section6-h1-float.html");
+        AssertDeterministicRender(html);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────
+
+    private static string ReadSplitHtml(string filename)
+    {
+        return File.ReadAllText(Path.Combine(Acid1Dir, "split", filename));
+    }
+
+    /// <summary>
+    /// Renders the HTML <paramref name="repeatCount"/> times and asserts
+    /// that every render is pixel-identical to the first.
+    /// </summary>
+    private static void AssertDeterministicRender(
+        string html, int repeatCount = RepeatCount)
+    {
+        using var baseline = PixelDiffRunner.RenderDeterministic(html, RenderConfig);
+
+        for (int i = 1; i < repeatCount; i++)
+        {
+            using var current = PixelDiffRunner.RenderDeterministic(html, RenderConfig);
+            var diff = PixelDiffRunner.Compare(baseline, current, RenderConfig);
+
+            Assert.True(diff.IsMatch,
+                $"Render {i + 1}/{repeatCount} differs from baseline: " +
+                $"{diff.DiffRatio:P4} pixel difference " +
+                $"({diff.DiffPixelCount}/{diff.TotalPixelCount} pixels). " +
+                "Rendering must be deterministic.");
+        }
     }
 
     private static string GetSourceDirectory([CallerFilePath] string path = "")

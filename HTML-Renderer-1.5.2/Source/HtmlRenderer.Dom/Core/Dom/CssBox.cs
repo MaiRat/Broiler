@@ -327,7 +327,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                         if (Float == CssConstants.Left)
                         {
-                            // Iteratively resolve collisions with all prior left floats
+                            // Iteratively resolve collisions with all prior floats (CSS1 §5.5.25)
                             for (int iter = 0; iter < 100; iter++)
                             {
                                 left = containerLeft + ActualMarginLeft;
@@ -342,7 +342,19 @@ internal class CssBox : CssBoxProperties, IDisposable
                                     }
                                 }
 
-                                if (left + Size.Width <= containerRight)
+                                // Also ensure left float doesn't overlap with right floats
+                                double effectiveRight = containerRight;
+                                foreach (var floatBox in precedingFloats)
+                                {
+                                    if (floatBox.Float == CssConstants.Right)
+                                    {
+                                        double fBottom = floatBox.ActualBottom + floatBox.ActualBorderBottomWidth;
+                                        if (top < fBottom && top + floatHeight > floatBox.Location.Y)
+                                            effectiveRight = Math.Min(effectiveRight, floatBox.Location.X - floatBox.ActualMarginLeft);
+                                    }
+                                }
+
+                                if (left + Size.Width <= effectiveRight)
                                     break;
 
                                 // Move below the lowest overlapping float
@@ -360,7 +372,49 @@ internal class CssBox : CssBoxProperties, IDisposable
                         }
                         else if (Float == CssConstants.Right)
                         {
-                            left = containerRight - Size.Width - ActualMarginRight;
+                            // Iteratively resolve collisions with all prior floats (CSS1 §5.5.26)
+                            for (int iter = 0; iter < 100; iter++)
+                            {
+                                left = containerRight - Size.Width - ActualMarginRight;
+
+                                // Avoid overlapping with preceding right floats
+                                foreach (var floatBox in precedingFloats)
+                                {
+                                    if (floatBox.Float == CssConstants.Right)
+                                    {
+                                        double fBottom = floatBox.ActualBottom + floatBox.ActualBorderBottomWidth;
+                                        if (top < fBottom && top + floatHeight > floatBox.Location.Y)
+                                            left = Math.Min(left, floatBox.Location.X - floatBox.ActualMarginLeft - Size.Width - ActualMarginRight);
+                                    }
+                                }
+
+                                // Ensure right float doesn't overlap with left floats
+                                double leftFloatEdge = containerLeft;
+                                foreach (var floatBox in precedingFloats)
+                                {
+                                    if (floatBox.Float == CssConstants.Left)
+                                    {
+                                        double fBottom = floatBox.ActualBottom + floatBox.ActualBorderBottomWidth;
+                                        if (top < fBottom && top + floatHeight > floatBox.Location.Y)
+                                            leftFloatEdge = Math.Max(leftFloatEdge, floatBox.Location.X + floatBox.Size.Width + floatBox.ActualMarginRight);
+                                    }
+                                }
+
+                                if (left >= leftFloatEdge)
+                                    break;
+
+                                // Move below the lowest overlapping float
+                                double maxBottom = top;
+                                foreach (var floatBox in precedingFloats)
+                                {
+                                    double fBottom = floatBox.ActualBottom + floatBox.ActualBorderBottomWidth;
+                                    if (top < fBottom && top + floatHeight > floatBox.Location.Y)
+                                        maxBottom = Math.Max(maxBottom, fBottom);
+                                }
+
+                                if (maxBottom <= top) break;
+                                top = maxBottom;
+                            }
                         }
                     }
 
