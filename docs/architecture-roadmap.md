@@ -89,32 +89,47 @@ are unchanged; new types are populated in parallel as "shadow" data.
 
 ## Phase 2 — Layout Consumes Only LayoutNode + ComputedStyle
 
+**Status**: 🚧 In Progress (BoxKind, list attributes, image source implemented)
+
 **Goal**: Decouple layout from raw DOM. Layout methods receive `LayoutNode`
 (or a wrapper) instead of calling `HtmlTag.GetAttribute()` or checking
 tag names.
 
 ### Steps
 
-1. **Add `BoxKind` enum** (`Block`, `Inline`, `ReplacedImage`,
+1. ✅ **Add `BoxKind` enum** (`Block`, `Inline`, `ReplacedImage`,
    `ReplacedIframe`, `TableCell`, `ListItem`, …) to `ComputedStyle`.
-   - Populate in `DomParser.CascadeApplyStyles()` based on tag name.
+   - Populated in `DomParser.CascadeApplyStyles()` based on tag name.
    - This replaces all `tag.Name == HtmlConstants.Img` checks.
 
-2. **Move list-attribute reads to style phase.**
-   - Add `ListStart`, `ListReversed` to `ComputedStyle`.
+2. ✅ **Move list-attribute reads to style phase.**
+   - Added `ListStart`, `ListReversed` to `ComputedStyle` and `CssBoxProperties`.
    - `DomParser` reads `<ol start="…" reversed>` and sets these.
-   - `CssBox.GetIndexForList()` reads from `ComputedStyle` instead of
+   - `CssBox.GetIndexForList()` reads from `CssBoxProperties` instead of
      `GetAttribute()`.
 
-3. **Move image / background-image loading to a resource-resolution pass**
-   before layout.
-   - New method `HtmlContainerInt.ResolveResources()` called between
-     `GenerateCssTree()` and `PerformLayout()`.
-   - `CssBoxImage` and `CssBox.MeasureWordsSize()` receive pre-loaded
-     dimensions rather than triggering async loads.
+3. ✅ **Add image source to style phase.**
+   - Added `ImageSource` to `ComputedStyle` and `CssBoxProperties`.
+   - `DomParser` reads `<img src="…">` and sets `ImageSource`.
+   - Full image/background-image resource-resolution pass deferred to
+     follow-up (requires deeper `CssBoxImage` changes).
 
 4. **Audit remaining `GetAttribute()` / `HtmlTag` accesses in layout code.**
    - Replace each with a property on `ComputedStyle` or `LayoutNode`.
+   - Remaining accesses: background-image load in `CssBox.MeasureWordsSize()`,
+     image load in `CssBoxImage.PaintImp()` / `MeasureWordsSize()`.
+
+### New/Modified Files
+
+| File | Change |
+|------|--------|
+| `HtmlRenderer.Core/Core/IR/BoxKind.cs` | ✦ new — enum classifying element roles |
+| `HtmlRenderer.Core/Core/IR/ComputedStyle.cs` | ✎ added Kind, ListStart, ListReversed, ImageSource |
+| `HtmlRenderer.Dom/Core/Dom/CssBoxProperties.cs` | ✎ added Kind, ListStart, ListReversed, ImageSource |
+| `HtmlRenderer.Dom/Core/Dom/CssBox.cs` | ✎ GetIndexForList() reads from CssBoxProperties |
+| `HtmlRenderer.Orchestration/Core/Parse/DomParser.cs` | ✎ AssignBoxKindAndAttributes() |
+| `HtmlRenderer.Orchestration/Core/IR/ComputedStyleBuilder.cs` | ✎ snapshots new properties |
+| `HtmlRenderer.Image.Tests/IRTypesTests.cs` | ✎ 27 new Phase 2 tests |
 
 ### Verification
 
@@ -207,7 +222,7 @@ main concern.
 |-------|-------|--------|------|-----------------|--------|
 | 0 | Documentation | ½ day | None | No | ✅ Complete |
 | 1 | Add IR types (shadow) | 2–3 days | Low | No | ✅ Complete |
-| 2 | Layout decoupled from DOM | 3–5 days | Medium | No (same output) | |
+| 2 | Layout decoupled from DOM | 3–5 days | Medium | No (same output) | 🚧 In Progress |
 | 3 | Paint decoupled from CssBox | 5–8 days | High | No (same output) | |
 | 4 | Incremental caching | 2–4 weeks | Medium | No (same output) | |
 

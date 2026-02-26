@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TheArtOfDev.HtmlRenderer.Adapters;
+using TheArtOfDev.HtmlRenderer.Core.IR;
 using TheArtOfDev.HtmlRenderer.Core.Parse;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -400,7 +401,21 @@ internal abstract class CssBoxProperties : IBorderRenderData, IBackgroundRenderD
     public string ListStyleImage { get; set; } = string.Empty;
     public string ListStyleType { get; set; } = "disc";
 
-    #endregion CSS Propertier
+    // --- Phase 2: element classification and DOM-attribute properties ---
+
+    /// <summary>Semantic role of the element, set during style resolution from tag name.</summary>
+    public BoxKind Kind { get; set; } = BoxKind.Anonymous;
+
+    /// <summary>The <c>start</c> attribute of an <c>&lt;ol&gt;</c>, or null if not specified.</summary>
+    public int? ListStart { get; set; }
+
+    /// <summary>Whether an <c>&lt;ol&gt;</c> has the <c>reversed</c> attribute.</summary>
+    public bool ListReversed { get; set; }
+
+    /// <summary>The resolved <c>src</c> attribute for image elements, or null if not applicable.</summary>
+    public string? ImageSource { get; set; }
+
+    #endregion CSS Properties
 
     public PointF Location
     {

@@ -7,11 +7,18 @@ namespace TheArtOfDev.HtmlRenderer.Core.IR;
 /// Produced by the style phase; consumed by layout and paint. Immutable once created.
 /// </summary>
 /// <remarks>
-/// Phase 1: This is a read-only snapshot populated in parallel with existing code.
-/// No existing code paths consume this yet.
+/// Phase 1: Read-only snapshot populated in parallel with existing code.
+/// Phase 2: Extended with <see cref="Kind"/>, <see cref="ListStart"/>,
+/// <see cref="ListReversed"/>, and <see cref="ImageSource"/> to decouple
+/// layout from raw DOM attribute access.
 /// </remarks>
 public sealed class ComputedStyle
 {
+    // --- Element classification (Phase 2) ---
+
+    /// <summary>Semantic role of the element, derived from tag name during style resolution.</summary>
+    public BoxKind Kind { get; init; } = BoxKind.Anonymous;
+
     // --- Box model (raw CSS strings, matching CssBoxProperties conventions) ---
 
     public string Display { get; init; } = "inline";
@@ -96,6 +103,19 @@ public sealed class ComputedStyle
     public string ListStylePosition { get; init; } = "outside";
     public string ListStyleImage { get; init; } = string.Empty;
     public string ListStyle { get; init; } = string.Empty;
+
+    // --- List attributes (Phase 2: moved from DOM GetAttribute reads) ---
+
+    /// <summary>The <c>start</c> attribute of the parent <c>&lt;ol&gt;</c>, or null if not specified.</summary>
+    public int? ListStart { get; init; }
+
+    /// <summary>Whether the parent <c>&lt;ol&gt;</c> has the <c>reversed</c> attribute.</summary>
+    public bool ListReversed { get; init; }
+
+    // --- Image source (Phase 2: moved from DOM GetAttribute reads) ---
+
+    /// <summary>The resolved <c>src</c> attribute for image elements, or null if not applicable.</summary>
+    public string? ImageSource { get; init; }
 
     // --- Opacity ---
 

@@ -423,4 +423,195 @@ public class IRTypesTests
 
         Assert.True(hasNonWhitePixels, "Rendering should produce visible output");
     }
+
+    // =================================================================
+    // Phase 2 — BoxKind enum
+    // =================================================================
+
+    [Fact]
+    public void BoxKind_Default_IsAnonymous()
+    {
+        var style = new ComputedStyle();
+        Assert.Equal(BoxKind.Anonymous, style.Kind);
+    }
+
+    [Fact]
+    public void BoxKind_CanBeSetViaInit()
+    {
+        var style = new ComputedStyle { Kind = BoxKind.ReplacedImage };
+        Assert.Equal(BoxKind.ReplacedImage, style.Kind);
+    }
+
+    [Theory]
+    [InlineData(BoxKind.Block)]
+    [InlineData(BoxKind.Inline)]
+    [InlineData(BoxKind.ReplacedImage)]
+    [InlineData(BoxKind.ReplacedIframe)]
+    [InlineData(BoxKind.TableCell)]
+    [InlineData(BoxKind.Table)]
+    [InlineData(BoxKind.TableRow)]
+    [InlineData(BoxKind.ListItem)]
+    [InlineData(BoxKind.OrderedList)]
+    [InlineData(BoxKind.UnorderedList)]
+    [InlineData(BoxKind.HorizontalRule)]
+    [InlineData(BoxKind.LineBreak)]
+    [InlineData(BoxKind.Anchor)]
+    [InlineData(BoxKind.Font)]
+    [InlineData(BoxKind.Input)]
+    [InlineData(BoxKind.Heading)]
+    public void BoxKind_AllVariants_RoundTrip(BoxKind kind)
+    {
+        var style = new ComputedStyle { Kind = kind };
+        Assert.Equal(kind, style.Kind);
+    }
+
+    // =================================================================
+    // Phase 2 — List attributes on ComputedStyle
+    // =================================================================
+
+    [Fact]
+    public void ComputedStyle_ListStart_DefaultsToNull()
+    {
+        var style = new ComputedStyle();
+        Assert.Null(style.ListStart);
+    }
+
+    [Fact]
+    public void ComputedStyle_ListReversed_DefaultsToFalse()
+    {
+        var style = new ComputedStyle();
+        Assert.False(style.ListReversed);
+    }
+
+    [Fact]
+    public void ComputedStyle_ListAttributes_CanBeSet()
+    {
+        var style = new ComputedStyle
+        {
+            ListStart = 5,
+            ListReversed = true,
+        };
+
+        Assert.Equal(5, style.ListStart);
+        Assert.True(style.ListReversed);
+    }
+
+    // =================================================================
+    // Phase 2 — ImageSource on ComputedStyle
+    // =================================================================
+
+    [Fact]
+    public void ComputedStyle_ImageSource_DefaultsToNull()
+    {
+        var style = new ComputedStyle();
+        Assert.Null(style.ImageSource);
+    }
+
+    [Fact]
+    public void ComputedStyle_ImageSource_CanBeSet()
+    {
+        var style = new ComputedStyle { ImageSource = "https://example.com/img.png" };
+        Assert.Equal("https://example.com/img.png", style.ImageSource);
+    }
+
+    // =================================================================
+    // Phase 2 — BoxKind populated via DomParser (integration)
+    // =================================================================
+
+    [Fact]
+    public void PerformLayout_ImgElement_HasReplacedImageKind()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div><img src='test.png' style='width:50px;height:50px;'/></div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        container.PerformLayout(canvas, new RectangleF(0, 0, 500, 500));
+
+        var tree = container.HtmlContainerInt.LatestFragmentTree;
+        Assert.NotNull(tree);
+        var imgFragment = FindFragmentByKind(tree, BoxKind.ReplacedImage);
+        Assert.NotNull(imgFragment);
+    }
+
+    [Fact]
+    public void PerformLayout_TableElement_HasTableKind()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<table><tr><td>Cell</td></tr></table>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        container.PerformLayout(canvas, new RectangleF(0, 0, 500, 500));
+
+        var tree = container.HtmlContainerInt.LatestFragmentTree;
+        Assert.NotNull(tree);
+        var tableFragment = FindFragmentByKind(tree, BoxKind.Table);
+        Assert.NotNull(tableFragment);
+    }
+
+    [Fact]
+    public void PerformLayout_OrderedList_HasListStartAndReversed()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<ol start='3' reversed><li>A</li><li>B</li></ol>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        container.PerformLayout(canvas, new RectangleF(0, 0, 500, 500));
+
+        var tree = container.HtmlContainerInt.LatestFragmentTree;
+        Assert.NotNull(tree);
+        var olFragment = FindFragmentByKind(tree, BoxKind.OrderedList);
+        Assert.NotNull(olFragment);
+        Assert.Equal(3, olFragment.Style.ListStart);
+        Assert.True(olFragment.Style.ListReversed);
+    }
+
+    [Fact]
+    public void PerformLayout_HrElement_HasHorizontalRuleKind()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div><hr/></div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        container.PerformLayout(canvas, new RectangleF(0, 0, 500, 500));
+
+        var tree = container.HtmlContainerInt.LatestFragmentTree;
+        Assert.NotNull(tree);
+        var hrFragment = FindFragmentByKind(tree, BoxKind.HorizontalRule);
+        Assert.NotNull(hrFragment);
+    }
+
+    private static Fragment? FindFragmentByKind(Fragment fragment, BoxKind kind)
+    {
+        if (fragment.Style.Kind == kind)
+            return fragment;
+
+        foreach (var child in fragment.Children)
+        {
+            var found = FindFragmentByKind(child, kind);
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
 }

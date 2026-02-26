@@ -18,7 +18,7 @@ internal static class HtmlConstants
     //        public const string BIG = "BIG";
     //        public const string BLOCKQUOTE = "BLOCKQUOTE";
     //        public const string BODY = "BODY";
-    //        public const string BR = "BR";
+    public const string Br = "br";
     //        public const string BUTTON = "BUTTON";
     public const string Caption = "caption";
     //        public const string CENTER = "CENTER";
@@ -52,7 +52,7 @@ internal static class HtmlConstants
     //        public const string I = "I";
     public const string Iframe = "iframe";
     public const string Img = "img";
-    //        public const string INPUT = "INPUT";
+    public const string Input = "input";
     //        public const string INS = "INS";
     //        public const string ISINDEX = "ISINDEX";
     //        public const string KBD = "KBD";
@@ -66,7 +66,7 @@ internal static class HtmlConstants
     //        public const string NOFRAMES = "NOFRAMES";
     //        public const string NOSCRIPT = "NOSCRIPT";
     //        public const string OBJECT = "OBJECT";
-    //        public const string OL = "OL";
+    public const string Ol = "ol";
     //        public const string OPTGROUP = "OPTGROUP";
     //        public const string OPTION = "OPTION";
     //        public const string P = "P";
@@ -95,7 +95,7 @@ internal static class HtmlConstants
     public const string Tr = "tr";
     //        public const string TT = "TT";
     //        public const string U = "U";
-    //        public const string UL = "UL";
+    public const string Ul = "ul";
     //        public const string VAR = "VAR";
 
     //        public const string abbr = "abbr";

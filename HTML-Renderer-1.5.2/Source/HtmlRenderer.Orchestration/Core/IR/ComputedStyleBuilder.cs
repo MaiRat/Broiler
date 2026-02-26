@@ -9,6 +9,9 @@ namespace TheArtOfDev.HtmlRenderer.Core;
 /// </summary>
 /// <remarks>
 /// Phase 1: Shadow data — existing code paths are unchanged.
+/// Phase 2: Extended to capture <see cref="ComputedStyle.Kind"/>,
+/// <see cref="ComputedStyle.ListStart"/>, <see cref="ComputedStyle.ListReversed"/>,
+/// and <see cref="ComputedStyle.ImageSource"/>.
 /// </remarks>
 internal static class ComputedStyleBuilder
 {
@@ -19,6 +22,9 @@ internal static class ComputedStyleBuilder
     {
         return new ComputedStyle
         {
+            // Phase 2: Element classification
+            Kind = box.Kind,
+
             // Box model
             Display = box.Display,
             Position = box.Position,
@@ -104,6 +110,13 @@ internal static class ComputedStyleBuilder
             ListStylePosition = box.ListStylePosition,
             ListStyleImage = box.ListStyleImage,
             ListStyle = box.ListStyle,
+
+            // Phase 2: List attributes
+            ListStart = box.ListStart,
+            ListReversed = box.ListReversed,
+
+            // Phase 2: Image source
+            ImageSource = box.ImageSource,
 
             // Opacity
             Opacity = box.Opacity,

@@ -2,6 +2,7 @@ using System.Drawing;
 using System;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
+using TheArtOfDev.HtmlRenderer.Core.IR;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
 namespace TheArtOfDev.HtmlRenderer.Core.Parse;
@@ -100,6 +101,10 @@ internal sealed class DomParser
                 if (block != null)
                     AssignCssBlock(box, block);
             }
+
+            // Phase 2: Populate BoxKind and DOM-attribute properties on the box
+            // so layout code can use these instead of accessing HtmlTag directly.
+            AssignBoxKindAndAttributes(box);
         }
 
         if (box.TextDecoration != String.Empty && box.Text.IsEmpty)
@@ -270,6 +275,51 @@ internal sealed class DomParser
 
         cssDataChanged = true;
         cssData = cssData.Clone();
+    }
+
+    /// <summary>
+    /// Phase 2: Sets <see cref="CssBoxProperties.Kind"/>, list attributes
+    /// (<see cref="CssBoxProperties.ListStart"/>, <see cref="CssBoxProperties.ListReversed"/>),
+    /// and <see cref="CssBoxProperties.ImageSource"/> based on the HTML tag.
+    /// This allows layout code to consume these properties instead of reading
+    /// <see cref="HtmlTag"/> attributes directly.
+    /// </summary>
+    private static void AssignBoxKindAndAttributes(CssBox box)
+    {
+        var tag = box.HtmlTag;
+        if (tag == null)
+            return;
+
+        box.Kind = tag.Name.ToLowerInvariant() switch
+        {
+            HtmlConstants.Img => BoxKind.ReplacedImage,
+            HtmlConstants.Iframe => BoxKind.ReplacedIframe,
+            HtmlConstants.Table => BoxKind.Table,
+            HtmlConstants.Tr => BoxKind.TableRow,
+            HtmlConstants.Td or HtmlConstants.Th => BoxKind.TableCell,
+            HtmlConstants.Li => BoxKind.ListItem,
+            HtmlConstants.Ol => BoxKind.OrderedList,
+            HtmlConstants.Ul => BoxKind.UnorderedList,
+            HtmlConstants.Hr => BoxKind.HorizontalRule,
+            HtmlConstants.Br => BoxKind.LineBreak,
+            HtmlConstants.A => BoxKind.Anchor,
+            HtmlConstants.Font => BoxKind.Font,
+            HtmlConstants.Input => BoxKind.Input,
+            "h1" or "h2" or "h3" or "h4" or "h5" or "h6" => BoxKind.Heading,
+            _ => BoxKind.Anonymous,
+        };
+
+        // Populate list attributes for <ol> elements
+        if (box.Kind == BoxKind.OrderedList)
+        {
+            box.ListReversed = tag.HasAttribute("reversed");
+            if (int.TryParse(tag.TryGetAttribute("start"), out int start))
+                box.ListStart = start;
+        }
+
+        // Populate image source for <img> elements
+        if (box.Kind == BoxKind.ReplacedImage)
+            box.ImageSource = tag.TryGetAttribute("src");
     }
 
     private void TranslateAttributes(HtmlTag tag, CssBox box)
