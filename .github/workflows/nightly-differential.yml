@@ -40,5 +40,7 @@ jobs:
       if: always()
       with:
         name: differential-reports
-        path: HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/TestData/DifferentialReports/
+        path: |
+          HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/TestData/DifferentialReports/
+          HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/TestData/Acid1DifferentialReports/
         if-no-files-found: ignore

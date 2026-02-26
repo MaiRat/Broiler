@@ -152,6 +152,61 @@ known limitations in the HTML-Renderer float-layout algorithm (see
 **43%** — any drop below this threshold fails the test and indicates a
 rendering regression.
 
+## Differential Testing (Chromium Comparison)
+
+The `Acid1DifferentialTests` class in `HtmlRenderer.Image.Tests` renders
+`acid1.html` and each split section in both the Broiler engine and headless
+Chromium (via Playwright), producing pixel-diff reports.
+
+### Prerequisites
+
+In addition to the standard prerequisites above, differential tests require
+Playwright Chromium to be installed:
+
+```bash
+pwsh HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/bin/Release/net8.0/playwright.ps1 install chromium
+```
+
+### Running Differential Tests
+
+```bash
+dotnet test HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/ \
+  --filter "FullyQualifiedName~Acid1DifferentialTests"
+```
+
+These tests are tagged `Category=Differential` and are excluded from
+per-commit CI builds. They run nightly via `nightly-differential.yml`.
+
+### Reports
+
+Side-by-side HTML comparison reports are generated in:
+
+```
+HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/TestData/Acid1DifferentialReports/
+```
+
+Each report includes the Broiler PNG, Chromium PNG, pixel-diff overlay, and
+JSON diagnostics (fragment tree, display list).
+
+### Current Diff Ratios
+
+| Section | CSS1 Feature | Pixel Diff |
+|---------|-------------|-----------|
+| Full page | All features combined | < 50 % |
+| 1 – Body border | html/body backgrounds + border | 89.97 % |
+| 2 – dt float:left | Float + percentage width | 86.30 % |
+| 3 – dd float:right | Float + border + side-by-side | 84.16 % |
+| 4 – li float:left | Multiple float stacking | 82.05 % |
+| 5 – blockquote | Float + asymmetric borders | 92.00 % |
+| 6 – h1 float | Float + black background | 91.23 % |
+| 7 – form line-height | line-height: 1.9 | 85.22 % |
+| 8 – clear:both | Clear after floats | 72.17 % |
+| 9 – % width | Percentage widths | 84.64 % |
+| 10 – dd height | Content-box height | < 50 % |
+
+See [ADR-009](adr/009-acid1-differential-testing.md) for detailed error
+documentation and the fix roadmap.
+
 ## Troubleshooting
 
 | Problem | Solution |
@@ -160,3 +215,4 @@ rendering regression.
 | Test data not found | Ensure the project was built: `dotnet build Broiler.slnx` |
 | Flaky test in parallel run | Run the specific test in isolation (see Single Test above) |
 | Similarity below threshold | Run split tests to identify which section regressed |
+| Playwright not found | Install Chromium: `pwsh .../playwright.ps1 install chromium` |

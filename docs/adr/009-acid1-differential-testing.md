@@ -1,0 +1,134 @@
+# ADR-009: Acid1 Differential Testing with Headless Chromium
+
+## Status
+
+Accepted
+
+## Context
+
+The [Acid1 test](https://www.w3.org/Style/CSS/Test/CSS1/current/test5526c.htm)
+is the W3C CSS1 conformance test. A CSS1-conformant renderer must produce output
+pixel-identical to the
+[reference rendering](https://www.w3.org/Style/CSS/Test/CSS1/current/sec5526c.gif)
+(except for font rasterisation and form widgets).
+
+Existing Acid1 tests in `Broiler.Cli.Tests` validate the HTML-Renderer engine
+in isolation using pixel counting and similarity scoring. However, they do not
+compare against a live reference renderer. This ADR establishes a differential
+testing approach that renders `acid1.html` (and its 10 split sections) in both
+the HTML-Renderer engine and headless Chromium (via Playwright), compares the
+pixel output, and documents the discrepancies.
+
+## Decision
+
+Add `Acid1DifferentialTests` to `HtmlRenderer.Image.Tests` that:
+
+1. Render the full `acid1.html` and each split section in both engines.
+2. Produce side-by-side pixel-diff reports (Broiler PNG, Chromium PNG, diff
+   PNG, fragment JSON, display-list JSON).
+3. Use a generous 95 % pixel-diff threshold so the tests serve as
+   **documentation baselines**, not enforcement gates.
+4. Run as part of the nightly differential CI workflow
+   (`nightly-differential.yml`), excluded from per-commit builds via
+   `Category=Differential`.
+
+## Observed Errors
+
+Testing was performed on 2026-02-26 using HTML-Renderer (Broiler) and
+Playwright Chromium 145.0.7632.6. All pixel-diff ratios are measured at
+800×600 viewport with 30 per-channel colour tolerance.
+
+| Section | CSS1 Feature | Pixel Diff | Severity | Category |
+|---------|-------------|-----------|----------|----------|
+| Full page | All CSS1 features combined | < 50 % | High | Layout |
+| 1 – Body border | `html` bg blue, `body` bg white + border | 89.97 % | High | Layout |
+| 2 – `dt` float:left | `float:left`, percentage width (10.638 %) | 86.30 % | High | Layout / Float |
+| 3 – `dd` float:right | `float:right`, border, width, side-by-side with `dt` | 84.16 % | High | Layout / Float |
+| 4 – `li` float:left | Multiple `float:left` stacking, gold bg | 82.05 % | High | Layout / Float |
+| 5 – `blockquote` | `float:left`, asymmetric borders | 92.00 % | Critical | Layout / Float / Border |
+| 6 – `h1` float | `float:left`, black bg, normal font-weight | 91.23 % | Critical | Layout / Float |
+| 7 – `form` line-height | `line-height: 1.9` on form paragraphs | 85.22 % | High | Layout / Typography |
+| 8 – `clear:both` | `clear:both` paragraph after floats | 72.17 % | Medium | Layout / Clear |
+| 9 – Percentage width | `10.638 %` and `41.17 %` widths | 84.64 % | High | Layout / Box Model |
+| 10 – `dd` height/clearance | Content-box height, float clearance | < 50 % | Medium | Layout |
+
+### Error Categories
+
+1. **Float layout (Sections 2–6, 8):** The HTML-Renderer float algorithm does
+   not correctly implement CSS1 §5.5.25/5.5.26. Floated elements are
+   positioned incorrectly relative to adjacent content and do not properly
+   reduce available line width. This is the dominant source of rendering
+   differences.
+
+2. **Border rendering (Sections 1, 5):** Asymmetric border widths
+   (`border-width: 1em 1.5em 2em .5em`) and `em`-unit borders are not
+   rendered to the same dimensions as Chromium. The body's `.5em solid black`
+   border also shows positioning differences.
+
+3. **Percentage width resolution (Sections 2, 9):** Percentage widths
+   (`10.638 %`, `41.17 %`, `50 %`) are resolved but the containing-block
+   width calculation differs from the CSS1 specification, causing cascading
+   layout shifts.
+
+4. **Typography / line-height (Section 7):** `line-height: 1.9` is applied
+   but the resulting line-box height differs from Chromium, affecting vertical
+   spacing within form elements.
+
+5. **Clear property (Section 8):** `clear: both` moves below floats but the
+   vertical clearance distance is not computed identically to Chromium.
+
+6. **Background propagation (Section 1):** The CSS1 rule that propagates the
+   `html` element's background to the canvas is not correctly applied; the
+   blue background does not cover the full viewport as it does in Chromium.
+
+## Fix Roadmap
+
+### Priority 1 – Float Layout Engine (Sections 2–6)
+
+- **Float positioning algorithm:** Implement CSS1 §5.5.25/5.5.26 for float
+  placement. Floats must be placed at the top of their containing block's
+  current line, shifted left/right, and subsequent content must flow around
+  them.
+- **Available width reduction:** When a float is active, the available line
+  width for sibling block-level content must be reduced by the float's
+  margin-box width.
+- **Float stacking:** Multiple `float:left` elements must stack horizontally
+  until the available width is exhausted, then wrap to a new line.
+- **Float clearing:** `clear:left`, `clear:right`, and `clear:both` must
+  correctly compute the clearance distance below active floats.
+
+### Priority 2 – Box Model / Containing Block (Sections 1, 9)
+
+- **Containing block width:** Percentage widths must resolve against the
+  content width of the containing block, not the padding-box or border-box.
+- **Body/html background propagation:** Implement the CSS1/CSS2.1 rule that
+  propagates `html` element background to the canvas when `body` has its own
+  background.
+- **Border-box vs content-box:** Ensure `width` sets the content-box width
+  and borders/padding are added outside it (CSS1 content-box model).
+
+### Priority 3 – Border Rendering (Section 5)
+
+- **Asymmetric borders:** Support different widths per side
+  (`border-width: 1em 1.5em 2em .5em`).
+- **Em-unit borders:** Ensure `em`-based border widths are resolved against
+  the element's computed `font-size`.
+
+### Priority 4 – Typography (Section 7)
+
+- **Line-height computation:** Ensure `line-height: 1.9` produces a line-box
+  height of `1.9 × font-size` as defined in CSS1 §5.4.8.
+- **Form element line-height:** Verify that `line-height` applies correctly
+  to paragraphs containing inline form controls (radio buttons).
+
+## Consequences
+
+- The Acid1 differential tests serve as a living dashboard for CSS1
+  compliance progress. As rendering improvements land, the diff ratios will
+  decrease and the threshold can be tightened.
+- Nightly CI generates side-by-side visual reports that developers can
+  inspect to understand exactly where the rendering diverges.
+- Sub-issues should be created for each priority block above and linked to
+  the tracking issue.
+- The 95 % threshold is intentionally permissive and should be lowered to
+  50 %, then 25 %, then 5 % as the roadmap items are completed.
