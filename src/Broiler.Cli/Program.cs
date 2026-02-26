@@ -13,6 +13,8 @@ public class Program
         string? output = null;
         bool fullPage = false;
         bool testEngines = false;
+        bool fuzzLayout = false;
+        int fuzzCount = 1000;
         int timeoutSeconds = 30;
         int width = 1024;
         int height = 768;
@@ -57,12 +59,23 @@ public class Program
                 case "--test-engines":
                     testEngines = true;
                     break;
+                case "--fuzz-layout":
+                    fuzzLayout = true;
+                    break;
+                case "--count" when i + 1 < args.Length:
+                    if (!int.TryParse(args[++i], out fuzzCount) || fuzzCount <= 0)
+                    {
+                        Console.Error.WriteLine("Error: '--count' must be a positive integer.");
+                        return 1;
+                    }
+                    break;
                 case "--url":
                 case "--capture-image":
                 case "--output":
                 case "--timeout":
                 case "--width":
                 case "--height":
+                case "--count":
                     Console.Error.WriteLine($"Error: '{args[i]}' requires a value.");
                     PrintUsage();
                     return 1;
@@ -79,6 +92,12 @@ public class Program
         if (testEngines)
         {
             return RunEngineTests();
+        }
+
+        if (fuzzLayout)
+        {
+            var fuzzService = new LayoutFuzzService();
+            return fuzzService.Run(fuzzCount, outputDir: output);
         }
 
         if (captureImageUrl is not null)
@@ -196,6 +215,7 @@ public class Program
         Console.WriteLine("Usage: Broiler.Cli --url <URL> --output <FILE> [OPTIONS]");
         Console.WriteLine("       Broiler.Cli --capture-image <URL> --output <FILE> [OPTIONS]");
         Console.WriteLine("       Broiler.Cli --test-engines");
+        Console.WriteLine("       Broiler.Cli --fuzz-layout [--count <N>] [--output <DIR>]");
         Console.WriteLine();
         Console.WriteLine("Options:");
         Console.WriteLine("  --url <URL>            The URL of the website to capture");
@@ -206,6 +226,8 @@ public class Program
         Console.WriteLine("  --full-page            Capture the full page content");
         Console.WriteLine("  --timeout <SECS>       Navigation timeout in seconds (default: 30)");
         Console.WriteLine("  --test-engines         Run smoke tests for the embedded rendering engines");
+        Console.WriteLine("  --fuzz-layout          Run layout fuzz testing with random HTML/CSS");
+        Console.WriteLine("  --count <N>            Number of fuzz cases to generate (default: 1000)");
         Console.WriteLine("  --help                 Show this help message");
     }
 

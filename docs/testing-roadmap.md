@@ -158,18 +158,18 @@ golden-file comparison of the Fragment tree.
 
 ## Phase 3 – Property-Based / Generative Layout Testing
 
-**Status:** Pending (depends on Phase 2)
+**Status:** Complete
 
 **Goal:** Automatically generate layout stress cases to find edge-case bugs.
 
 ### Prerequisites
 
-- Phase 2 invariant checker (required)
-- Phase 2 Fragment JSON dump (required for failure reporting)
+- Phase 2 invariant checker (required) ✅
+- Phase 2 Fragment JSON dump (required for failure reporting) ✅
 
 ### Tasks
 
-- [ ] **Implement minimal HTML/CSS generator** targeting:
+- [x] **Implement minimal HTML/CSS generator** targeting:
   - `float: left | right | none`
   - `clear: left | right | both | none`
   - `width` / `height` (px, %, auto)
@@ -178,20 +178,20 @@ golden-file comparison of the Fragment tree.
   - Nesting depth: 1–4 levels
   - Child count: 1–6 per parent
 
-- [ ] **Build fuzz runner** that:
+- [x] **Build fuzz runner** that:
   1. Generates N random HTML/CSS documents (default: 1000)
   2. Parses and lays out each document
   3. Builds Fragment tree via `FragmentTreeBuilder.Build()`
   4. Runs invariant checker on the Fragment tree
   5. On failure: saves HTML input + Fragment JSON + violation description
 
-- [ ] **Implement failure minimizer** (basic delta reduction):
+- [x] **Implement failure minimizer** (basic delta reduction):
   1. Remove one child element at a time
   2. Re-run layout + invariant check
   3. If violation persists, keep removal
   4. Repeat until minimal repro
 
-- [ ] **Add CLI integration** for manual fuzz runs:
+- [x] **Add CLI integration** for manual fuzz runs:
   ```bash
   dotnet run --project src/Broiler.Cli -- --fuzz-layout --count 1000
   ```
