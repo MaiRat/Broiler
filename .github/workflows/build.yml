@@ -30,7 +30,7 @@ jobs:
       run: dotnet build Broiler.slnx --no-restore --configuration Release
 
     - name: Test
-      run: dotnet test Broiler.slnx --no-build --configuration Release --verbosity normal
+      run: dotnet test Broiler.slnx --no-build --configuration Release --verbosity normal --filter "Category!=Differential"
 
     - name: Image Capture Test
       run: dotnet run --project src/Broiler.Cli --no-build --configuration Release -- --capture-image https://www.heise.de/ --output capture.png --timeout 60

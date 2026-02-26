@@ -359,7 +359,7 @@ image diffing.
 
 ## Phase 6 – Differential Testing
 
-**Status:** Long-term (depends on Phase 5)
+**Status:** Complete
 
 **Goal:** Compare rendering output against a reference browser automatically.
 
@@ -370,22 +370,22 @@ image diffing.
 
 ### Tasks
 
-- [ ] **Set up reference engine rendering**:
+- [x] **Set up reference engine rendering**:
   - Use headless Chromium (via Playwright or Puppeteer) to render test HTML
   - Capture screenshot at identical viewport/DPI settings
   - Save as reference baseline
 
-- [ ] **Build comparison harness**:
+- [x] **Build comparison harness**:
   - Render same HTML in Broiler engine
   - Pixel-diff against Chromium output
   - Configurable tolerance (rendering engines will differ in subtle ways)
 
-- [ ] **Optional layout metric comparison**:
+- [x] **Optional layout metric comparison**:
   - Extract `getBoundingClientRect()` for key elements from Chromium
   - Compare against Fragment tree geometry from Broiler
   - Flag significant dimensional differences
 
-- [ ] **Failure diagnosis**:
+- [x] **Failure diagnosis**:
   - On pixel diff: dump Broiler's Fragment JSON + DisplayList JSON
   - Classify as layout, paint, or raster difference
   - Generate side-by-side comparison report
@@ -396,6 +396,17 @@ image diffing.
 - Failure layer classification
 - Comparison report generator
 - CI integration (nightly, not per-commit)
+
+### Implementation Details
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `ChromiumRenderer` | `HtmlRenderer.Image.Tests/ChromiumRenderer.cs` | Renders HTML via Playwright headless Chromium, captures screenshots as SKBitmap, extracts `getBoundingClientRect()` |
+| `DifferentialTestConfig` | `HtmlRenderer.Image.Tests/DifferentialTestConfig.cs` | Configuration: 5% pixel threshold, 15 colour tolerance, 2px layout tolerance |
+| `DifferentialTestRunner` | `HtmlRenderer.Image.Tests/DifferentialTestRunner.cs` | Orchestrates Broiler vs. Chromium rendering, pixel-diff, failure classification |
+| `DifferentialTestReport` | `HtmlRenderer.Image.Tests/DifferentialTestReport.cs` | Side-by-side HTML report with Broiler/Chromium/diff PNGs |
+| `DifferentialTests` | `HtmlRenderer.Image.Tests/DifferentialTests.cs` | 10 xUnit tests: 8 structural, 1 layout metric, 1 report generation |
+| Nightly CI | `.github/workflows/nightly-differential.yml` | Scheduled at 02:00 UTC, installs Chromium, uploads reports |
 
 ### Effort Estimate
 
@@ -490,10 +501,10 @@ engine stability over time.
 ```
 Month 1          Month 2          Month 3          Month 4+
 ─────────────────────────────────────────────────────────────
-Phase 0 ✅       Phase 3          Phase 5          Phase 6
+Phase 0 ✅       Phase 3 ✅       Phase 5 ✅       Phase 6 ✅
 Phase 1 ✅       (fuzz gen)       (pixel regr.)    (differential)
-Phase 2                           WPT subset
-(golden layout)  Phase 4
+Phase 2 ✅                        WPT subset
+(golden layout)  Phase 4 ✅
                  (golden paint)
 ```
 
