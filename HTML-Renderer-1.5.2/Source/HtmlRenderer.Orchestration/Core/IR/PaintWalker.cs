@@ -1,0 +1,291 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using TheArtOfDev.HtmlRenderer.Core.IR;
+
+namespace TheArtOfDev.HtmlRenderer.Core;
+
+/// <summary>
+/// Walks a <see cref="Fragment"/> tree and produces a flat <see cref="DisplayList"/>
+/// of drawing primitives. This decouples paint from the DOM (<see cref="Dom.CssBox"/>).
+/// </summary>
+/// <remarks>
+/// Phase 3: Standalone paint walker that reads only from <see cref="Fragment"/> and
+/// <see cref="ComputedStyle"/>. Replaces <c>CssBox.PaintImp()</c> for the new rendering path.
+/// </remarks>
+internal static class PaintWalker
+{
+    /// <summary>
+    /// Paints the given <see cref="Fragment"/> tree and returns a flat <see cref="DisplayList"/>.
+    /// </summary>
+    public static DisplayList Paint(Fragment root)
+    {
+        var items = new List<DisplayItem>();
+        PaintFragment(root, items);
+        return new DisplayList { Items = items };
+    }
+
+    private static void PaintFragment(Fragment fragment, List<DisplayItem> items)
+    {
+        var style = fragment.Style;
+
+        // Skip invisible fragments
+        if (style.Display == "none")
+            return;
+        if (style.Visibility != "visible")
+        {
+            // Even if not visible, children may be visible (CSS spec)
+            PaintChildren(fragment, items);
+            return;
+        }
+
+        var bounds = fragment.Bounds;
+
+        // Skip empty-cells table cells
+        if (style.Display == "table-cell" && style.EmptyCells == "hide")
+        {
+            bool hasContent = fragment.Lines != null && fragment.Lines.Count > 0;
+            if (!hasContent && fragment.Children.Count == 0)
+                return;
+        }
+
+        // Overflow clipping
+        bool clipped = false;
+        if (style.Overflow == "hidden")
+        {
+            items.Add(new ClipItem { Bounds = bounds, ClipRect = bounds });
+            clipped = true;
+        }
+
+        // Background color
+        EmitBackground(fragment, items);
+
+        // Borders
+        EmitBorders(fragment, items);
+
+        // Text (inline fragments from line boxes)
+        EmitText(fragment, items);
+
+        // Text decoration
+        EmitTextDecoration(fragment, items);
+
+        // Child fragments (stacking-context sorted)
+        PaintChildren(fragment, items);
+
+        // Restore clip
+        if (clipped)
+            items.Add(new RestoreItem { Bounds = bounds });
+    }
+
+    private static void EmitBackground(Fragment fragment, List<DisplayItem> items)
+    {
+        var style = fragment.Style;
+        var bounds = fragment.Bounds;
+
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+            return;
+
+        // Background gradient
+        if (style.ActualBackgroundGradient.A > 0 &&
+            style.ActualBackgroundGradient != style.ActualBackgroundColor)
+        {
+            // Emit primary color; gradient rendering deferred to raster backend
+            items.Add(new FillRectItem { Bounds = bounds, Color = style.ActualBackgroundColor });
+        }
+        else if (style.ActualBackgroundColor.A > 0)
+        {
+            items.Add(new FillRectItem { Bounds = bounds, Color = style.ActualBackgroundColor });
+        }
+    }
+
+    private static void EmitBorders(Fragment fragment, List<DisplayItem> items)
+    {
+        var style = fragment.Style;
+        var border = fragment.Border;
+        var bounds = fragment.Bounds;
+
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+            return;
+
+        bool hasTop = HasBorder(style.BorderTopStyle, border.Top);
+        bool hasRight = HasBorder(style.BorderRightStyle, border.Right);
+        bool hasBottom = HasBorder(style.BorderBottomStyle, border.Bottom);
+        bool hasLeft = HasBorder(style.BorderLeftStyle, border.Left);
+
+        if (!hasTop && !hasRight && !hasBottom && !hasLeft)
+            return;
+
+        items.Add(new DrawBorderItem
+        {
+            Bounds = bounds,
+            Widths = border,
+            TopColor = hasTop ? style.ActualBorderTopColor : Color.Empty,
+            RightColor = hasRight ? style.ActualBorderRightColor : Color.Empty,
+            BottomColor = hasBottom ? style.ActualBorderBottomColor : Color.Empty,
+            LeftColor = hasLeft ? style.ActualBorderLeftColor : Color.Empty,
+            Style = style.BorderTopStyle ?? "solid",
+            TopStyle = style.BorderTopStyle ?? "none",
+            RightStyle = style.BorderRightStyle ?? "none",
+            BottomStyle = style.BorderBottomStyle ?? "none",
+            LeftStyle = style.BorderLeftStyle ?? "none",
+            CornerNw = style.ActualCornerNw,
+            CornerNe = style.ActualCornerNe,
+            CornerSe = style.ActualCornerSe,
+            CornerSw = style.ActualCornerSw,
+        });
+    }
+
+    private static void EmitText(Fragment fragment, List<DisplayItem> items)
+    {
+        if (fragment.Lines == null || fragment.Lines.Count == 0)
+            return;
+
+        var style = fragment.Style;
+        bool isRtl = style.Direction == "rtl";
+
+        foreach (var line in fragment.Lines)
+        {
+            foreach (var inline in line.Inlines)
+            {
+                if (string.IsNullOrEmpty(inline.Text))
+                    continue;
+
+                // Skip line-break placeholders
+                if (inline.Text == "\n")
+                    continue;
+
+                var inlineStyle = inline.Style;
+
+                items.Add(new DrawTextItem
+                {
+                    Bounds = new RectangleF(inline.X, inline.Y, inline.Width, inline.Height),
+                    Text = inline.Text,
+                    FontFamily = inlineStyle.FontFamily,
+                    FontSize = (float)ParseFontSize(inlineStyle.FontSize),
+                    FontWeight = inlineStyle.FontWeight,
+                    Color = inlineStyle.ActualColor,
+                    Origin = new PointF(inline.X, inline.Y),
+                    FontHandle = inline.FontHandle,
+                    IsRtl = isRtl,
+                });
+            }
+        }
+    }
+
+    private static void EmitTextDecoration(Fragment fragment, List<DisplayItem> items)
+    {
+        if (fragment.Lines == null || fragment.Lines.Count == 0)
+            return;
+
+        var style = fragment.Style;
+        if (string.IsNullOrEmpty(style.TextDecoration) || style.TextDecoration == "none")
+            return;
+
+        var bounds = fragment.Bounds;
+        var border = fragment.Border;
+        var padding = fragment.Padding;
+
+        float x1 = bounds.X + (float)padding.Left + (float)border.Left;
+        float x2 = bounds.Right - (float)padding.Right - (float)border.Right;
+
+        foreach (var line in fragment.Lines)
+        {
+            float y;
+            if (style.TextDecoration == "underline")
+                y = line.Y + line.Height * 0.85f;
+            else if (style.TextDecoration == "line-through")
+                y = line.Y + line.Height / 2f;
+            else if (style.TextDecoration == "overline")
+                y = line.Y;
+            else
+                continue;
+
+            items.Add(new DrawLineItem
+            {
+                Bounds = new RectangleF(x1, y, x2 - x1, 1),
+                Start = new PointF(x1, y),
+                End = new PointF(x2, y),
+                Color = style.ActualColor,
+                Width = 1,
+                DashStyle = "solid",
+            });
+        }
+    }
+
+    private static void PaintChildren(Fragment fragment, List<DisplayItem> items)
+    {
+        if (fragment.Children.Count == 0)
+            return;
+
+        // Separate children into non-positioned and positioned
+        // Paint order: non-positioned (tree order), then positioned (sorted by StackLevel)
+        List<Fragment>? positioned = null;
+
+        foreach (var child in fragment.Children)
+        {
+            if (child.CreatesStackingContext)
+            {
+                positioned ??= new List<Fragment>();
+                positioned.Add(child);
+            }
+            else
+            {
+                PaintFragment(child, items);
+            }
+        }
+
+        if (positioned != null)
+        {
+            positioned.Sort((a, b) => a.StackLevel.CompareTo(b.StackLevel));
+            foreach (var child in positioned)
+            {
+                PaintFragment(child, items);
+            }
+        }
+    }
+
+    private static bool HasBorder(string? borderStyle, double width)
+    {
+        if (width <= 0)
+            return false;
+        if (string.IsNullOrEmpty(borderStyle))
+            return false;
+        if (borderStyle == "none" || borderStyle == "hidden")
+            return false;
+        return true;
+    }
+
+    private static double ParseFontSize(string fontSize)
+    {
+        if (string.IsNullOrEmpty(fontSize))
+            return 11; // default
+
+        // Handle named sizes
+        return fontSize switch
+        {
+            "medium" => 11,
+            "xx-small" => 7,
+            "x-small" => 8,
+            "small" => 9,
+            "large" => 13,
+            "x-large" => 14,
+            "xx-large" => 15,
+            _ => TryParseNumeric(fontSize, 11),
+        };
+    }
+
+    private static double TryParseNumeric(string value, double fallback)
+    {
+        // Strip common CSS units
+        var numeric = value;
+        if (numeric.EndsWith("pt", StringComparison.OrdinalIgnoreCase))
+            numeric = numeric[..^2];
+        else if (numeric.EndsWith("px", StringComparison.OrdinalIgnoreCase))
+            numeric = numeric[..^2];
+        else if (numeric.EndsWith("em", StringComparison.OrdinalIgnoreCase))
+            numeric = numeric[..^2];
+
+        return double.TryParse(numeric, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : fallback;
+    }
+}

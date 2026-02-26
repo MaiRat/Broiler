@@ -38,6 +38,18 @@ public sealed class DrawBorderItem : DisplayItem
     public Color BottomColor { get; init; }
     public Color LeftColor { get; init; }
     public string Style { get; init; } = "solid";
+
+    /// <summary>Per-side border styles (Phase 3). Falls back to <see cref="Style"/> when not set.</summary>
+    public string TopStyle { get; init; } = "solid";
+    public string RightStyle { get; init; } = "solid";
+    public string BottomStyle { get; init; } = "solid";
+    public string LeftStyle { get; init; } = "solid";
+
+    /// <summary>Corner radii for rounded borders (Phase 3).</summary>
+    public double CornerNw { get; init; }
+    public double CornerNe { get; init; }
+    public double CornerSe { get; init; }
+    public double CornerSw { get; init; }
 }
 
 /// <summary>Draws a text string at a given origin.</summary>
@@ -49,6 +61,12 @@ public sealed class DrawTextItem : DisplayItem
     public string FontWeight { get; init; } = "normal";
     public Color Color { get; init; }
     public PointF Origin { get; init; }
+
+    /// <summary>Platform-specific font handle for rendering (Phase 3).</summary>
+    public object? FontHandle { get; init; }
+
+    /// <summary>Whether text is right-to-left (Phase 3).</summary>
+    public bool IsRtl { get; init; }
 }
 
 /// <summary>Draws an image into a destination rectangle.</summary>
@@ -72,4 +90,14 @@ public sealed class RestoreItem : DisplayItem { }
 public sealed class OpacityItem : DisplayItem
 {
     public float Opacity { get; init; }
+}
+
+/// <summary>Draws a line between two points (Phase 3).</summary>
+public sealed class DrawLineItem : DisplayItem
+{
+    public PointF Start { get; init; }
+    public PointF End { get; init; }
+    public Color Color { get; init; }
+    public float Width { get; init; } = 1;
+    public string DashStyle { get; init; } = "solid";
 }

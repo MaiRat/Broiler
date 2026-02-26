@@ -1,0 +1,162 @@
+using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using TheArtOfDev.HtmlRenderer.Adapters;
+using TheArtOfDev.HtmlRenderer.Core.IR;
+
+namespace TheArtOfDev.HtmlRenderer.Core;
+
+/// <summary>
+/// <see cref="IRasterBackend"/> implementation that replays a <see cref="DisplayList"/>
+/// onto an <see cref="RGraphics"/> surface. Bridges the new IR paint pipeline back to
+/// the existing platform adapters.
+/// </summary>
+/// <remarks>
+/// Phase 3: This backend allows the new <see cref="PaintWalker"/> display-list output
+/// to be rendered via the same <see cref="RGraphics"/> adapters used by the old paint path,
+/// enabling gradual migration without replacing platform-specific code.
+/// </remarks>
+internal sealed class RGraphicsRasterBackend : IRasterBackend
+{
+    public static readonly RGraphicsRasterBackend Instance = new();
+
+    /// <inheritdoc />
+    public void Render(DisplayList list, object surface)
+    {
+        if (surface is not RGraphics g)
+            throw new ArgumentException("Surface must be an RGraphics instance.", nameof(surface));
+
+        foreach (var item in list.Items)
+        {
+            switch (item)
+            {
+                case FillRectItem fill:
+                    RenderFillRect(g, fill);
+                    break;
+                case DrawBorderItem border:
+                    RenderDrawBorder(g, border);
+                    break;
+                case DrawTextItem text:
+                    RenderDrawText(g, text);
+                    break;
+                case DrawImageItem image:
+                    RenderDrawImage(g, image);
+                    break;
+                case DrawLineItem line:
+                    RenderDrawLine(g, line);
+                    break;
+                case ClipItem clip:
+                    g.PushClip(clip.ClipRect);
+                    break;
+                case RestoreItem:
+                    g.PopClip();
+                    break;
+                case OpacityItem:
+                    // Opacity not directly supported by RGraphics; skip for now
+                    break;
+            }
+        }
+    }
+
+    private static void RenderFillRect(RGraphics g, FillRectItem item)
+    {
+        using var brush = g.GetSolidBrush(item.Color);
+        g.DrawRectangle(brush, Math.Ceiling(item.Bounds.X), Math.Ceiling(item.Bounds.Y),
+            item.Bounds.Width, item.Bounds.Height);
+    }
+
+    private static void RenderDrawBorder(RGraphics g, DrawBorderItem item)
+    {
+        var bounds = item.Bounds;
+        var widths = item.Widths;
+
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+            return;
+
+        // Top border
+        if (widths.Top > 0 && item.TopColor.A > 0 && IsBorderStyleVisible(item.TopStyle))
+        {
+            var pen = CreateBorderPen(g, item.TopStyle, item.TopColor, widths.Top);
+            g.DrawLine(pen, Math.Ceiling(bounds.Left), bounds.Top + widths.Top / 2,
+                bounds.Right - 1, bounds.Top + widths.Top / 2);
+        }
+
+        // Left border
+        if (widths.Left > 0 && item.LeftColor.A > 0 && IsBorderStyleVisible(item.LeftStyle))
+        {
+            var pen = CreateBorderPen(g, item.LeftStyle, item.LeftColor, widths.Left);
+            g.DrawLine(pen, bounds.Left + widths.Left / 2, Math.Ceiling(bounds.Top),
+                bounds.Left + widths.Left / 2, Math.Floor(bounds.Bottom));
+        }
+
+        // Bottom border
+        if (widths.Bottom > 0 && item.BottomColor.A > 0 && IsBorderStyleVisible(item.BottomStyle))
+        {
+            var pen = CreateBorderPen(g, item.BottomStyle, item.BottomColor, widths.Bottom);
+            g.DrawLine(pen, Math.Ceiling(bounds.Left), bounds.Bottom - widths.Bottom / 2,
+                bounds.Right - 1, bounds.Bottom - widths.Bottom / 2);
+        }
+
+        // Right border
+        if (widths.Right > 0 && item.RightColor.A > 0 && IsBorderStyleVisible(item.RightStyle))
+        {
+            var pen = CreateBorderPen(g, item.RightStyle, item.RightColor, widths.Right);
+            g.DrawLine(pen, bounds.Right - widths.Right / 2, Math.Ceiling(bounds.Top),
+                bounds.Right - widths.Right / 2, Math.Floor(bounds.Bottom));
+        }
+    }
+
+    private static void RenderDrawText(RGraphics g, DrawTextItem item)
+    {
+        if (string.IsNullOrEmpty(item.Text))
+            return;
+
+        if (item.FontHandle is RFont font)
+        {
+            g.DrawString(item.Text, font, item.Color, item.Origin,
+                new SizeF(item.Bounds.Width, item.Bounds.Height), item.IsRtl);
+        }
+    }
+
+    private static void RenderDrawImage(RGraphics g, DrawImageItem item)
+    {
+        if (item.ImageHandle is RImage image)
+        {
+            if (item.SourceRect != RectangleF.Empty)
+                g.DrawImage(image, item.DestRect, item.SourceRect);
+            else
+                g.DrawImage(image, item.DestRect);
+        }
+    }
+
+    private static void RenderDrawLine(RGraphics g, DrawLineItem item)
+    {
+        var pen = g.GetPen(item.Color);
+        pen.Width = item.Width;
+        pen.DashStyle = item.DashStyle switch
+        {
+            "dotted" => System.Drawing.Drawing2D.DashStyle.Dot,
+            "dashed" => System.Drawing.Drawing2D.DashStyle.Dash,
+            _ => System.Drawing.Drawing2D.DashStyle.Solid,
+        };
+        g.DrawLine(pen, item.Start.X, item.Start.Y, item.End.X, item.End.Y);
+    }
+
+    private static RPen CreateBorderPen(RGraphics g, string style, Color color, double width)
+    {
+        var pen = g.GetPen(color);
+        pen.Width = width;
+        pen.DashStyle = style switch
+        {
+            "dotted" => System.Drawing.Drawing2D.DashStyle.Dot,
+            "dashed" => System.Drawing.Drawing2D.DashStyle.Dash,
+            _ => System.Drawing.Drawing2D.DashStyle.Solid,
+        };
+        return pen;
+    }
+
+    private static bool IsBorderStyleVisible(string style)
+    {
+        return !string.IsNullOrEmpty(style) && style != "none" && style != "hidden";
+    }
+}
