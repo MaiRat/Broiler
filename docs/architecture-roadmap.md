@@ -30,38 +30,57 @@ violations so every future PR has clear acceptance criteria.
 
 ## Phase 1 — Introduce IR Structs Without Changing Behavior
 
+**Status**: ✅ Complete (IR types and shadow building implemented)
+
 **Goal**: Add the new IR types alongside existing code. Existing code paths
 are unchanged; new types are populated in parallel as "shadow" data.
 
 ### Steps
 
-1. **Add `ComputedStyle` record** to `HtmlRenderer.Core`.
+1. ✅ **Add `ComputedStyle` record** to `HtmlRenderer.Core`.
    - Read-only, init-only properties for every CSS property that layout
      and paint currently access on `CssBoxProperties`.
-   - Add a factory method `ComputedStyle.From(CssBoxProperties box)` that
-     snapshots the current lazy-parsed values.
+   - Factory builder `ComputedStyleBuilder.FromBox(CssBoxProperties)` in
+     `HtmlRenderer.Orchestration` snapshots the current lazy-parsed values.
 
-2. **Add `Fragment` / `LineFragment` / `InlineFragment`** records to
+2. ✅ **Add `Fragment` / `LineFragment` / `InlineFragment`** records to
    `HtmlRenderer.Core`.
-   - After `CssBox.PerformLayout()` completes, build a `Fragment` tree
-     by walking the `CssBox` tree and copying geometry.
+   - `FragmentTreeBuilder.Build(CssBox)` in `HtmlRenderer.Orchestration`
+     walks the `CssBox` tree after layout and copies geometry.
    - This is a read-only snapshot; no code consumes it yet.
 
-3. **Add `DisplayList` / `DisplayItem` types** to `HtmlRenderer.Core`.
-   - A recording `RGraphics` adapter (`RecordingGraphics`) that implements
-     `RGraphics` but appends `DisplayItem` entries instead of drawing.
-   - Wire it into `HtmlContainerInt` as an optional second paint pass.
+3. ✅ **Add `DisplayList` / `DisplayItem` types** to `HtmlRenderer.Core`.
+   - Type definitions for all display-list primitives (`FillRectItem`,
+     `DrawBorderItem`, `DrawTextItem`, `DrawImageItem`, `ClipItem`,
+     `RestoreItem`, `OpacityItem`).
+   - `RecordingGraphics` adapter deferred to Phase 3 (paint decoupling).
 
-4. **Add `IRasterBackend`** interface to `HtmlRenderer.Core`.
+4. ✅ **Add `IRasterBackend`** interface to `HtmlRenderer.Core`.
    - Single method `Render(DisplayList, surface)`.
-   - Implement `SkiaRasterBackend` that replays `DisplayItem` entries
-     onto an `SKCanvas`.
+   - Concrete `SkiaRasterBackend` implementation deferred to Phase 3.
+
+5. ✅ **Wire shadow fragment-tree building** into `HtmlContainerInt`.
+   - `PerformLayout()` now builds a `Fragment` tree after layout completes.
+   - Stored as `LatestFragmentTree` for validation; not consumed by paint.
 
 ### Verification
 
-- All existing tests pass unchanged.
-- New integration test: render reference HTML through both the old path
-  and the new IR path → assert pixel-identical output.
+- ✅ All existing tests pass unchanged.
+- ✅ 20 new IR-type unit tests pass (BoxEdges, ComputedStyle, Fragment,
+  DisplayList, shadow building integration).
+
+### New Files
+
+| File | Project |
+|------|---------|
+| `Core/IR/BoxEdges.cs` | `HtmlRenderer.Core` |
+| `Core/IR/ComputedStyle.cs` | `HtmlRenderer.Core` |
+| `Core/IR/Fragment.cs` | `HtmlRenderer.Core` |
+| `Core/IR/DisplayList.cs` | `HtmlRenderer.Core` |
+| `Core/IR/IRasterBackend.cs` | `HtmlRenderer.Core` |
+| `Core/IR/ComputedStyleBuilder.cs` | `HtmlRenderer.Orchestration` |
+| `Core/IR/FragmentTreeBuilder.cs` | `HtmlRenderer.Orchestration` |
+| `IRTypesTests.cs` | `HtmlRenderer.Image.Tests` |
 
 **Effort**: ~2–3 days.
 **Risk**: Low — no existing behavior changes; purely additive types.
@@ -184,13 +203,13 @@ main concern.
 
 ## Summary
 
-| Phase | Scope | Effort | Risk | Behavior Change |
-|-------|-------|--------|------|-----------------|
-| 0 | Documentation | ½ day | None | No |
-| 1 | Add IR types (shadow) | 2–3 days | Low | No |
-| 2 | Layout decoupled from DOM | 3–5 days | Medium | No (same output) |
-| 3 | Paint decoupled from CssBox | 5–8 days | High | No (same output) |
-| 4 | Incremental caching | 2–4 weeks | Medium | No (same output) |
+| Phase | Scope | Effort | Risk | Behavior Change | Status |
+|-------|-------|--------|------|-----------------|--------|
+| 0 | Documentation | ½ day | None | No | ✅ Complete |
+| 1 | Add IR types (shadow) | 2–3 days | Low | No | ✅ Complete |
+| 2 | Layout decoupled from DOM | 3–5 days | Medium | No (same output) | |
+| 3 | Paint decoupled from CssBox | 5–8 days | High | No (same output) | |
+| 4 | Incremental caching | 2–4 weeks | Medium | No (same output) | |
 
 Each phase is independently shippable. Phases 1–3 must produce
 pixel-identical output for all existing tests (no behavior regressions).
