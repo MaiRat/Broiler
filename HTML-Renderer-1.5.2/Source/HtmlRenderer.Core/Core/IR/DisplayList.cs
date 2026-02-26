@@ -15,6 +15,13 @@ namespace TheArtOfDev.HtmlRenderer.Core.IR;
 public sealed class DisplayList
 {
     public IReadOnlyList<DisplayItem> Items { get; init; } = [];
+
+    /// <summary>
+    /// Serialises this display list to deterministic, indented JSON.
+    /// Coordinates are rounded to 2 decimal places; platform-specific handles are excluded.
+    /// </summary>
+    /// <remarks>Phase 4 convenience method – wraps <see cref="DisplayListJsonDumper"/>.</remarks>
+    public string ToJson() => DisplayListJsonDumper.ToJson(this);
 }
 
 /// <summary>
