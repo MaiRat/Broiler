@@ -730,7 +730,10 @@ internal class CssBox : CssBoxProperties, IDisposable
         foreach (var child in Boxes)
         {
             if (!isBfc && child.Float != CssConstants.None)
+            {
                 continue;
+            }
+
             maxChildBottom = Math.Max(maxChildBottom, child.ActualBottom + child.ActualBorderBottomWidth);
         }
 
