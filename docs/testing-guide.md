@@ -158,6 +158,67 @@ request. The CI workflow (`.github/workflows/build.yml`) includes:
   HTML-Renderer's 3D border styling, so border tests use non-white pixel
   detection rather than exact color matching.
 
+## Phase 3 — Property-Based / Generative Layout Testing
+
+Phase 3 introduces fuzz testing for the layout engine. Random HTML/CSS
+documents are generated, laid out, and checked against structural
+invariants. Failures are automatically saved for investigation and
+optionally minimized via delta reduction.
+
+### Key Classes
+
+| Class | Location | Purpose |
+|-------|----------|---------|
+| `HtmlCssGenerator` | `HtmlRenderer.Core/Core/IR/` | Generates random but well-formed HTML with inline CSS styles targeting layout stress parameters (floats, clears, widths, heights, padding, margin, border, display, nesting 1–4 levels, 1–6 children per parent) |
+| `FragmentInvariantChecker` | `HtmlRenderer.Core/Core/IR/` | Pure-C# invariant checker (no test-framework dependency). Validates Fragment trees for NaN/Infinity, negative dimensions, vertical ordering, etc. |
+| `DeltaMinimizer` | `HtmlRenderer.Core/Core/IR/` | Reduces failing HTML to a minimal reproduction by removing child elements one at a time |
+| `LayoutFuzzRunner` | `HtmlRenderer.Image.Tests/` | xUnit test class that generates 100 random documents, checks invariants, saves failures |
+| `LayoutFuzzService` | `Broiler.Cli/` | CLI service for manual fuzz runs with configurable count and output directory |
+
+### Running Fuzz Tests
+
+#### Via xUnit (100 cases, CI-safe)
+
+```bash
+dotnet test HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/ \
+  --filter "FullyQualifiedName~LayoutFuzzRunner"
+```
+
+#### Via CLI (configurable count)
+
+```bash
+# Default 1000 cases
+dotnet run --project src/Broiler.Cli -- --fuzz-layout
+
+# Custom count with output directory
+dotnet run --project src/Broiler.Cli -- --fuzz-layout --count 5000 --output ./fuzz-results
+```
+
+### Failure Output
+
+When invariant violations are found, four files are saved per failure:
+
+- `fuzz_seed_{N}.html` — the generated HTML document
+- `fuzz_seed_{N}_minimized.html` — delta-reduced minimal reproduction
+- `fuzz_seed_{N}.json` — Fragment tree JSON dump
+- `fuzz_seed_{N}_violations.txt` — list of invariant violations
+
+### Invariant Violations
+
+The fuzz runner checks these invariants on every Fragment tree:
+
+1. No NaN or Infinity in coordinates/dimensions
+2. Non-negative width and height
+3. Box edges (margin/border/padding) are finite
+4. Lines are ordered vertically (Y non-decreasing)
+5. Line baselines are within line height bounds
+6. Block children stack vertically (Y non-decreasing for non-floated,
+   static-positioned block elements)
+
+Known layout engine bugs (e.g. negative widths from deeply nested
+elements) are logged and saved but do not fail the test. See
+`TestData/FuzzFailures/` for any saved violations.
+
 ## Adding New Tests
 
 1. Place unit tests for HTML-Renderer internals in
