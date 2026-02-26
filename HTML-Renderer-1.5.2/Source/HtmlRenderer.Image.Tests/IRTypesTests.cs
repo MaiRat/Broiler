@@ -1042,8 +1042,7 @@ public class IRTypesTests
         var clip = new RectangleF(0, 0, 500, 500);
         container.PerformLayout(canvas, clip);
 
-        // Enable new paint path
-        container.HtmlContainerInt.UseNewPaintPath = true;
+        // Paint path always uses PaintWalker → DisplayList → RGraphics
         container.PerformPaint(canvas, clip);
 
         var displayList = container.HtmlContainerInt.LatestDisplayList;
@@ -1066,7 +1065,6 @@ public class IRTypesTests
         var clip = new RectangleF(0, 0, 500, 500);
         container.PerformLayout(canvas, clip);
 
-        container.HtmlContainerInt.UseNewPaintPath = true;
         container.PerformPaint(canvas, clip);
 
         var displayList = container.HtmlContainerInt.LatestDisplayList;
@@ -1089,7 +1087,6 @@ public class IRTypesTests
         var clip = new RectangleF(0, 0, 500, 500);
         container.PerformLayout(canvas, clip);
 
-        container.HtmlContainerInt.UseNewPaintPath = true;
         container.PerformPaint(canvas, clip);
 
         var displayList = container.HtmlContainerInt.LatestDisplayList;
@@ -1114,7 +1111,6 @@ public class IRTypesTests
         var clip = new RectangleF(0, 0, 500, 500);
         container.PerformLayout(canvas, clip);
 
-        container.HtmlContainerInt.UseNewPaintPath = true;
         container.PerformPaint(canvas, clip);
 
         var displayList = container.HtmlContainerInt.LatestDisplayList;
@@ -1137,7 +1133,6 @@ public class IRTypesTests
         var clip = new RectangleF(0, 0, 500, 500);
         container.PerformLayout(canvas, clip);
 
-        container.HtmlContainerInt.UseNewPaintPath = true;
         container.PerformPaint(canvas, clip);
 
         // Verify the bitmap has non-white pixels (something was rendered)
@@ -1159,7 +1154,7 @@ public class IRTypesTests
     }
 
     [Fact]
-    public void NewPaintPath_OldPathStillWorksWhenFlagOff()
+    public void PaintPath_AlwaysProducesDisplayList()
     {
         using var container = new HtmlContainer();
         container.AvoidAsyncImagesLoading = true;
@@ -1173,13 +1168,13 @@ public class IRTypesTests
         var clip = new RectangleF(0, 0, 500, 500);
         container.PerformLayout(canvas, clip);
 
-        // UseNewPaintPath defaults to false
+        // Paint always uses PaintWalker path — no flag needed
         container.PerformPaint(canvas, clip);
 
-        // Should have no display list (old path)
-        Assert.Null(container.HtmlContainerInt.LatestDisplayList);
+        // Display list should always be populated
+        Assert.NotNull(container.HtmlContainerInt.LatestDisplayList);
 
-        // But should still render visible output
+        // Should still render visible output
         bool hasNonWhitePixels = false;
         for (int y = 0; y < bitmap.Height && !hasNonWhitePixels; y++)
         {
@@ -1194,7 +1189,7 @@ public class IRTypesTests
             }
         }
 
-        Assert.True(hasNonWhitePixels, "Old paint path should still work");
+        Assert.True(hasNonWhitePixels, "Paint path should produce visible output");
     }
 
     [Fact]
@@ -1212,7 +1207,6 @@ public class IRTypesTests
         var clip = new RectangleF(0, 0, 500, 500);
         container.PerformLayout(canvas, clip);
 
-        container.HtmlContainerInt.UseNewPaintPath = true;
         container.PerformPaint(canvas, clip);
 
         var displayList = container.HtmlContainerInt.LatestDisplayList;
@@ -1274,7 +1268,6 @@ public class IRTypesTests
         var clip = new RectangleF(0, 0, 300, 300);
         container.PerformLayout(canvas, clip);
 
-        container.HtmlContainerInt.UseNewPaintPath = true;
         container.PerformPaint(canvas, clip);
 
         var list1 = container.HtmlContainerInt.LatestDisplayList;

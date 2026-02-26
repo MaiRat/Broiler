@@ -54,6 +54,13 @@ public sealed class Fragment
 
     /// <summary>Source rectangle for <see cref="ImageHandle"/> (Phase 3).</summary>
     public RectangleF ImageSourceRect { get; init; }
+
+    /// <summary>
+    /// Per-line-box rectangles for inline elements. Used by paint to render
+    /// backgrounds and borders for inline boxes that span multiple line boxes.
+    /// When non-empty, paint uses these instead of <see cref="Bounds"/>.
+    /// </summary>
+    public IReadOnlyList<RectangleF>? InlineRects { get; init; }
 }
 
 /// <summary>

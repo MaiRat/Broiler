@@ -59,6 +59,13 @@ internal static class FragmentTreeBuilder
                 imgSourceRect = rectImage.ImageRectangle;
         }
 
+        // Capture per-line-box rectangles for inline elements (used for backgrounds/borders)
+        List<RectangleF>? inlineRects = null;
+        if (box.Rectangles.Count > 0)
+        {
+            inlineRects = new List<RectangleF>(box.Rectangles.Values);
+        }
+
         return new Fragment
         {
             Location = box.Location,
@@ -74,6 +81,7 @@ internal static class FragmentTreeBuilder
             BackgroundImageHandle = bgImage,
             ImageHandle = imgHandle,
             ImageSourceRect = imgSourceRect,
+            InlineRects = inlineRects,
         };
     }
 

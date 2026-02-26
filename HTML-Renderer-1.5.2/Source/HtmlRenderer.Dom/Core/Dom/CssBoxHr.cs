@@ -1,5 +1,4 @@
 ﻿using TheArtOfDev.HtmlRenderer.Adapters;
-using TheArtOfDev.HtmlRenderer.Core.Handlers;
 using TheArtOfDev.HtmlRenderer.Core.Parse;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 using System.Drawing;
@@ -55,29 +54,5 @@ internal sealed class CssBoxHr : CssBox
         Size = new SizeF((float)width, (float)height);
 
         ActualBottom = Location.Y + ActualPaddingTop + ActualPaddingBottom + height;
-    }
-
-    protected override void PaintImp(RGraphics g)
-    {
-        var offset = (ContainerInt != null && !IsFixed) ? ContainerInt.ScrollOffset : PointF.Empty;
-        var rect = new RectangleF(Bounds.X + offset.X, Bounds.Y + offset.Y, Bounds.Width, Bounds.Height);
-
-        if (rect.Height > 2 && RenderUtils.IsColorVisible(ActualBackgroundColor))
-            g.DrawRectangle(g.GetSolidBrush(ActualBackgroundColor), rect.X, rect.Y, rect.Width, rect.Height);
-
-        var b1 = g.GetSolidBrush(ActualBorderTopColor);
-        BordersDrawHandler.DrawBorder(Border.Top, g, this, b1, rect);
-
-        if (rect.Height <= 1)
-            return;
-
-        var b2 = g.GetSolidBrush(ActualBorderLeftColor);
-        BordersDrawHandler.DrawBorder(Border.Left, g, this, b2, rect);
-
-        var b3 = g.GetSolidBrush(ActualBorderRightColor);
-        BordersDrawHandler.DrawBorder(Border.Right, g, this, b3, rect);
-
-        var b4 = g.GetSolidBrush(ActualBorderBottomColor);
-        BordersDrawHandler.DrawBorder(Border.Bottom, g, this, b4, rect);
     }
 }
