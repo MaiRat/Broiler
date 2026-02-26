@@ -55,3 +55,7 @@ desktop.ini
 *.bak
 *.orig
 Generated/
+
+# Fuzz test outputs
+**/FuzzFailures/
+fuzz-failures/

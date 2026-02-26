@@ -3,6 +3,7 @@ using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Core;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
+using TheArtOfDev.HtmlRenderer.Core.IR;
 using TheArtOfDev.HtmlRenderer.Image.Adapters;
 using System.Drawing;
 
@@ -42,6 +43,12 @@ public sealed class HtmlContainer : IDisposable
     }
 
     internal HtmlContainerInt HtmlContainerInt { get; }
+
+    /// <summary>
+    /// The most recent <see cref="Fragment"/> tree built after layout.
+    /// Available after <see cref="PerformLayout"/> has been called.
+    /// </summary>
+    public Fragment? LatestFragmentTree => HtmlContainerInt.LatestFragmentTree;
 
     public CssData CssData => HtmlContainerInt.CssData;
 
