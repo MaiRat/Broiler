@@ -94,7 +94,7 @@ public static class DeltaMinimizer
                         break;
                     }
                     depth--;
-                    scan = nextClose + "</div>".Length - 1;
+                    scan = nextClose + "</div>".Length;
                 }
             }
 

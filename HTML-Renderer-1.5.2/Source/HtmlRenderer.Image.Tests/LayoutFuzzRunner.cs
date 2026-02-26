@@ -125,7 +125,7 @@ public class LayoutFuzzRunner
             var clip = new RectangleF(0, 0, 500, 500);
             container.PerformLayout(canvas, clip);
 
-            return container.HtmlContainerInt.LatestFragmentTree;
+            return container.LatestFragmentTree;
         }
         catch
         {
