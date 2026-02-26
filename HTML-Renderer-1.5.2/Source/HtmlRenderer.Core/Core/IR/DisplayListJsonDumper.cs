@@ -190,11 +190,6 @@ public static class DisplayListJsonDumper
         return Math.Round(value, 2).ToString("G", CultureInfo.InvariantCulture);
     }
 
-    private static string Round(float value)
-    {
-        return Math.Round(value, 2).ToString("G", CultureInfo.InvariantCulture);
-    }
-
     private static string EscapeJsonString(string s)
     {
         return s.Replace("\\", "\\\\")
