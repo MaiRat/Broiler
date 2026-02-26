@@ -113,7 +113,8 @@ internal static class FragmentTreeBuilder
         if (box.Position == CssConstants.Absolute || box.Position == CssConstants.Fixed)
             return true;
 
-        if (box.Opacity != "1")
+        if (double.TryParse(box.Opacity, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var opacity) && opacity < 1.0)
             return true;
 
         return false;

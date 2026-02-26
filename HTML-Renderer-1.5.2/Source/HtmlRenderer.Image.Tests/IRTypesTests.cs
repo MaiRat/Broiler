@@ -171,7 +171,7 @@ public class IRTypesTests
     // =================================================================
 
     [Fact]
-    public void LineFragment_CanHoldInlines()
+    public void LineFragment_PreservesInlineTextAndOrder()
     {
         var inline1 = new InlineFragment { X = 0, Y = 0, Width = 30, Height = 12, Text = "Hello" };
         var inline2 = new InlineFragment { X = 30, Y = 0, Width = 40, Height = 12, Text = "World" };
