@@ -15,6 +15,16 @@ namespace TheArtOfDev.HtmlRenderer.Core;
 /// </remarks>
 internal static class PaintWalker
 {
+    /// <summary>Default selection highlight color (semi-transparent blue).</summary>
+    private static readonly Color SelectionHighlightColor = Color.FromArgb(0x69, 0x33, 0x99, 0xFF);
+
+    /// <summary>
+    /// Sentinel value indicating that a selection offset is not constrained
+    /// (i.e. the entire inline is selected on that side). Matches the convention
+    /// used by <c>CssRect.SelectedStartOffset</c> / <c>SelectedEndOffset</c>.
+    /// </summary>
+    private const double FullSelectionOffset = -1;
+
     /// <summary>
     /// Paints the given <see cref="Fragment"/> tree and returns a flat <see cref="DisplayList"/>.
     /// </summary>
@@ -176,9 +186,9 @@ internal static class PaintWalker
                 if (!inline.Selected)
                     continue;
 
-                // Selection highlight: semi-transparent blue rectangle
-                var left = inline.SelectedStartOffset > -1 ? (float)inline.SelectedStartOffset : 0f;
-                var width = inline.SelectedEndOffset > -1 ? (float)inline.SelectedEndOffset - left : inline.Width - left;
+                // Selection highlight rectangle
+                var left = inline.SelectedStartOffset > FullSelectionOffset ? (float)inline.SelectedStartOffset : 0f;
+                var width = inline.SelectedEndOffset > FullSelectionOffset ? (float)inline.SelectedEndOffset - left : inline.Width - left;
 
                 if (width <= 0)
                     continue;
@@ -186,7 +196,7 @@ internal static class PaintWalker
                 items.Add(new FillRectItem
                 {
                     Bounds = new RectangleF(inline.X + left, inline.Y, width, line.Height),
-                    Color = Color.FromArgb(0x69, 0x33, 0x99, 0xFF),
+                    Color = SelectionHighlightColor,
                 });
             }
         }
