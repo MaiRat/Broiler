@@ -440,6 +440,59 @@ public class Acid1ProgrammaticTests
             "clear:both should push below the outer floats.");
     }
 
+    /// <summary>
+    /// Regression test for test5526c: <c>blockquote</c> and <c>h1</c>
+    /// siblings of <c>ul</c> inside a floated <c>dd</c> must remain inside
+    /// <c>dd</c>'s content box and not overlap the final cleared
+    /// <c>&lt;p&gt;</c>. The BFC-aware float collision detection must find
+    /// the <c>li</c> floats inside <c>ul</c> so that the subsequent
+    /// <c>blockquote</c>/<c>h1</c> wrap to the second row.
+    /// </summary>
+    [Fact]
+    public void FloatsInsideDd_BlockquoteAndH1_StayInsideDd()
+    {
+        // dd (float:right, height:80px) contains:
+        //   ul > li*2 (float:left, width:60px each → fill first row of 120px container)
+        //   blockquote (float:left, width:40px → second row)
+        // The blockquote must stay inside dd (y < dd bottom).
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 300px; }
+        </style></head><body>
+            <div style='float:right; width:120px; height:80px; margin:0; padding:0; border:0; background-color:white;'>
+                <ul style='margin:0; padding:0; border:0;'>
+                    <li style='display:block; float:left; width:60px; height:30px; margin:0; padding:0; border:0; background-color:red;'>a</li>
+                    <li style='display:block; float:left; width:60px; height:30px; margin:0; padding:0; border:0; background-color:rgb(0,0,255);'>b</li>
+                </ul>
+                <blockquote style='float:left; width:40px; height:30px; margin:0; padding:0; border:0; background-color:green;'>c</blockquote>
+            </div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 300, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+        Assert.NotNull(greenBounds);
+
+        // Red and blue (the two li's) should be on the same row.
+        Assert.True(Math.Abs(redBounds.Value.minY - blueBounds.Value.minY) < 5,
+            "First two floated li's should be on the same row.");
+
+        // Green (blockquote) should wrap to the next row (below the li row).
+        Assert.True(greenBounds.Value.minY >= redBounds.Value.maxY - 2,
+            $"Blockquote should wrap to second row (green top={greenBounds.Value.minY}, " +
+            $"li bottom={redBounds.Value.maxY}). " +
+            "Float collision with nested li floats inside ul may not work.");
+
+        // Green must stay inside the dd container (height 80px).
+        Assert.True(greenBounds.Value.maxY < 85,
+            $"Blockquote must stay inside dd (green bottom={greenBounds.Value.maxY}, " +
+            "dd height=80). Blockquote is escaping the dd container.");
+    }
+
     // -----------------------------------------------------------------
     // 5. Percentage widths
     // -----------------------------------------------------------------
