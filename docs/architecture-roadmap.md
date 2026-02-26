@@ -7,6 +7,9 @@
 >
 > This roadmap defines **four incremental phases**, each independently
 > shippable and testable.
+>
+> All effort estimates are **person-days for a single developer** familiar
+> with the codebase.
 
 ---
 
