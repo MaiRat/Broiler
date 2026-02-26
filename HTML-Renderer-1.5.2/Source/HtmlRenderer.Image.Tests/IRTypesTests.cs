@@ -614,4 +614,684 @@ public class IRTypesTests
 
         return null;
     }
+
+    // =================================================================
+    // Phase 3 — PaintWalker: Fragment tree → DisplayList
+    // =================================================================
+
+    [Fact]
+    public void PaintWalker_EmptyFragment_ProducesEmptyDisplayList()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 100),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        Assert.NotNull(displayList);
+        Assert.NotNull(displayList.Items);
+    }
+
+    [Fact]
+    public void PaintWalker_BackgroundColor_EmitsFillRectItem()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(10, 20),
+            Size = new SizeF(100, 50),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                ActualBackgroundColor = Color.Red,
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        var fillItems = displayList.Items.OfType<FillRectItem>().ToList();
+        Assert.Single(fillItems);
+        Assert.Equal(Color.Red, fillItems[0].Color);
+        Assert.Equal(10, fillItems[0].Bounds.X);
+        Assert.Equal(20, fillItems[0].Bounds.Y);
+    }
+
+    [Fact]
+    public void PaintWalker_TransparentBackground_NoFillRectItem()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 50),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0),
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        Assert.DoesNotContain(displayList.Items, i => i is FillRectItem);
+    }
+
+    [Fact]
+    public void PaintWalker_Border_EmitsDrawBorderItem()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 50),
+            Border = new BoxEdges(2, 2, 2, 2),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                BorderTopStyle = "solid",
+                BorderRightStyle = "solid",
+                BorderBottomStyle = "solid",
+                BorderLeftStyle = "solid",
+                Border = new BoxEdges(2, 2, 2, 2),
+                ActualBorderTopColor = Color.Black,
+                ActualBorderRightColor = Color.Black,
+                ActualBorderBottomColor = Color.Black,
+                ActualBorderLeftColor = Color.Black,
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        var borderItems = displayList.Items.OfType<DrawBorderItem>().ToList();
+        Assert.Single(borderItems);
+        Assert.Equal(Color.Black, borderItems[0].TopColor);
+        Assert.Equal(2, borderItems[0].Widths.Top);
+    }
+
+    [Fact]
+    public void PaintWalker_NoBorder_NoDrawBorderItem()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 50),
+            Border = BoxEdges.Zero,
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                BorderTopStyle = "none",
+                BorderRightStyle = "none",
+                BorderBottomStyle = "none",
+                BorderLeftStyle = "none",
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        Assert.DoesNotContain(displayList.Items, i => i is DrawBorderItem);
+    }
+
+    [Fact]
+    public void PaintWalker_TextInline_EmitsDrawTextItem()
+    {
+        var inlineStyle = new ComputedStyle
+        {
+            FontFamily = "Arial",
+            FontSize = "12pt",
+            FontWeight = "normal",
+            ActualColor = Color.Black,
+        };
+
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(200, 20),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            Lines =
+            [
+                new LineFragment
+                {
+                    X = 0, Y = 0, Width = 200, Height = 20,
+                    Inlines =
+                    [
+                        new InlineFragment
+                        {
+                            X = 5, Y = 2, Width = 50, Height = 16,
+                            Text = "Hello",
+                            Style = inlineStyle,
+                        }
+                    ]
+                }
+            ],
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        var textItems = displayList.Items.OfType<DrawTextItem>().ToList();
+        Assert.Single(textItems);
+        Assert.Equal("Hello", textItems[0].Text);
+        Assert.Equal("Arial", textItems[0].FontFamily);
+        Assert.Equal(Color.Black, textItems[0].Color);
+    }
+
+    [Fact]
+    public void PaintWalker_DisplayNone_SkipsFragment()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 50),
+            Style = new ComputedStyle
+            {
+                Display = "none",
+                ActualBackgroundColor = Color.Red,
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        Assert.Empty(displayList.Items);
+    }
+
+    [Fact]
+    public void PaintWalker_OverflowHidden_EmitsClipAndRestore()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(10, 10),
+            Size = new SizeF(100, 50),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                Overflow = "hidden",
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        Assert.Contains(displayList.Items, i => i is ClipItem);
+        Assert.Contains(displayList.Items, i => i is RestoreItem);
+
+        var clipItem = displayList.Items.OfType<ClipItem>().First();
+        Assert.Equal(10, clipItem.ClipRect.X);
+        Assert.Equal(10, clipItem.ClipRect.Y);
+        Assert.Equal(100, clipItem.ClipRect.Width);
+    }
+
+    [Fact]
+    public void PaintWalker_Children_PaintedInOrder()
+    {
+        var child1 = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(50, 50),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                ActualBackgroundColor = Color.Red,
+            },
+        };
+        var child2 = new Fragment
+        {
+            Location = new PointF(50, 0),
+            Size = new SizeF(50, 50),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                ActualBackgroundColor = Color.Blue,
+            },
+        };
+
+        var parent = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 50),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            Children = [child1, child2],
+        };
+
+        var displayList = PaintWalker.Paint(parent);
+        var fillItems = displayList.Items.OfType<FillRectItem>().ToList();
+        Assert.Equal(2, fillItems.Count);
+        Assert.Equal(Color.Red, fillItems[0].Color);
+        Assert.Equal(Color.Blue, fillItems[1].Color);
+    }
+
+    [Fact]
+    public void PaintWalker_StackingContext_PositionedAfterNonPositioned()
+    {
+        var nonPositioned = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(50, 50),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                ActualBackgroundColor = Color.Red,
+            },
+            CreatesStackingContext = false,
+        };
+        var positioned = new Fragment
+        {
+            Location = new PointF(50, 0),
+            Size = new SizeF(50, 50),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                Position = "absolute",
+                ActualBackgroundColor = Color.Blue,
+            },
+            CreatesStackingContext = true,
+            StackLevel = 1,
+        };
+
+        // Place positioned BEFORE non-positioned in tree order
+        var parent = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 50),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible" },
+            Children = [positioned, nonPositioned],
+        };
+
+        var displayList = PaintWalker.Paint(parent);
+        var fillItems = displayList.Items.OfType<FillRectItem>().ToList();
+        Assert.Equal(2, fillItems.Count);
+        // Non-positioned should be painted first regardless of tree order
+        Assert.Equal(Color.Red, fillItems[0].Color);
+        Assert.Equal(Color.Blue, fillItems[1].Color);
+    }
+
+    [Fact]
+    public void PaintWalker_TextDecoration_EmitsDrawLineItem()
+    {
+        var fragment = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(200, 20),
+            Border = BoxEdges.Zero,
+            Padding = BoxEdges.Zero,
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                TextDecoration = "underline",
+                ActualColor = Color.Black,
+            },
+            Lines =
+            [
+                new LineFragment
+                {
+                    X = 0, Y = 0, Width = 200, Height = 20,
+                    Inlines =
+                    [
+                        new InlineFragment { X = 0, Y = 0, Width = 100, Height = 16, Text = "Test" },
+                    ]
+                }
+            ],
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        Assert.Contains(displayList.Items, i => i is DrawLineItem);
+    }
+
+    // =================================================================
+    // Phase 3 — DrawBorderItem per-side styles
+    // =================================================================
+
+    [Fact]
+    public void DrawBorderItem_PerSideStyles_CanBeSet()
+    {
+        var item = new DrawBorderItem
+        {
+            Bounds = new RectangleF(0, 0, 100, 100),
+            Widths = new BoxEdges(1, 2, 3, 4),
+            TopStyle = "solid",
+            RightStyle = "dashed",
+            BottomStyle = "dotted",
+            LeftStyle = "none",
+            CornerNw = 5,
+            CornerNe = 10,
+        };
+
+        Assert.Equal("solid", item.TopStyle);
+        Assert.Equal("dashed", item.RightStyle);
+        Assert.Equal("dotted", item.BottomStyle);
+        Assert.Equal("none", item.LeftStyle);
+        Assert.Equal(5, item.CornerNw);
+        Assert.Equal(10, item.CornerNe);
+    }
+
+    // =================================================================
+    // Phase 3 — DrawTextItem FontHandle
+    // =================================================================
+
+    [Fact]
+    public void DrawTextItem_FontHandle_CanBeSet()
+    {
+        var item = new DrawTextItem
+        {
+            Text = "Hello",
+            FontHandle = "fake-font-object",
+            IsRtl = true,
+        };
+
+        Assert.Equal("fake-font-object", item.FontHandle);
+        Assert.True(item.IsRtl);
+    }
+
+    // =================================================================
+    // Phase 3 — DrawLineItem
+    // =================================================================
+
+    [Fact]
+    public void DrawLineItem_Properties_CanBeSet()
+    {
+        var item = new DrawLineItem
+        {
+            Bounds = new RectangleF(0, 10, 100, 1),
+            Start = new PointF(0, 10),
+            End = new PointF(100, 10),
+            Color = Color.Red,
+            Width = 2,
+            DashStyle = "dashed",
+        };
+
+        Assert.Equal(new PointF(0, 10), item.Start);
+        Assert.Equal(new PointF(100, 10), item.End);
+        Assert.Equal(Color.Red, item.Color);
+        Assert.Equal(2, item.Width);
+        Assert.Equal("dashed", item.DashStyle);
+    }
+
+    // =================================================================
+    // Phase 3 — InlineFragment FontHandle
+    // =================================================================
+
+    [Fact]
+    public void InlineFragment_FontHandle_CanBeSet()
+    {
+        var inline = new InlineFragment
+        {
+            X = 0, Y = 0, Width = 50, Height = 12,
+            Text = "Test",
+            FontHandle = "font-handle",
+        };
+
+        Assert.Equal("font-handle", inline.FontHandle);
+    }
+
+    // =================================================================
+    // Phase 3 — Integration: New paint path via HtmlContainer
+    // =================================================================
+
+    [Fact]
+    public void NewPaintPath_ProducesDisplayList()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div style='width:200px;height:100px;background:red;'>Hello</div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        var clip = new RectangleF(0, 0, 500, 500);
+        container.PerformLayout(canvas, clip);
+
+        // Enable new paint path
+        container.HtmlContainerInt.UseNewPaintPath = true;
+        container.PerformPaint(canvas, clip);
+
+        var displayList = container.HtmlContainerInt.LatestDisplayList;
+        Assert.NotNull(displayList);
+        Assert.True(displayList.Items.Count > 0, "DisplayList should have items");
+    }
+
+    [Fact]
+    public void NewPaintPath_HasFillRectForBackground()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div style='width:200px;height:100px;background:red;'>Content</div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        var clip = new RectangleF(0, 0, 500, 500);
+        container.PerformLayout(canvas, clip);
+
+        container.HtmlContainerInt.UseNewPaintPath = true;
+        container.PerformPaint(canvas, clip);
+
+        var displayList = container.HtmlContainerInt.LatestDisplayList;
+        Assert.NotNull(displayList);
+        Assert.Contains(displayList.Items, i => i is FillRectItem);
+    }
+
+    [Fact]
+    public void NewPaintPath_HasDrawTextForContent()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div style='width:200px;'>Hello World</div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        var clip = new RectangleF(0, 0, 500, 500);
+        container.PerformLayout(canvas, clip);
+
+        container.HtmlContainerInt.UseNewPaintPath = true;
+        container.PerformPaint(canvas, clip);
+
+        var displayList = container.HtmlContainerInt.LatestDisplayList;
+        Assert.NotNull(displayList);
+        var textItems = displayList.Items.OfType<DrawTextItem>().ToList();
+        Assert.True(textItems.Count > 0, "Should have text items for 'Hello World'");
+        Assert.Contains(textItems, t => t.Text.Contains("Hello"));
+    }
+
+    [Fact]
+    public void NewPaintPath_HasDrawBorderForBorderedElement()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div style='width:200px;height:100px;border:2px solid black;'>Bordered</div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        var clip = new RectangleF(0, 0, 500, 500);
+        container.PerformLayout(canvas, clip);
+
+        container.HtmlContainerInt.UseNewPaintPath = true;
+        container.PerformPaint(canvas, clip);
+
+        var displayList = container.HtmlContainerInt.LatestDisplayList;
+        Assert.NotNull(displayList);
+        Assert.Contains(displayList.Items, i => i is DrawBorderItem);
+    }
+
+    [Fact]
+    public void NewPaintPath_ProducesVisiblePixels()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div style='width:200px;height:100px;background:red;'>Visible</div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        var clip = new RectangleF(0, 0, 500, 500);
+        container.PerformLayout(canvas, clip);
+
+        container.HtmlContainerInt.UseNewPaintPath = true;
+        container.PerformPaint(canvas, clip);
+
+        // Verify the bitmap has non-white pixels (something was rendered)
+        bool hasNonWhitePixels = false;
+        for (int y = 0; y < bitmap.Height && !hasNonWhitePixels; y++)
+        {
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                var pixel = bitmap.GetPixel(x, y);
+                if (pixel != SKColors.White)
+                {
+                    hasNonWhitePixels = true;
+                    break;
+                }
+            }
+        }
+
+        Assert.True(hasNonWhitePixels, "New paint path should produce visible output");
+    }
+
+    [Fact]
+    public void NewPaintPath_OldPathStillWorksWhenFlagOff()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div style='width:200px;'>Hello World</div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        var clip = new RectangleF(0, 0, 500, 500);
+        container.PerformLayout(canvas, clip);
+
+        // UseNewPaintPath defaults to false
+        container.PerformPaint(canvas, clip);
+
+        // Should have no display list (old path)
+        Assert.Null(container.HtmlContainerInt.LatestDisplayList);
+
+        // But should still render visible output
+        bool hasNonWhitePixels = false;
+        for (int y = 0; y < bitmap.Height && !hasNonWhitePixels; y++)
+        {
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                var pixel = bitmap.GetPixel(x, y);
+                if (pixel != SKColors.White)
+                {
+                    hasNonWhitePixels = true;
+                    break;
+                }
+            }
+        }
+
+        Assert.True(hasNonWhitePixels, "Old paint path should still work");
+    }
+
+    [Fact]
+    public void NewPaintPath_TextItemHasFontHandle()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div style='width:200px;font-family:Arial;font-size:12pt;'>Text</div>");
+
+        using var bitmap = new SKBitmap(500, 500);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        var clip = new RectangleF(0, 0, 500, 500);
+        container.PerformLayout(canvas, clip);
+
+        container.HtmlContainerInt.UseNewPaintPath = true;
+        container.PerformPaint(canvas, clip);
+
+        var displayList = container.HtmlContainerInt.LatestDisplayList;
+        Assert.NotNull(displayList);
+        var textItems = displayList.Items.OfType<DrawTextItem>().ToList();
+        Assert.True(textItems.Count > 0);
+        // Font handles should be populated from the fragment tree
+        Assert.All(textItems, t => Assert.NotNull(t.FontHandle));
+    }
+
+    // =================================================================
+    // Phase 3 — DisplayList JSON serialization (snapshot tests)
+    // =================================================================
+
+    [Fact]
+    public void DisplayList_CanSerializeToJson()
+    {
+        var items = new DisplayItem[]
+        {
+            new FillRectItem { Bounds = new RectangleF(0, 0, 100, 50), Color = Color.Red },
+            new DrawBorderItem
+            {
+                Bounds = new RectangleF(0, 0, 100, 50),
+                Widths = new BoxEdges(1, 1, 1, 1),
+                TopColor = Color.Black, RightColor = Color.Black,
+                BottomColor = Color.Black, LeftColor = Color.Black,
+                TopStyle = "solid", RightStyle = "solid",
+                BottomStyle = "solid", LeftStyle = "solid",
+            },
+            new DrawTextItem { Text = "Hello", FontFamily = "Arial", FontSize = 12, Color = Color.Black, Origin = new PointF(5, 5) },
+            new DrawLineItem { Start = new PointF(0, 10), End = new PointF(100, 10), Color = Color.Black, Width = 1 },
+        };
+
+        var list = new DisplayList { Items = items };
+        var json = System.Text.Json.JsonSerializer.Serialize(list, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true,
+        });
+
+        Assert.NotNull(json);
+        Assert.Contains("FillRect", json);
+        Assert.Contains("DrawBorder", json);
+        Assert.Contains("DrawText", json);
+        Assert.Contains("DrawLine", json);
+    }
+
+    [Fact]
+    public void NewPaintPath_DisplayList_Snapshot_IsStable()
+    {
+        using var container = new HtmlContainer();
+        container.AvoidAsyncImagesLoading = true;
+        container.AvoidImagesLateLoading = true;
+        container.SetHtml("<div style='width:100px;height:50px;background:blue;border:1px solid black;'>Snapshot</div>");
+
+        using var bitmap = new SKBitmap(300, 300);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        var clip = new RectangleF(0, 0, 300, 300);
+        container.PerformLayout(canvas, clip);
+
+        container.HtmlContainerInt.UseNewPaintPath = true;
+        container.PerformPaint(canvas, clip);
+
+        var list1 = container.HtmlContainerInt.LatestDisplayList;
+
+        // Re-layout and re-paint — display list should be identical
+        container.PerformLayout(canvas, clip);
+        container.PerformPaint(canvas, clip);
+
+        var list2 = container.HtmlContainerInt.LatestDisplayList;
+
+        Assert.NotNull(list1);
+        Assert.NotNull(list2);
+        Assert.Equal(list1.Items.Count, list2.Items.Count);
+
+        for (int i = 0; i < list1.Items.Count; i++)
+        {
+            Assert.Equal(list1.Items[i].GetType(), list2.Items[i].GetType());
+            Assert.Equal(list1.Items[i].Bounds, list2.Items[i].Bounds);
+        }
+    }
 }

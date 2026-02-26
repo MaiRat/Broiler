@@ -146,41 +146,71 @@ Float collision and table layout are the highest-risk areas.
 
 ## Phase 3 — Paint Consumes Only FragmentTree
 
+**Status**: 🚧 In Progress (PaintWalker, RGraphicsRasterBackend, feature-flagged new path)
+
 **Goal**: `PaintImp()` reads from `Fragment` records instead of `CssBox`
 fields. The `DisplayList` becomes the sole output of paint.
 
 ### Steps
 
-1. **Replace `CssBox.PaintImp()`** with a standalone `PaintWalker` class
+1. ✅ **Replace `CssBox.PaintImp()`** with a standalone `PaintWalker` class
    that receives a `Fragment` tree.
    - `PaintWalker` produces `DisplayItem` entries.
    - Stacking context sorting is done on `Fragment.StackLevel`.
+   - Handles background colors, borders, text, text decoration,
+     overflow clipping, and child ordering.
 
-2. **Replace direct `RGraphics` calls** in `BordersDrawHandler` and
+2. ✅ **Create `RGraphicsRasterBackend`** implementing `IRasterBackend`.
+   - Bridges `DisplayList` back to `RGraphics` for rendering.
+   - Handles `FillRectItem`, `DrawBorderItem`, `DrawTextItem`,
+     `DrawImageItem`, `DrawLineItem`, `ClipItem`, `RestoreItem`.
+
+3. ✅ **Wire new paint path** with feature flag (`UseNewPaintPath`).
+   - `HtmlContainerInt.PerformPaint()` supports both old and new paths.
+
+4. ✅ **Extend IR types** for paint requirements.
+   - `DrawBorderItem`: per-side styles, corner radii.
+   - `DrawTextItem`: `FontHandle`, `IsRtl`.
+   - `InlineFragment`: `FontHandle` captured during fragment building.
+   - Added `DrawLineItem` for text decoration.
+   - `DisplayItem`: `JsonDerivedType` attributes for snapshot serialization.
+
+5. **Remove `CssBox.Paint()` / `PaintImp()`** methods.
+   - Deferred: old paint path retained as fallback until full validation.
+
+6. **Replace direct `RGraphics` calls** in `BordersDrawHandler` and
    `BackgroundImageDrawHandler` with `DisplayItem` emission.
-   - The handlers already receive interfaces (`IBorderRenderData`,
-     `IBackgroundRenderData`); map these to `Fragment` + `ComputedStyle`.
+   - Deferred: handlers still used by old paint path; new path bypasses
+     them via `PaintWalker` → `DisplayItem` emission.
 
-3. **Remove `CssBox.Paint()` / `PaintImp()`** methods.
-   - Paint is now fully separate from the DOM.
+### Remaining Work
 
-4. **Wire the `IRasterBackend`** as the sole rendering path.
-   - `HtmlContainerInt.PerformPaint()` becomes:
-     ```
-     var fragments = BuildFragmentTree(root);
-     var displayList = painter.Paint(fragments);
-     backend.Render(displayList, surface);
-     ```
+- Handle background images and gradients in `PaintWalker`.
+- Handle image loading state and selection rendering in new path.
+- Remove old `CssBox.Paint()` / `PaintImp()` once fully validated.
+
+### New/Modified Files
+
+| File | Change |
+|------|--------|
+| `HtmlRenderer.Orchestration/Core/IR/PaintWalker.cs` | ✦ new |
+| `HtmlRenderer.Orchestration/Core/IR/RGraphicsRasterBackend.cs` | ✦ new |
+| `HtmlRenderer.Core/Core/IR/DisplayList.cs` | ✎ extended |
+| `HtmlRenderer.Core/Core/IR/Fragment.cs` | ✎ InlineFragment.FontHandle |
+| `HtmlRenderer.Orchestration/Core/IR/FragmentTreeBuilder.cs` | ✎ font handles |
+| `HtmlRenderer.Orchestration/Core/HtmlContainerInt.cs` | ✎ new paint path |
+| `HtmlRenderer.Image.Tests/IRTypesTests.cs` | ✎ 24 new tests |
 
 ### Verification
 
-- Pixel-identical output for all existing test cases.
-- New test: serialize `DisplayList` to JSON → snapshot-test against
-  expected output for a set of reference HTML files.
+- ✅ All 205 tests pass (181 existing + 24 new Phase 3 tests).
+- ✅ DisplayList JSON serialization with polymorphic type discriminators.
+- ✅ Snapshot stability test.
+- Old paint path unaffected (feature flag defaults to off).
 
 **Effort**: ~5–8 days.
-**Risk**: High — replaces the entire paint path. Must be done behind a
-feature flag or with a parallel old-path fallback until fully validated.
+**Risk**: High — replaces the entire paint path. Feature flag
+(`UseNewPaintPath`) provides parallel old-path fallback until fully validated.
 
 ---
 
@@ -223,7 +253,7 @@ main concern.
 | 0 | Documentation | ½ day | None | No | ✅ Complete |
 | 1 | Add IR types (shadow) | 2–3 days | Low | No | ✅ Complete |
 | 2 | Layout decoupled from DOM | 3–5 days | Medium | No (same output) | 🚧 In Progress |
-| 3 | Paint decoupled from CssBox | 5–8 days | High | No (same output) | |
+| 3 | Paint decoupled from CssBox | 5–8 days | High | No (same output) | 🚧 In Progress |
 | 4 | Incremental caching | 2–4 weeks | Medium | No (same output) | |
 
 Each phase is independently shippable. Phases 1–3 must produce

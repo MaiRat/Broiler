@@ -75,6 +75,7 @@ internal static class FragmentTreeBuilder
                 Height = (float)word.Height,
                 Text = word.IsSpaces ? " " : word.Text,
                 Style = ownerStyle,
+                FontHandle = word.OwnerBox.ActualFont,
             });
         }
 

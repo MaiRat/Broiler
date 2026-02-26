@@ -71,4 +71,7 @@ public sealed class InlineFragment
     public float Height { get; init; }
     public string? Text { get; init; }
     public ComputedStyle Style { get; init; } = new();
+
+    /// <summary>Platform-specific font handle resolved during layout (Phase 3).</summary>
+    public object? FontHandle { get; init; }
 }
