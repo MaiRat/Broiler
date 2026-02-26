@@ -1000,4 +1000,180 @@ public class Acid1ProgrammaticTests
             $"Gold li (top={goldBounds.Value.minY}) and green #bar (top={greenBounds.Value.minY}) " +
             "should be at the same vertical level.");
     }
+
+    // -----------------------------------------------------------------
+    // Priority 1: Right float collision detection (CSS1 §5.5.26)
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that two consecutive <c>float: right</c> elements stack
+    /// side-by-side from right to left (CSS1 §5.5.26).
+    /// </summary>
+    [Fact]
+    public void Float_TwoRightFloats_StackRightToLeft()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 400px; }
+        </style></head><body>
+            <div style='float: right; width: 80px; height: 50px; background-color: red;'>a</div>
+            <div style='float: right; width: 80px; height: 50px; background-color: rgb(0,0,255);'>b</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+
+        // First right float (red) should be at the right edge.
+        Assert.True(redBounds.Value.maxX > 350,
+            $"First float:right should be at the right edge (maxX={redBounds.Value.maxX}).");
+
+        // Second right float (blue) should be to the left of the first.
+        Assert.True(blueBounds.Value.maxX <= redBounds.Value.minX + 2,
+            $"Second float:right (maxX={blueBounds.Value.maxX}) should be to the left of " +
+            $"first float:right (minX={redBounds.Value.minX}). " +
+            "Right floats must stack from right to left.");
+
+        // Both should be at the same Y level.
+        Assert.True(Math.Abs(redBounds.Value.minY - blueBounds.Value.minY) < 5,
+            $"Both right floats should be at the same Y level " +
+            $"(red top={redBounds.Value.minY}, blue top={blueBounds.Value.minY}).");
+    }
+
+    /// <summary>
+    /// Verifies that <c>float: right</c> elements wrap to a new row
+    /// when the container width is exceeded (CSS1 §5.5.26).
+    /// </summary>
+    [Fact]
+    public void Float_RightFloats_WrapWhenContainerFull()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 200px; }
+        </style></head><body>
+            <div style='float: right; width: 120px; height: 40px; background-color: red;'>a</div>
+            <div style='float: right; width: 120px; height: 40px; background-color: rgb(0,0,255);'>b</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 200, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+
+        // Second right float should wrap below the first (120+120 > 200).
+        Assert.True(blueBounds.Value.minY > redBounds.Value.maxY - 5,
+            $"Second float:right should wrap to next row " +
+            $"(blue top={blueBounds.Value.minY}, red bottom={redBounds.Value.maxY}). " +
+            "Float:right wrapping when container is full.");
+    }
+
+    /// <summary>
+    /// Verifies that a <c>float: right</c> element does not overlap
+    /// with a preceding <c>float: left</c> element (CSS1 §5.5.25/26).
+    /// </summary>
+    [Fact]
+    public void Float_RightDoesNotOverlapLeft()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 300px; }
+        </style></head><body>
+            <div style='float: left; width: 200px; height: 50px; background-color: red;'>a</div>
+            <div style='float: right; width: 200px; height: 50px; background-color: rgb(0,0,255);'>b</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 300, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+
+        // When left + right floats exceed container width, the right float
+        // should drop below the left float (CSS1 §5.5.26 rule 3).
+        Assert.True(blueBounds.Value.minY >= redBounds.Value.maxY - 5,
+            $"Float:right (top={blueBounds.Value.minY}) should drop below " +
+            $"float:left (bottom={redBounds.Value.maxY}) when there isn't enough room. " +
+            "Right float must not overlap with left float.");
+    }
+
+    /// <summary>
+    /// Verifies the Acid1 pattern where a <c>dt</c> is floated left and a
+    /// <c>dd</c> is floated right – they should appear side-by-side when
+    /// the container is wide enough (Acid1 Section 3).
+    /// </summary>
+    [Fact]
+    public void Float_DtLeftDdRight_SideBySide()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 500px; }
+            dl { margin: 0; padding: 5px; }
+            dt { float: left; width: 50px; height: 100px;
+                 background-color: red; margin: 0; padding: 10px;
+                 border: 5px solid black; }
+            dd { float: right; width: 300px; height: 100px;
+                 background-color: rgb(0,0,255); margin: 0 0 0 10px;
+                 padding: 10px; border: 10px solid black; }
+        </style></head><body>
+        <dl><dt>toggle</dt><dd>content</dd></dl>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 520, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+
+        // dt (red, float:left) should be on the left side.
+        Assert.True(redBounds.Value.minX < 100,
+            $"dt (float:left) should be near the left edge (minX={redBounds.Value.minX}).");
+
+        // dd (blue, float:right) should be to the right of dt.
+        Assert.True(blueBounds.Value.minX > redBounds.Value.maxX - 5,
+            $"dd (float:right, minX={blueBounds.Value.minX}) should be to the right of " +
+            $"dt (float:left, maxX={redBounds.Value.maxX}). " +
+            "Left and right floats should appear side-by-side when container is wide enough.");
+
+        // Both should be at approximately the same Y level.
+        Assert.True(Math.Abs(redBounds.Value.minY - blueBounds.Value.minY) < 15,
+            $"dt (top={redBounds.Value.minY}) and dd (top={blueBounds.Value.minY}) " +
+            "should be at approximately the same vertical level.");
+    }
+
+    /// <summary>
+    /// Verifies that a <c>float: left</c> element does not extend past
+    /// a preceding <c>float: right</c> element (CSS1 §5.5.25).
+    /// </summary>
+    [Fact]
+    public void Float_LeftDoesNotOverlapRight()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; width: 300px; }
+        </style></head><body>
+            <div style='float: right; width: 100px; height: 50px; background-color: red;'>a</div>
+            <div style='float: left; width: 250px; height: 50px; background-color: rgb(0,0,255);'>b</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 300, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var blueBounds = GetColorBounds(bitmap, IsBlue);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(blueBounds);
+
+        // When left float + right float exceed container width, the left float
+        // should drop below the right float (CSS1 §5.5.25 rule 3).
+        Assert.True(blueBounds.Value.minY >= redBounds.Value.maxY - 5,
+            $"Float:left (top={blueBounds.Value.minY}) should drop below " +
+            $"float:right (bottom={redBounds.Value.maxY}) when there isn't enough room. " +
+            "Left float must not overlap with right float.");
+    }
 }

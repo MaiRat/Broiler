@@ -83,19 +83,40 @@ Playwright Chromium 145.0.7632.6. All pixel-diff ratios are measured at
 
 ## Fix Roadmap
 
-### Priority 1 – Float Layout Engine (Sections 2–6)
+### Priority 1 – Float Layout Engine (Sections 2–6) ✅ Fixed
 
-- **Float positioning algorithm:** Implement CSS1 §5.5.25/5.5.26 for float
-  placement. Floats must be placed at the top of their containing block's
-  current line, shifted left/right, and subsequent content must flow around
-  them.
-- **Available width reduction:** When a float is active, the available line
-  width for sibling block-level content must be reduced by the float's
-  margin-box width.
-- **Float stacking:** Multiple `float:left` elements must stack horizontally
+- ✅ **Float positioning algorithm:** Implemented CSS1 §5.5.25/5.5.26 for float
+  placement. Left floats use iterative collision detection against both left and
+  right floats. Right floats now use the same iterative collision detection
+  approach (previously had no collision detection at all).
+- ✅ **Available width reduction:** Left floats now check against right floats
+  to ensure they do not extend past them. Right floats check against left floats
+  to avoid overlap.
+- ✅ **Float stacking:** Multiple `float:left` elements stack horizontally
+  (existing). Multiple `float:right` elements now stack from right-to-left
   until the available width is exhausted, then wrap to a new line.
-- **Float clearing:** `clear:left`, `clear:right`, and `clear:both` must
-  correctly compute the clearance distance below active floats.
+- ✅ **Float clearing:** `clear:left`, `clear:right`, and `clear:both`
+  correctly compute the clearance distance below active floats (existing).
+
+#### Changes Made
+
+- `CssBox.PerformLayoutImp()`: Added iterative collision detection for
+  `float:right` elements, matching the existing algorithm for `float:left`.
+  Right floats now avoid overlapping with preceding right floats (stacking
+  from right-to-left) and preceding left floats. When there is not enough
+  room, the right float drops below the lowest overlapping float.
+- `CssBox.PerformLayoutImp()`: Updated left float collision detection to
+  also check against preceding right floats, preventing left floats from
+  extending into the space occupied by right floats.
+- Added 5 new programmatic tests in `Acid1ProgrammaticTests.cs`:
+  - `Float_TwoRightFloats_StackRightToLeft`
+  - `Float_RightFloats_WrapWhenContainerFull`
+  - `Float_RightDoesNotOverlapLeft`
+  - `Float_DtLeftDdRight_SideBySide`
+  - `Float_LeftDoesNotOverlapRight`
+- Added 6 repeated render validation tests in `Acid1RepeatedRenderTests`:
+  - Full acid1.html and Sections 2–6 rendered multiple times to verify
+    determinism after float layout changes.
 
 ### Priority 2 – Box Model / Containing Block (Sections 1, 9)
 
