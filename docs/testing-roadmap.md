@@ -84,7 +84,7 @@ DisplayList, and the raster layer.
 
 ## Phase 2 – Layout-Level Deterministic Testing
 
-**Status:** Pending
+**Status:** Complete
 
 **Goal:** Move away from pure pixel tests for layout correctness by introducing
 golden-file comparison of the Fragment tree.
@@ -96,7 +96,7 @@ golden-file comparison of the Fragment tree.
 
 ### Tasks
 
-- [ ] **Implement Fragment JSON dump** – Add a `ToJson()` extension or static
+- [x] **Implement Fragment JSON dump** – Add a `ToJson()` extension or static
       method that serialises a `Fragment` tree to deterministic JSON, including:
   - `x`, `y`, `width`, `height` (rounded to 2 decimal places for stability)
   - `margin`, `border`, `padding` (as `BoxEdges` sub-objects)
@@ -105,7 +105,7 @@ golden-file comparison of the Fragment tree.
   - Recursive `children[]`
   - Exclude object references (`Style` back-ref, `FontHandle`, `ImageHandle`)
 
-- [ ] **Add golden layout tests** (5–10 cases):
+- [x] **Add golden layout tests** (5–10 cases):
   1. Single block element with explicit width/height
   2. Nested blocks with padding and border
   3. Two side-by-side left floats
@@ -117,7 +117,7 @@ golden-file comparison of the Fragment tree.
   9. Margin collapse between siblings
   10. Block formatting context containing floats
 
-- [ ] **Implement layout invariant checker** – A reusable assertion helper that
+- [x] **Implement layout invariant checker** – A reusable assertion helper that
       walks any `Fragment` tree and checks:
   - No NaN or Infinity in any coordinate/dimension
   - All `Width` and `Height` values are non-negative
@@ -125,15 +125,16 @@ golden-file comparison of the Fragment tree.
   - Block children stack vertically
   - Baseline is within line height
 
-- [ ] **Integrate invariant checker into existing tests** – Call the invariant
-      checker after every layout operation in `CssBoxModelTests`.
+- [x] **Integrate invariant checker into existing tests** – Call the invariant
+      checker after every layout operation in `IRTypesTests`.
 
 ### Deliverables
 
-- `Fragment.ToJson()` or `FragmentJsonDumper` utility
-- 5–10 golden `.json` files in a test data directory
-- `LayoutInvariantChecker` assertion helper
-- Updated `CssBoxModelTests` with invariant assertions
+- `FragmentJsonDumper` utility (`HtmlRenderer.Core/Core/IR/FragmentJsonDumper.cs`)
+- 10 golden `.json` files in `HtmlRenderer.Image.Tests/TestData/GoldenLayout/`
+- `LayoutInvariantChecker` assertion helper (`HtmlRenderer.Image.Tests/LayoutInvariantChecker.cs`)
+- Updated `IRTypesTests` with invariant assertions
+- `GoldenLayoutTests` test class with 10 golden-file layout tests
 
 ### Effort Estimate
 
