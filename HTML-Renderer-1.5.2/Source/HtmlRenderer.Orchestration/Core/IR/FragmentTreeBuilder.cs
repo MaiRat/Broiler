@@ -45,6 +45,20 @@ internal static class FragmentTreeBuilder
             }
         }
 
+        // Phase 3: Capture background image handle for the new paint path
+        object? bgImage = box.LoadedBackgroundImage;
+
+        // Phase 3: Capture replaced image handle (e.g. <img> elements)
+        object? imgHandle = null;
+        RectangleF imgSourceRect = RectangleF.Empty;
+        if (box is CssBoxImage imgBox)
+        {
+            imgHandle = imgBox.Image;
+            // CssBoxImage stores source rect on its internal CssRectImage word
+            if (imgBox.Words.Count > 0 && imgBox.Words[0] is CssRectImage rectImage)
+                imgSourceRect = rectImage.ImageRectangle;
+        }
+
         return new Fragment
         {
             Location = box.Location,
@@ -57,6 +71,9 @@ internal static class FragmentTreeBuilder
             Style = style,
             CreatesStackingContext = IsStackingContext(box),
             StackLevel = 0,
+            BackgroundImageHandle = bgImage,
+            ImageHandle = imgHandle,
+            ImageSourceRect = imgSourceRect,
         };
     }
 
@@ -76,6 +93,9 @@ internal static class FragmentTreeBuilder
                 Text = word.IsSpaces ? " " : word.Text,
                 Style = ownerStyle,
                 FontHandle = word.OwnerBox.ActualFont,
+                Selected = word.Selected,
+                SelectedStartOffset = word.SelectedStartOffset,
+                SelectedEndOffset = word.SelectedEndOffset,
             });
         }
 
