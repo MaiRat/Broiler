@@ -363,7 +363,7 @@ internal class CssBox : CssBoxProperties, IDisposable
 
                         double containerLeft = ContainingBlock.Location.X + ContainingBlock.ActualPaddingLeft + ContainingBlock.ActualBorderLeftWidth;
                         double containerRight = ContainingBlock.ClientLeft + ContainingBlock.AvailableWidth;
-                        double floatHeight = Math.Max(ActualHeight, 1);
+                        double floatHeight = Math.Max(ActualHeight + ActualPaddingTop + ActualPaddingBottom + ActualBorderTopWidth + ActualBorderBottomWidth, 1);
 
                         // Collect all preceding floats in the BFC, including
                         // those nested inside non-BFC siblings (CSS2.1 §9.5.1).
@@ -382,7 +382,7 @@ internal class CssBox : CssBoxProperties, IDisposable
                                     {
                                         double fBottom = floatBox.ActualBottom + floatBox.ActualBorderBottomWidth;
                                         if (top < fBottom && top + floatHeight > floatBox.Location.Y)
-                                            left = Math.Max(left, floatBox.Location.X + floatBox.Size.Width + ActualMarginLeft);
+                                            left = Math.Max(left, floatBox.Location.X + floatBox.Size.Width + floatBox.ActualMarginRight + ActualMarginLeft);
                                     }
                                 }
 
