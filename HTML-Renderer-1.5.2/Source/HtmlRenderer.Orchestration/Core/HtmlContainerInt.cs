@@ -8,6 +8,7 @@ using TheArtOfDev.HtmlRenderer.Adapters.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Dom;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using TheArtOfDev.HtmlRenderer.Core.Handlers;
+using TheArtOfDev.HtmlRenderer.Core.IR;
 using TheArtOfDev.HtmlRenderer.Core.Parse;
 using TheArtOfDev.HtmlRenderer.Core.Utils;
 
@@ -25,6 +26,12 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     private int _marginLeft;
     private int _marginRight;
     private readonly IHandlerFactory _handlerFactory;
+
+    /// <summary>
+    /// The most recent fragment tree snapshot, built after layout completes.
+    /// Phase 1 shadow data — not consumed by any rendering path yet.
+    /// </summary>
+    internal Fragment LatestFragmentTree { get; private set; }
 
     internal HtmlContainerInt(IAdapter adapter, IHandlerFactory handlerFactory)
     {
@@ -230,6 +237,10 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
             _loadComplete = true;
             LoadComplete?.Invoke(this, EventArgs.Empty);
         }
+
+        // Phase 1: Build shadow fragment tree after layout for IR validation.
+        // This snapshot is not consumed by any rendering path yet.
+        LatestFragmentTree = FragmentTreeBuilder.Build(Root);
     }
 
     public void PerformPaint(RGraphics g)
