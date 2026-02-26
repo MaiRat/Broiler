@@ -123,6 +123,7 @@ internal static class PaintWalker
             RightColor = hasRight ? style.ActualBorderRightColor : Color.Empty,
             BottomColor = hasBottom ? style.ActualBorderBottomColor : Color.Empty,
             LeftColor = hasLeft ? style.ActualBorderLeftColor : Color.Empty,
+            // Style kept for Phase 1 backward compat; per-side styles are authoritative
             Style = style.BorderTopStyle ?? "solid",
             TopStyle = style.BorderTopStyle ?? "none",
             RightStyle = style.BorderRightStyle ?? "none",
@@ -150,7 +151,7 @@ internal static class PaintWalker
                 if (string.IsNullOrEmpty(inline.Text))
                     continue;
 
-                // Skip line-break placeholders
+                // Skip line-break placeholders (CssRect uses "\n" for <br> elements)
                 if (inline.Text == "\n")
                     continue;
 
@@ -192,11 +193,11 @@ internal static class PaintWalker
         {
             float y;
             if (style.TextDecoration == "underline")
-                y = line.Y + line.Height * 0.85f;
+                y = line.Y + line.Height * 0.85f; // approximate underline offset (~85% of line height)
             else if (style.TextDecoration == "line-through")
-                y = line.Y + line.Height / 2f;
+                y = line.Y + line.Height / 2f; // center of line
             else if (style.TextDecoration == "overline")
-                y = line.Y;
+                y = line.Y; // top of line
             else
                 continue;
 
@@ -258,9 +259,10 @@ internal static class PaintWalker
     private static double ParseFontSize(string fontSize)
     {
         if (string.IsNullOrEmpty(fontSize))
-            return 11; // default
+            return 11; // default: matches CssConstants.FontSize (11pt)
 
-        // Handle named sizes
+        // CSS 2.1 §15.7 named absolute sizes mapped to pt values
+        // (relative to CssConstants.FontSize = 11)
         return fontSize switch
         {
             "medium" => 11,

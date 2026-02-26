@@ -61,6 +61,7 @@ internal sealed class RGraphicsRasterBackend : IRasterBackend
     private static void RenderFillRect(RGraphics g, FillRectItem item)
     {
         using var brush = g.GetSolidBrush(item.Color);
+        // RGraphics.DrawRectangle(brush, ...) fills the rectangle (API convention)
         g.DrawRectangle(brush, Math.Ceiling(item.Bounds.X), Math.Ceiling(item.Bounds.Y),
             item.Bounds.Width, item.Bounds.Height);
     }

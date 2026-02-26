@@ -49,7 +49,7 @@ public sealed class DrawBorderItem : DisplayItem
     public Color LeftColor { get; init; }
     public string Style { get; init; } = "solid";
 
-    /// <summary>Per-side border styles (Phase 3). Falls back to <see cref="Style"/> when not set.</summary>
+    /// <summary>Per-side border styles (Phase 3). These are the authoritative style values used by <c>RGraphicsRasterBackend</c>.</summary>
     public string TopStyle { get; init; } = "solid";
     public string RightStyle { get; init; } = "solid";
     public string BottomStyle { get; init; } = "solid";
