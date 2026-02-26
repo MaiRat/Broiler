@@ -17,6 +17,7 @@ public class RenderingStagesTests
         var painter = new Painter();
         var commands = painter.Paint(box);
         Assert.True(commands.Count > 0);
+        AssertPaintCommandInvariants(commands);
     }
 
     [Fact]
@@ -31,6 +32,7 @@ public class RenderingStagesTests
         var painter = new Painter();
         var commands = painter.Paint(box);
         Assert.Contains(commands, c => c.Type == PaintCommandType.Text);
+        AssertPaintCommandInvariants(commands);
     }
 
     [Fact]
@@ -79,5 +81,32 @@ public class RenderingStagesTests
     {
         var cmd = new PaintCommand();
         Assert.Equal(1.0f, cmd.Opacity);
+    }
+
+    /// <summary>
+    /// Validates basic paint-level invariants for a list of <see cref="PaintCommand"/>s.
+    /// Phase 4 integration: ensures no negative bounds, opacity in [0,1], finite values,
+    /// and text commands have non-empty text.
+    /// </summary>
+    private static void AssertPaintCommandInvariants(List<PaintCommand> commands)
+    {
+        for (int i = 0; i < commands.Count; i++)
+        {
+            var cmd = commands[i];
+            Assert.True(cmd.Bounds.Width >= 0, $"Commands[{i}].Bounds.Width is negative ({cmd.Bounds.Width})");
+            Assert.True(cmd.Bounds.Height >= 0, $"Commands[{i}].Bounds.Height is negative ({cmd.Bounds.Height})");
+            Assert.True(!float.IsNaN(cmd.Opacity) && !float.IsInfinity(cmd.Opacity),
+                $"Commands[{i}].Opacity is not finite ({cmd.Opacity})");
+            Assert.True(cmd.Opacity >= 0f && cmd.Opacity <= 1f,
+                $"Commands[{i}].Opacity out of range ({cmd.Opacity})");
+
+            if (cmd.Type == PaintCommandType.Text)
+            {
+                Assert.False(string.IsNullOrEmpty(cmd.Text),
+                    $"Commands[{i}]: Text command has empty text");
+                Assert.True(cmd.FontSize > 0,
+                    $"Commands[{i}]: Text command has non-positive FontSize ({cmd.FontSize})");
+            }
+        }
     }
 }
