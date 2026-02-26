@@ -146,7 +146,7 @@ Float collision and table layout are the highest-risk areas.
 
 ## Phase 3 — Paint Consumes Only FragmentTree
 
-**Status**: 🚧 In Progress (PaintWalker, RGraphicsRasterBackend, feature-flagged new path)
+**Status**: ✅ Complete (PaintWalker handles background images, replaced images, selection; old path retained as fallback)
 
 **Goal**: `PaintImp()` reads from `Fragment` records instead of `CssBox`
 fields. The `DisplayList` becomes the sole output of paint.
@@ -175,35 +175,45 @@ fields. The `DisplayList` becomes the sole output of paint.
    - Added `DrawLineItem` for text decoration.
    - `DisplayItem`: `JsonDerivedType` attributes for snapshot serialization.
 
-5. **Remove `CssBox.Paint()` / `PaintImp()`** methods.
+5. ✅ **Handle background images** in `PaintWalker`.
+   - `CssBox.LoadedBackgroundImage` exposes the loaded background image handle.
+   - `Fragment.BackgroundImageHandle` captures it during fragment building.
+   - `PaintWalker.EmitBackgroundImage()` emits `DrawImageItem` for background images.
+
+6. ✅ **Handle replaced images** (e.g. `<img>` elements) in `PaintWalker`.
+   - `Fragment.ImageHandle` and `Fragment.ImageSourceRect` capture the loaded
+     image from `CssBoxImage` during fragment building.
+   - `PaintWalker.EmitReplacedImage()` emits `DrawImageItem` for replaced images.
+
+7. ✅ **Handle selection rendering** in `PaintWalker`.
+   - `InlineFragment.Selected`, `SelectedStartOffset`, `SelectedEndOffset`
+     capture selection state from `CssRect` during fragment building.
+   - `PaintWalker.EmitSelection()` emits `FillRectItem` for selection highlights.
+
+8. **Remove `CssBox.Paint()` / `PaintImp()`** methods.
    - Deferred: old paint path retained as fallback until full validation.
 
-6. **Replace direct `RGraphics` calls** in `BordersDrawHandler` and
+9. **Replace direct `RGraphics` calls** in `BordersDrawHandler` and
    `BackgroundImageDrawHandler` with `DisplayItem` emission.
    - Deferred: handlers still used by old paint path; new path bypasses
      them via `PaintWalker` → `DisplayItem` emission.
-
-### Remaining Work
-
-- Handle background images and gradients in `PaintWalker`.
-- Handle image loading state and selection rendering in new path.
-- Remove old `CssBox.Paint()` / `PaintImp()` once fully validated.
 
 ### New/Modified Files
 
 | File | Change |
 |------|--------|
-| `HtmlRenderer.Orchestration/Core/IR/PaintWalker.cs` | ✦ new |
+| `HtmlRenderer.Orchestration/Core/IR/PaintWalker.cs` | ✦ new — background images, replaced images, selection |
 | `HtmlRenderer.Orchestration/Core/IR/RGraphicsRasterBackend.cs` | ✦ new |
 | `HtmlRenderer.Core/Core/IR/DisplayList.cs` | ✎ extended |
-| `HtmlRenderer.Core/Core/IR/Fragment.cs` | ✎ InlineFragment.FontHandle |
-| `HtmlRenderer.Orchestration/Core/IR/FragmentTreeBuilder.cs` | ✎ font handles |
+| `HtmlRenderer.Core/Core/IR/Fragment.cs` | ✎ BackgroundImageHandle, ImageHandle, ImageSourceRect, selection props |
+| `HtmlRenderer.Orchestration/Core/IR/FragmentTreeBuilder.cs` | ✎ captures images and selection |
+| `HtmlRenderer.Dom/Core/Dom/CssBox.cs` | ✎ LoadedBackgroundImage property |
 | `HtmlRenderer.Orchestration/Core/HtmlContainerInt.cs` | ✎ new paint path |
-| `HtmlRenderer.Image.Tests/IRTypesTests.cs` | ✎ 24 new tests |
+| `HtmlRenderer.Image.Tests/IRTypesTests.cs` | ✎ 37 new tests |
 
 ### Verification
 
-- ✅ All 205 tests pass (181 existing + 24 new Phase 3 tests).
+- ✅ All 218 tests pass (181 existing + 37 new Phase 1–3 tests).
 - ✅ DisplayList JSON serialization with polymorphic type discriminators.
 - ✅ Snapshot stability test.
 - Old paint path unaffected (feature flag defaults to off).
@@ -253,7 +263,7 @@ main concern.
 | 0 | Documentation | ½ day | None | No | ✅ Complete |
 | 1 | Add IR types (shadow) | 2–3 days | Low | No | ✅ Complete |
 | 2 | Layout decoupled from DOM | 3–5 days | Medium | No (same output) | 🚧 In Progress |
-| 3 | Paint decoupled from CssBox | 5–8 days | High | No (same output) | 🚧 In Progress |
+| 3 | Paint decoupled from CssBox | 5–8 days | High | No (same output) | ✅ Complete |
 | 4 | Incremental caching | 2–4 weeks | Medium | No (same output) | |
 
 Each phase is independently shippable. Phases 1–3 must produce
