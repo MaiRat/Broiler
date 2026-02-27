@@ -220,17 +220,18 @@ internal static class CssBoxHelper
     {
         if (box.Float != CssConstants.None)
         {
-            // When the float has an explicit CSS height, compute the full
-            // border-box bottom (content + padding + border) per CSS2.1
-            // content-box model.  For auto-height floats, use ActualBottom
-            // plus the bottom border (existing convention).
+            // Compute the float's margin-box bottom ("bottom outer edge"
+            // per CSS2.1 §9.5.2) so that clearance positions the cleared
+            // element below the float's full margin box.
             double bottom;
             if (box.Height != CssConstants.Auto && !string.IsNullOrEmpty(box.Height))
                 bottom = box.Location.Y + box.ActualHeight
                     + box.ActualPaddingTop + box.ActualPaddingBottom
-                    + box.ActualBorderTopWidth + box.ActualBorderBottomWidth;
+                    + box.ActualBorderTopWidth + box.ActualBorderBottomWidth
+                    + box.ActualMarginBottom;
             else
-                bottom = box.ActualBottom + box.ActualBorderBottomWidth;
+                bottom = box.ActualBottom + box.ActualBorderBottomWidth
+                    + box.ActualMarginBottom;
             maxBottom = Math.Max(maxBottom, bottom);
             considered ??= new List<(string, double)>();
             considered.Add((box.HtmlTag?.Name ?? box.Display, bottom));

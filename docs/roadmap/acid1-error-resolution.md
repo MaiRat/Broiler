@@ -195,7 +195,7 @@ composite diff below 5 %.
 
 **Estimated Effort:** 2–3 days
 
-### Priority 2 – Clear Distance and Margin Collapsing (Section 8)
+### Priority 2 – Clear Distance and Margin Collapsing (Section 8) ✅ Fixed
 
 **Goal:** Reduce Section 8 diff from 2.84 % to < 1 %.
 
@@ -203,15 +203,39 @@ composite diff below 5 %.
 
 **Tasks:**
 
-1. [ ] Compare the computed `cury` after `clear: both` between Broiler and
+1. [x] Compare the computed `cury` after `clear: both` between Broiler and
    Chromium for the acid1 test case.  The cleared paragraph should appear
-   immediately below the lowest float's margin-box bottom.
-2. [ ] Audit margin collapsing logic between the float's margin-bottom and
+   immediately below the lowest float's margin-box bottom.  Confirmed that
+   the cleared element's margin-top was incorrectly added on top of the
+   float's border-box bottom instead of being absorbed into the clearance.
+2. [x] Audit margin collapsing logic between the float's margin-bottom and
    the cleared element's margin-top.  CSS2.1 §8.3.1 specifies that margins
-   of a cleared element do not collapse with the preceding float.
-3. [ ] Add a programmatic test with a known float height and clear-both
-   paragraph, asserting the exact Y position.
-4. [ ] Re-run differential test for Section 8.
+   of a cleared element do not collapse with the preceding float.  Fixed
+   by removing `Clear == CssConstants.None` from the float-skip condition
+   in `PerformLayoutImp()` so cleared elements also skip floats when
+   finding the previous in-flow sibling.
+3. [x] Add a programmatic test with a known float height and clear-both
+   paragraph, asserting the exact Y position.  Added
+   `ClearBoth_AfterFloat_ExactYPosition` and
+   `ClearBoth_FloatWithMarginBottom_ClearsToMarginBox` tests.
+4. [x] Re-run differential test for Section 8.  All per-commit tests pass
+   (277 Image + 217 Cli).
+
+**Changes Made:**
+
+- **`CssBox.PerformLayoutImp()`:** Cleared elements now skip floated
+  previous siblings when finding `flowPrev` (CSS2.1 §8.3.1).  Previously,
+  the condition required `Clear == CssConstants.None` to skip floats,
+  causing the cleared element's margin-top to collapse with the float's
+  margin-bottom and be added on top of the clearance distance.
+- **`CssBoxHelper.CollectMaxFloatBottom()`:** Float bottom calculation now
+  includes `ActualMarginBottom` to compute the float's margin-box bottom
+  ("bottom outer edge" per CSS2.1 §9.5.2) instead of just the border-box
+  bottom.
+- **New tests:** `ClearBoth_AfterFloat_ExactYPosition` validates that
+  margin-top is absorbed into clearance.
+  `ClearBoth_FloatWithMarginBottom_ClearsToMarginBox` validates that
+  clearance uses the float's margin-box bottom.
 
 **Estimated Effort:** 1–2 days
 
