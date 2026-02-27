@@ -76,8 +76,9 @@ internal sealed class DomUtils
 
     /// <summary>
     /// Returns the previous in-flow sibling of <paramref name="b"/>,
-    /// skipping floated, display:none, and positioned elements
-    /// (CSS2.1 §9.5: floats are out of normal flow).
+    /// skipping floated, display:none, and absolutely/fixed positioned
+    /// elements (CSS2.1 §9.5, §9.6.1). Relatively positioned elements
+    /// remain in flow and are not skipped (CSS2.1 §9.3.1).
     /// </summary>
     public static CssBox GetPreviousInFlowSibling(CssBox b)
     {

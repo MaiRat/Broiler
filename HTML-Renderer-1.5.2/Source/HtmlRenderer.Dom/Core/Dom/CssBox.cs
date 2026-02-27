@@ -314,10 +314,10 @@ internal class CssBox : CssBoxProperties, IDisposable
                     // floats do not exist (the block box overlaps the float,
                     // only inline content wraps around it).
                     var flowPrev = prevSibling;
-                    if (Float == CssConstants.None && Clear == CssConstants.None)
+                    if (Float == CssConstants.None && Clear == CssConstants.None
+                        && flowPrev != null && flowPrev.Float != CssConstants.None)
                     {
-                        while (flowPrev != null && flowPrev.Float != CssConstants.None)
-                            flowPrev = DomUtils.GetPreviousInFlowSibling(flowPrev);
+                        flowPrev = DomUtils.GetPreviousInFlowSibling(flowPrev);
                     }
 
                     double top = (flowPrev == null && ParentBox != null ? ParentBox.ClientTop : ParentBox == null ? Location.Y : 0) + MarginTopCollapse(flowPrev) + (flowPrev != null ? flowPrev.ActualBottom + flowPrev.ActualBorderBottomWidth : 0);

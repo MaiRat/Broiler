@@ -148,7 +148,7 @@ text rendering pipeline.
 
 ## Fix Roadmap
 
-### Priority 1 – Percentage Width in Floated Containing Blocks (Section 9)
+### Priority 1 – Percentage Width in Floated Containing Blocks (Section 9) ✅ Fixed
 
 **Goal:** Reduce Section 9 diff from 10.67 % to < 5 %.
 
@@ -158,21 +158,40 @@ composite diff below 5 %.
 
 **Tasks:**
 
-1. [ ] Investigate the containing-block width used when resolving `width:
+1. [x] Investigate the containing-block width used when resolving `width:
    41.17 %` inside a floated `dd` with `width: 34em`, `border: 1em`,
-   `padding: 1em`.  Verify that the percentage resolves against 340 px
-   (the content width), not 380 px (the border-box width).
-2. [ ] Compare the resolved pixel width of `dt` (`width: 10.638 %` of the
+   `padding: 1em`.  Verified that the percentage resolves against 340 px
+   (the content width).  The actual root cause was that non-floated blocks
+   following floats were incorrectly pushed below the float instead of
+   overlapping (CSS2.1 §9.5), and `CollectPrecedingFloatsInBfc` did not
+   walk up the ancestor chain to find floats in the same BFC.
+2. [x] Compare the resolved pixel width of `dt` (`width: 10.638 %` of the
    `dl`'s content width) between Broiler and Chromium.  The `body` has
    `width: 48em` (content width) and the `dl` has `padding: .5em` per side
    with `margin: 0` and `border: 0`, so the `dl`'s content width is
    48em − 0.5em × 2 = 47em.  10.638 % of 47em = 4.99986em ≈ 50 px.
-3. [ ] Check whether `min-width` and `max-width` on the `dd` (both set to
+   The percentage width resolution itself was correct.
+3. [x] Check whether `min-width` and `max-width` on the `dd` (both set to
    `34em`) interact correctly with the percentage width resolution of child
-   elements.
-4. [ ] Add programmatic tests validating the resolved width in pixels for
-   both the `dt` and `#bar` elements.
-5. [ ] Re-run differential tests to verify the diff drops below 5 %.
+   elements.  `min-width` is not yet supported but does not affect layout
+   since `width` is already `34em`.  `max-width` is correctly applied.
+4. [x] Add programmatic tests validating the resolved width in pixels for
+   both the `dt` and `#bar` elements.  Added
+   `PercentageWidth_InFloatedParent_ResolvesAgainstContentWidth` and
+   `PercentageWidth_Acid1Section9_BarWidthResolves` tests.
+5. [x] Re-run differential tests to verify the diff drops below 5 %.
+
+**Changes Made:**
+
+- **`CssBox.PerformLayoutImp()`:** Non-floated, non-cleared block elements
+  now skip floated previous siblings when computing vertical position
+  (CSS2.1 §9.5).  Added `GetPreviousInFlowSibling()` to `DomUtils`.
+- **`CssBox.CollectPrecedingFloatsInBfc()`:** Walk up the ancestor chain
+  to collect floats from each ancestor's preceding siblings, stopping at
+  BFC boundaries.  Added `EstablishesBfc()` helper.
+- **Updated tests:** `Float_LeftFloat_NonFloatedBlockPosition` now verifies
+  CSS2.1-compliant overlap behavior.  Re-baselined golden layout, display
+  list, and pixel regression tests.
 
 **Estimated Effort:** 2–3 days
 
