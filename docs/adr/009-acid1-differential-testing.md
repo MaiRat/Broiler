@@ -184,12 +184,38 @@ Playwright Chromium 145.0.7632.6. All pixel-diff ratios are measured at
 - Added 1 new split test in `Acid1SplitTests.cs`:
   - `Section5_BlockquoteFloat_BottomBorderThickerThanTop`
 
-### Priority 4 – Typography (Section 7)
+### Priority 4 – Typography (Section 7) ✅ Fixed
 
-- **Line-height computation:** Ensure `line-height: 1.9` produces a line-box
-  height of `1.9 × font-size` as defined in CSS1 §5.4.8.
-- **Form element line-height:** Verify that `line-height` applies correctly
+- ✅ **Line-height computation:** Verified that `line-height: 1.9` produces a
+  line-box height of `1.9 × font-size` as defined in CSS1 §5.4.8. The existing
+  `CssValueParser.ParseLength()` correctly treats unitless values as `em`
+  multipliers via the `defaultUnit` parameter.
+- ✅ **Block-in-inline line breaks:** Block-level `<p>` elements inside an
+  inline `<form>` now correctly force line breaks before and after themselves
+  (CSS2.1 §9.2.1.1 anonymous block box behaviour). Previously, block elements
+  inside inline parents were flowed inline, causing all paragraph content to
+  appear on a single line.
+- ✅ **Form element line-height:** Verified that `line-height` applies correctly
   to paragraphs containing inline form controls (radio buttons).
+
+#### Changes Made
+
+- `CssLayoutEngine.FlowBox()`: When encountering a block-level child (`b.IsBlock`)
+  during inline flow, the method now forces a line break before and after the block.
+  Before the block: if there is existing content on the current line (`curx > startx`
+  or `maxbottom > cury`), advance `cury` to `maxbottom`, reset `curx`, and create a
+  new `CssLineBox`. After the block: always advance `cury` to `maxbottom`, reset
+  `curx`, and create a new `CssLineBox`. This ensures block elements like `<p>`
+  inside inline containers like `<form display:inline>` start on their own line.
+- Added 4 new programmatic tests in `Acid1ProgrammaticTests.cs`:
+  - `LineHeight_Unitless_ProducesCorrectLineBoxHeight`
+  - `LineHeight_TwoParagraphs_VerticalSeparation`
+  - `LineHeight_BlockInsideInlineForm_SeparateLines`
+  - `LineHeight_FormWithRadioButtons_CorrectSpacing`
+- Added 1 new split test in `Acid1SplitTests.cs`:
+  - `Section7_FormLineHeight_TwoLinesWithSpacing`
+- Added 1 new repeated render test in `Acid1RepeatedRenderTests`:
+  - `Section7_FormLineHeight_RepeatedRender_IsDeterministic`
 
 ## Consequences
 
