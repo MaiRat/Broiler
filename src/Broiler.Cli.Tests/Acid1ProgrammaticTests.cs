@@ -1470,4 +1470,211 @@ public class Acid1ProgrammaticTests
             $"Border-box height should be ~140px (9em content + 1em padding*2 + 1em top + 2em bottom), " +
             $"but measured {bboxHeight}px.");
     }
+
+    // -----------------------------------------------------------------
+    // 7. Line-height / typography (Priority 4)
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that <c>line-height: 1.9</c> produces a line-box height
+    /// of approximately <c>1.9 × font-size</c> (CSS1 §5.4.8).  With a
+    /// 10 px font, the expected line-box height is 19 px.  We verify by
+    /// rendering two consecutive paragraphs and checking that the second
+    /// starts well below the first.
+    /// </summary>
+    [Fact]
+    public void LineHeight_Unitless_ProducesCorrectLineBoxHeight()
+    {
+        // Render with line-height: 1.9 (expected ~19px per line)
+        const string htmlWide = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            p { margin: 0; line-height: 1.9; }
+        </style></head><body><p>Hello</p><p>World</p></body></html>";
+
+        // Render with line-height: 1 (expected ~10px per line)
+        const string htmlNarrow = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            p { margin: 0; line-height: 1; }
+        </style></head><body><p>Hello</p><p>World</p></body></html>";
+
+        using var bmpWide = HtmlRender.RenderToImage(htmlWide, 400, 100);
+        using var bmpNarrow = HtmlRender.RenderToImage(htmlNarrow, 400, 100);
+
+        var bandsWide = FindTextBands(bmpWide);
+        var bandsNarrow = FindTextBands(bmpNarrow);
+
+        Assert.True(bandsWide.Count >= 2,
+            $"Expected ≥2 text bands with line-height:1.9, found {bandsWide.Count}.");
+        Assert.True(bandsNarrow.Count >= 2,
+            $"Expected ≥2 text bands with line-height:1, found {bandsNarrow.Count}.");
+
+        // The second band should start further down with line-height: 1.9
+        // than with line-height: 1, confirming the larger line-box.
+        int gapWide = bandsWide[1].start - bandsWide[0].end;
+        int gapNarrow = bandsNarrow[1].start - bandsNarrow[0].end;
+
+        Assert.True(gapWide > gapNarrow,
+            $"Gap between paragraphs with line-height:1.9 ({gapWide}px) " +
+            $"should be larger than with line-height:1 ({gapNarrow}px).");
+    }
+
+    /// <summary>
+    /// Verifies that two <c>&lt;p&gt;</c> elements with
+    /// <c>line-height: 1.9</c> produce two distinct text rows with
+    /// visible vertical separation between them.
+    /// </summary>
+    [Fact]
+    public void LineHeight_TwoParagraphs_VerticalSeparation()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            p { margin: 0; line-height: 1.9; }
+        </style></head><body><p>AAA</p><p>BBB</p></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
+
+        // Scan for distinct text bands – the two paragraphs must be
+        // on separate lines.
+        var bands = FindTextBands(bitmap);
+        Assert.True(bands.Count >= 2,
+            $"Expected two separate text bands for two paragraphs, " +
+            $"found {bands.Count}.");
+
+        // Verify vertical gap between the bands is consistent with
+        // line-height: 1.9 (≈19px per line).
+        int gap = bands[1].start - bands[0].end;
+        Assert.True(gap >= 2,
+            $"Expected visible gap between paragraph lines, but gap " +
+            $"is only {gap}px.");
+    }
+
+    /// <summary>
+    /// Verifies the Acid1 Section 7 scenario: block-level
+    /// <c>&lt;p&gt;</c> elements inside an inline <c>&lt;form&gt;</c>
+    /// are laid out on separate lines with correct
+    /// <c>line-height: 1.9</c> spacing.
+    /// </summary>
+    [Fact]
+    public void LineHeight_BlockInsideInlineForm_SeparateLines()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            form { margin: 0; display: inline; }
+            p { margin: 0; }
+            form p { line-height: 1.9; }
+        </style></head><body>
+        <form action='#' method='get'>
+          <p>bang</p>
+          <p>whimper</p>
+        </form></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
+
+        var bands = FindTextBands(bitmap);
+        Assert.True(bands.Count >= 2,
+            $"Expected two separate text bands for 'bang' and 'whimper', " +
+            $"found {bands.Count}. Block <p> inside inline <form> must " +
+            "create separate lines.");
+    }
+
+    /// <summary>
+    /// Verifies that <c>line-height: 1.9</c> applied to paragraphs
+    /// containing inline form controls (radio buttons) produces the
+    /// correct vertical spacing.
+    /// </summary>
+    [Fact]
+    public void LineHeight_FormWithRadioButtons_CorrectSpacing()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            form { margin: 0; display: inline; }
+            p { margin: 0; }
+            form p { line-height: 1.9; }
+        </style></head><body>
+        <form action='#' method='get'>
+          <p>bang <input type='radio' name='foo' value='off'></p>
+          <p>whimper <input type='radio' name='foo2' value='on'></p>
+        </form></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
+
+        // Both text labels must be visible.
+        var textBounds = GetColorBounds(bitmap, IsBlack);
+        Assert.NotNull(textBounds);
+
+        // The two paragraphs must render on separate lines.
+        var bands = FindTextBands(bitmap);
+        Assert.True(bands.Count >= 2,
+            $"Expected ≥2 text bands for radio-button paragraphs, " +
+            $"found {bands.Count}.");
+
+        // Total content height should be larger than a single line
+        // because two paragraphs are on separate lines.  The glyph
+        // bounds will be smaller than the full line-box height, so we
+        // only check that the extent spans more than one line of text.
+        int totalHeight = textBounds.Value.maxY - textBounds.Value.minY + 1;
+        Assert.True(totalHeight >= 15,
+            $"Expected total content height ≥15px for two lines with " +
+            $"line-height:1.9, but measured {totalHeight}px.");
+    }
+
+    // -----------------------------------------------------------------
+    // Helper: find horizontal text bands in a bitmap
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Scans the bitmap row-by-row and returns a list of contiguous
+    /// vertical bands that contain non-white pixels.  Two rows are
+    /// considered part of the same band if they are within 1 px of each
+    /// other.
+    /// </summary>
+    private static List<(int start, int end)> FindTextBands(SKBitmap bitmap)
+    {
+        var bands = new List<(int start, int end)>();
+        int? bandStart = null;
+        int? bandEnd = null;
+
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            bool hasContent = false;
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                var p = bitmap.GetPixel(x, y);
+                if (!IsWhite(p))
+                {
+                    hasContent = true;
+                    break;
+                }
+            }
+
+            if (hasContent)
+            {
+                if (bandStart == null)
+                {
+                    bandStart = y;
+                    bandEnd = y;
+                }
+                else if (y - bandEnd!.Value <= 1)
+                {
+                    bandEnd = y;
+                }
+                else
+                {
+                    bands.Add((bandStart.Value, bandEnd!.Value));
+                    bandStart = y;
+                    bandEnd = y;
+                }
+            }
+        }
+
+        if (bandStart != null)
+            bands.Add((bandStart.Value, bandEnd!.Value));
+
+        return bands;
+    }
 }

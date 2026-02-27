@@ -499,6 +499,27 @@ public class Acid1SplitTests : IDisposable
             "The form with line-height:1.9 may not render any visible content.");
     }
 
+    /// <summary>
+    /// Verifies that the two <c>&lt;p&gt;</c> elements inside the
+    /// inline <c>&lt;form&gt;</c> render on separate lines, with visible
+    /// vertical separation produced by <c>line-height: 1.9</c>.
+    /// </summary>
+    [Fact]
+    public void Section7_FormLineHeight_TwoLinesWithSpacing()
+    {
+        var html = ReadSplitHtml("section7-form-line-height.html");
+        using var bitmap = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
+
+        // Scan only the interior region (past border/margin) to avoid
+        // counting the continuous black border as one big text band.
+        // body has 1.5em margin + .5em border = 20px inset; scan x in [25..RenderWidth-25].
+        var bands = FindTextBandsInRegion(bitmap, 25, RenderWidth - 25);
+        Assert.True(bands.Count >= 2,
+            $"Expected ≥2 text bands for 'bang' and 'whimper', " +
+            $"found {bands.Count}. Block <p> inside inline <form> must " +
+            "render on separate lines with line-height spacing.");
+    }
+
     // -------------------------------------------------------------------------
     // Section 8: Clear both
     // -------------------------------------------------------------------------
@@ -694,5 +715,67 @@ public class Acid1SplitTests : IDisposable
             $"Full Acid1 similarity ({similarity:P1}) fell below the regression floor " +
             $"({MinThreshold:P0}). This indicates a significant rendering regression. " +
             "Run the split tests to identify which specific CSS1 feature has regressed.");
+    }
+
+    // -----------------------------------------------------------------
+    // Helper: find horizontal text bands in a bitmap
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Scans the bitmap row-by-row and returns a list of contiguous
+    /// vertical bands that contain non-white, non-blue pixels.
+    /// </summary>
+    private static List<(int start, int end)> FindTextBands(SKBitmap bitmap)
+        => FindTextBandsInRegion(bitmap, 0, bitmap.Width);
+
+    /// <summary>
+    /// Scans the bitmap row-by-row within the horizontal region
+    /// [<paramref name="x1"/>, <paramref name="x2"/>) and returns
+    /// contiguous vertical bands with non-white, non-blue pixels.
+    /// </summary>
+    private static List<(int start, int end)> FindTextBandsInRegion(
+        SKBitmap bitmap, int x1, int x2)
+    {
+        var bands = new List<(int start, int end)>();
+        int? bandStart = null;
+        int? bandEnd = null;
+
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            bool hasContent = false;
+            for (int x = x1; x < x2; x++)
+            {
+                var p = bitmap.GetPixel(x, y);
+                if (!IsWhite(p) && !IsBlue(p))
+                {
+                    hasContent = true;
+                    break;
+                }
+            }
+
+            if (hasContent)
+            {
+                if (bandStart == null)
+                {
+                    bandStart = y;
+                    bandEnd = y;
+                }
+                else if (y - bandEnd!.Value <= 1)
+                {
+                    bandEnd = y;
+                }
+                else
+                {
+                    bands.Add((bandStart.Value, bandEnd!.Value));
+                    bandStart = y;
+                    bandEnd = y;
+                }
+            }
+        }
+
+        if (bandStart != null)
+            bands.Add((bandStart.Value, bandEnd!.Value));
+
+        return bands;
     }
 }

@@ -284,6 +284,18 @@ public class Acid1RepeatedRenderTests
         AssertDeterministicRender(html);
     }
 
+    /// <summary>
+    /// Repeated render of Section 7 (form line-height) to verify that
+    /// block-level paragraphs inside an inline form with
+    /// <c>line-height: 1.9</c> produce deterministic output.
+    /// </summary>
+    [Fact]
+    public void Section7_FormLineHeight_RepeatedRender_IsDeterministic()
+    {
+        var html = ReadSplitHtml("section7-form-line-height.html");
+        AssertDeterministicRender(html);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────
 
     private static string ReadSplitHtml(string filename)

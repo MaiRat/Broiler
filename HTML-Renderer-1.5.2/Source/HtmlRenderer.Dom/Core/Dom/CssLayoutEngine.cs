@@ -273,7 +273,28 @@ internal static class CssLayoutEngine
             }
             else
             {
+                // Block-level child inside inline flow: force a line break
+                // before and after the block (CSS2.1 §9.2.1.1 anonymous
+                // block boxes).  This ensures elements like <p> inside an
+                // inline <form> start on their own line.
+                if (b.IsBlock)
+                {
+                    if (curx > startx || maxbottom > cury)
+                    {
+                        cury = maxbottom;
+                        curx = startx;
+                        line = new CssLineBox(blockbox);
+                    }
+                }
+
                 FlowBox(g, blockbox, b, limitRight, linespacing, startx, ref line, ref curx, ref cury, ref maxRight, ref maxbottom);
+
+                if (b.IsBlock)
+                {
+                    cury = maxbottom;
+                    curx = startx;
+                    line = new CssLineBox(blockbox);
+                }
             }
 
             curx += rightspacing;
