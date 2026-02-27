@@ -74,6 +74,33 @@ internal sealed class DomUtils
         return null;
     }
 
+    /// <summary>
+    /// Returns the previous in-flow sibling of <paramref name="b"/>,
+    /// skipping floated, display:none, and absolutely/fixed positioned
+    /// elements (CSS2.1 §9.5, §9.6.1). Relatively positioned elements
+    /// remain in flow and are not skipped (CSS2.1 §9.3.1).
+    /// </summary>
+    public static CssBox GetPreviousInFlowSibling(CssBox b)
+    {
+        if (b.ParentBox == null)
+            return null;
+
+        int index = b.ParentBox.Boxes.IndexOf(b);
+
+        for (int i = index - 1; i >= 0; i--)
+        {
+            var sib = b.ParentBox.Boxes[i];
+            if (sib.Display == CssConstants.None
+                || sib.Position == CssConstants.Absolute
+                || sib.Position == CssConstants.Fixed
+                || sib.Float != CssConstants.None)
+                continue;
+            return sib;
+        }
+
+        return null;
+    }
+
     public static CssBox GetPreviousContainingBlockSibling(CssBox b)
     {
         var conBlock = b;

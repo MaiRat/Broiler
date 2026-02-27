@@ -2,7 +2,7 @@
   "x": 0,
   "y": 0,
   "width": 300,
-  "height": 85.61,
+  "height": 25.61,
   "margin": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
   "border": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
   "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
@@ -14,7 +14,7 @@
       "x": 0,
       "y": 0,
       "width": 300,
-      "height": 85.61,
+      "height": 25.61,
       "margin": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
       "border": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
       "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
@@ -46,7 +46,7 @@
         },
         {
           "x": 0,
-          "y": 60,
+          "y": 0,
           "width": 300,
           "height": 25.61,
           "margin": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
@@ -57,63 +57,63 @@
           "lines": [
             {
               "x": 0,
-              "y": 60,
+              "y": 0,
               "width": 283,
               "height": 12.8,
               "baseline": 0,
               "inlines": [
                 {
                   "x": 0,
-                  "y": 60,
+                  "y": 0,
                   "width": 25,
                   "height": 12.8,
                   "text": "Text"
                 },
                 {
                   "x": 29,
-                  "y": 60,
+                  "y": 0,
                   "width": 22,
                   "height": 12.8,
                   "text": "that"
                 },
                 {
                   "x": 55,
-                  "y": 60,
+                  "y": 0,
                   "width": 37,
                   "height": 12.8,
                   "text": "should"
                 },
                 {
                   "x": 96,
-                  "y": 60,
+                  "y": 0,
                   "width": 28,
                   "height": 12.8,
                   "text": "wrap"
                 },
                 {
                   "x": 128,
-                  "y": 60,
+                  "y": 0,
                   "width": 40,
                   "height": 12.8,
                   "text": "around"
                 },
                 {
                   "x": 172,
-                  "y": 60,
+                  "y": 0,
                   "width": 18,
                   "height": 12.8,
                   "text": "the"
                 },
                 {
                   "x": 194,
-                  "y": 60,
+                  "y": 0,
                   "width": 39,
                   "height": 12.8,
                   "text": "floated"
                 },
                 {
                   "x": 237,
-                  "y": 60,
+                  "y": 0,
                   "width": 46,
                   "height": 12.8,
                   "text": "element"
@@ -122,35 +122,35 @@
             },
             {
               "x": 0,
-              "y": 72.8,
+              "y": 12.8,
               "width": 89,
               "height": 12.8,
               "baseline": 0,
               "inlines": [
                 {
                   "x": 0,
-                  "y": 72.8,
+                  "y": 12.8,
                   "width": 14,
                   "height": 12.8,
                   "text": "on"
                 },
                 {
                   "x": 18,
-                  "y": 72.8,
+                  "y": 12.8,
                   "width": 18,
                   "height": 12.8,
                   "text": "the"
                 },
                 {
                   "x": 40,
-                  "y": 72.8,
+                  "y": 12.8,
                   "width": 18,
                   "height": 12.8,
                   "text": "left"
                 },
                 {
                   "x": 62,
-                  "y": 72.8,
+                  "y": 12.8,
                   "width": 27,
                   "height": 12.8,
                   "text": "side."

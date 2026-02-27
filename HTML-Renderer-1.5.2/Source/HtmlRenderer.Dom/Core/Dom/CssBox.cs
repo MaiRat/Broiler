@@ -308,7 +308,19 @@ internal class CssBox : CssBoxProperties, IDisposable
                 if (Position != CssConstants.Fixed)
                 {
                     double left = ContainingBlock.Location.X + ContainingBlock.ActualPaddingLeft + ActualMarginLeft + ContainingBlock.ActualBorderLeftWidth;
-                    double top = (prevSibling == null && ParentBox != null ? ParentBox.ClientTop : ParentBox == null ? Location.Y : 0) + MarginTopCollapse(prevSibling) + (prevSibling != null ? prevSibling.ActualBottom + prevSibling.ActualBorderBottomWidth : 0);
+
+                    // CSS2.1 §9.5: floats are out of normal flow. Non-floated,
+                    // non-cleared blocks must be positioned as if preceding
+                    // floats do not exist (the block box overlaps the float,
+                    // only inline content wraps around it).
+                    var flowPrev = prevSibling;
+                    if (Float == CssConstants.None && Clear == CssConstants.None
+                        && flowPrev != null && flowPrev.Float != CssConstants.None)
+                    {
+                        flowPrev = DomUtils.GetPreviousInFlowSibling(flowPrev);
+                    }
+
+                    double top = (flowPrev == null && ParentBox != null ? ParentBox.ClientTop : ParentBox == null ? Location.Y : 0) + MarginTopCollapse(flowPrev) + (flowPrev != null ? flowPrev.ActualBottom + flowPrev.ActualBorderBottomWidth : 0);
 
                     // --- Float positioning ---
                     if (Float != CssConstants.None)
@@ -757,19 +769,54 @@ internal class CssBox : CssBoxProperties, IDisposable
     /// Collects all float boxes in the same block formatting context that
     /// precede <paramref name="box"/> in the DOM tree. This includes floats
     /// nested inside non-BFC siblings (e.g., floated <c>li</c> elements
-    /// inside a non-floated <c>ul</c>).
+    /// inside a non-floated <c>ul</c>) and floats that are siblings of
+    /// ancestor elements when those ancestors do not establish a new BFC
+    /// (CSS2.1 §9.4.1).
     /// </summary>
     private static List<CssBox> CollectPrecedingFloatsInBfc(CssBox box)
     {
         var result = new List<CssBox>();
         if (box.ParentBox == null) return result;
 
+        // Collect preceding sibling floats (and their non-BFC subtrees).
         foreach (var sibling in box.ParentBox.Boxes)
         {
             if (sibling == box) break;
             CollectFloatsInSubtree(sibling, result);
         }
+
+        // Walk up ancestor chain: collect floats from each ancestor's
+        // preceding siblings while the ancestor does not establish a BFC.
+        var current = box.ParentBox;
+        while (current != null && current.ParentBox != null)
+        {
+            if (EstablishesBfc(current))
+                break;
+
+            foreach (var sibling in current.ParentBox.Boxes)
+            {
+                if (sibling == current) break;
+                CollectFloatsInSubtree(sibling, result);
+            }
+
+            current = current.ParentBox;
+        }
+
         return result;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if <paramref name="box"/> establishes a new
+    /// block formatting context (CSS2.1 §9.4.1).
+    /// </summary>
+    private static bool EstablishesBfc(CssBox box)
+    {
+        return box.Float != CssConstants.None
+            || box.Display == CssConstants.InlineBlock
+            || box.Display == CssConstants.TableCell
+            || box.Position == CssConstants.Absolute
+            || box.Position == CssConstants.Fixed
+            || (box.Overflow != null && box.Overflow != CssConstants.Visible);
     }
 
     private static void CollectFloatsInSubtree(CssBox root, List<CssBox> result)

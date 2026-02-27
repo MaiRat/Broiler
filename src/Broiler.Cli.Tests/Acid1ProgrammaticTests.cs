@@ -146,9 +146,9 @@ public class Acid1ProgrammaticTests
 
     /// <summary>
     /// Verifies that a non-floated block following a <c>float: left</c>
-    /// element is positioned below the float.  Documents the known
-    /// HTML-Renderer behavior (CSS1 section 4.1.1 says the block should overlap
-    /// with the float and only shorten its line boxes).
+    /// element overlaps with the float (CSS2.1 §9.5: floats are out of
+    /// normal flow, so following blocks are positioned as if the float
+    /// does not exist). The block's background may paint over the float.
     /// </summary>
     [Fact]
     public void Float_LeftFloat_NonFloatedBlockPosition()
@@ -168,14 +168,13 @@ public class Acid1ProgrammaticTests
         Assert.NotNull(redBounds);
         Assert.NotNull(blueBounds);
 
-        // Document the current behavior: the blue block is pushed below
-        // the red float (as if clear:left is applied).
-        // CSS1 says the block should overlap; this test ensures the
-        // current behavior does not regress further.
-        Assert.True(redBounds.Value.minY < 5,
-            $"Float should start near the top (minY={redBounds.Value.minY}).");
-        Assert.True(blueBounds.Value.minY >= 0,
-            $"Non-floated block should render (minY={blueBounds.Value.minY}).");
+        // CSS2.1 §9.5: the blue block box starts at the top (overlapping
+        // the float). The blue background covers the float in the first
+        // 30px, so the visible red is only below the blue block.
+        Assert.True(blueBounds.Value.minY < 5,
+            $"Non-floated block should start near the top (minY={blueBounds.Value.minY}).");
+        Assert.True(redBounds.Value.maxY >= 30,
+            $"Float should extend below the non-floated block (maxY={redBounds.Value.maxY}).");
     }
 
     /// <summary>
@@ -1676,5 +1675,113 @@ public class Acid1ProgrammaticTests
             bands.Add((bandStart.Value, bandEnd!.Value));
 
         return bands;
+    }
+
+    // -----------------------------------------------------------------
+    // Priority 1: Percentage width in floated containing blocks
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Reproduces the exact Acid1 Section 9 structure: dl > dt + dd > ul > li#bar
+    /// with percentage widths. The #bar element's 41.17% width must resolve
+    /// against the dd's content width (340px), producing ~140px.
+    /// </summary>
+    [Fact]
+    public void PercentageWidth_Acid1Section9_BarWidthResolves()
+    {
+        // Full acid1 structure for section 9
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; background-color: blue; color: white; }
+            body { margin: 1.5em; border: .5em solid black; padding: 0; width: 48em; background-color: white; }
+            dl { margin: 0; border: 0; padding: .5em; }
+            dt { background-color: rgb(204,0,0); margin: 0; padding: 1em;
+                 width: 10.638%; height: 5em; border: .5em solid black; float: left; }
+            dd { float: right; margin: 0 0 0 1em; border: 1em solid black;
+                 padding: 1em; width: 34em; max-width: 34em; height: 27em; }
+            ul { margin: 0; border: 0; padding: 0; }
+            li { display: block; color: black; height: 9em; width: 5em; margin: 0;
+                 border: .5em solid black; padding: 1em; float: left; background-color: #FC0; }
+            #bar { background-color: rgb(0,128,0); color: white; width: 41.17%;
+                   border: 0; margin: 0 1em; }
+        </style></head><body>
+        <dl>
+            <dt>toggle</dt>
+            <dd>
+                <ul>
+                    <li>the way</li>
+                    <li id='bar'>the world ends</li>
+                </ul>
+            </dd>
+        </dl>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 800, 600);
+
+        // Measure the green (#bar) element width
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+        Assert.NotNull(greenBounds);
+        int barWidth = greenBounds.Value.maxX - greenBounds.Value.minX + 1;
+
+        // Expected: 41.17% of 340 (dd content width) = 139.978px ≈ 140px
+        // Plus padding: 1em each side = 20px → total ~160px
+        // (border is 0 for #bar, but padding from li is inherited: 1em=10px each side)
+        // Total rendered width should be ~160px (140 content + 20 padding)
+        // Allow tolerance for font metrics and sub-pixel differences
+        Assert.True(barWidth >= 140 && barWidth <= 180,
+            $"#bar (41.17% of dd content-width 340px) should render ~160px wide " +
+            $"(140 content + 20 padding), but measured {barWidth}px. " +
+            "Percentage width may resolve against wrong containing block width.");
+    }
+
+    /// <summary>
+    /// Verifies that a percentage width inside a floated parent with explicit
+    /// width, border, and padding resolves against the parent's content width,
+    /// not the border-box or padding-box width (CSS1 §5.3.4).
+    /// </summary>
+    [Fact]
+    public void PercentageWidth_InFloatedParent_ResolvesAgainstContentWidth()
+    {
+        // Parent: float:right, width:34em=340px, border:1em=10px, padding:1em=10px
+        // Parent content width = 340px, padding-box = 360px, border-box = 380px
+        // Child: width:41.17% → expected 41.17% of 340 = 139.978 ≈ 140px
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; width: 48em; }
+            .parent {
+                float: right;
+                width: 34em;
+                border: 1em solid rgb(0,0,255);
+                padding: 1em;
+                margin: 0;
+                height: 10em;
+            }
+            .child {
+                width: 41.17%;
+                height: 3em;
+                background-color: red;
+                border: 0;
+                margin: 0;
+                padding: 0;
+            }
+        </style></head><body>
+        <div class='parent'>
+            <div class='child'>x</div>
+        </div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 600, 200);
+
+        var childBounds = GetColorBounds(bitmap, IsRed);
+        Assert.NotNull(childBounds);
+        int childWidth = childBounds.Value.maxX - childBounds.Value.minX + 1;
+
+        // 41.17% of 340 (content-box) = 139.978 ≈ 140px
+        // 41.17% of 360 (padding-box) = 148.21 ≈ 148px (wrong)
+        // 41.17% of 380 (border-box)  = 156.45 ≈ 156px (wrong)
+        Assert.True(childWidth >= 130 && childWidth <= 150,
+            $"Child with width:41.17% in floated parent (content-width=340px) " +
+            $"should be ~140px, but measured {childWidth}px. " +
+            "Percentage may be resolving against padding-box or border-box " +
+            "instead of content-box width.");
     }
 }
