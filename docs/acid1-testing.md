@@ -146,11 +146,18 @@ dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1" --verbosi
 ## Current Status
 
 The Acid1 test suite currently achieves approximately **45% similarity** with
-the W3C reference rendering. The remaining differences are attributed to
-known limitations in the HTML-Renderer float-layout algorithm (see
-`acid/acid1/split/README.md` for details). The regression floor is set at
-**43%** — any drop below this threshold fails the test and indicates a
-rendering regression.
+the W3C reference rendering. Recent improvements include:
+
+- **Priority 1 (Float Layout):** Fixed float positioning algorithm for CSS1
+  §5.5.25/5.5.26 compliance. Sections 2–6 now render with correct float
+  stacking and collision detection.
+- **Priority 2 (Box Model / Canvas Background):** Implemented CSS2.1 §14.2
+  canvas background propagation. The `html` element's background now fills
+  the entire viewport, matching Chromium's behaviour for Sections 1 and 9.
+
+The remaining differences are attributed to border rendering (Priority 3) and
+typography/line-height (Priority 4). See
+[ADR-009](adr/009-acid1-differential-testing.md) for the fix roadmap.
 
 ## Differential Testing (Chromium Comparison)
 

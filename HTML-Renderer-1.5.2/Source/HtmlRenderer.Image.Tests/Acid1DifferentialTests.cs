@@ -261,6 +261,29 @@ public class Acid1RepeatedRenderTests
         AssertDeterministicRender(html);
     }
 
+    /// <summary>
+    /// Repeated render of Section 1 (body border + html/body backgrounds)
+    /// to verify that canvas background propagation produces consistent output.
+    /// </summary>
+    [Fact]
+    public void Section1_BodyBorder_RepeatedRender_IsDeterministic()
+    {
+        var html = ReadSplitHtml("section1-body-border.html");
+        AssertDeterministicRender(html);
+    }
+
+    /// <summary>
+    /// Repeated render of Section 9 (percentage width) to verify that
+    /// percentage-based width resolution with canvas background propagation
+    /// is deterministic across runs.
+    /// </summary>
+    [Fact]
+    public void Section9_PercentageWidth_RepeatedRender_IsDeterministic()
+    {
+        var html = ReadSplitHtml("section9-percentage-width.html");
+        AssertDeterministicRender(html);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────
 
     private static string ReadSplitHtml(string filename)

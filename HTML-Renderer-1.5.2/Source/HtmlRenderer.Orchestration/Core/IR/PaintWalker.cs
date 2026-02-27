@@ -28,11 +28,81 @@ internal static class PaintWalker
     /// <summary>
     /// Paints the given <see cref="Fragment"/> tree and returns a flat <see cref="DisplayList"/>.
     /// </summary>
-    public static DisplayList Paint(Fragment root)
+    public static DisplayList Paint(Fragment root) => Paint(root, RectangleF.Empty);
+
+    /// <summary>
+    /// Paints the given <see cref="Fragment"/> tree and returns a flat <see cref="DisplayList"/>.
+    /// When <paramref name="viewport"/> is non-empty, CSS2.1&nbsp;§14.2 canvas background
+    /// propagation is applied: the root element's background fills the entire viewport.
+    /// </summary>
+    public static DisplayList Paint(Fragment root, RectangleF viewport)
     {
         var items = new List<DisplayItem>();
+
+        if (viewport.Width > 0 && viewport.Height > 0)
+            EmitCanvasBackground(root, viewport, items);
+
         PaintFragment(root, items);
         return new DisplayList { Items = items };
+    }
+
+    /// <summary>
+    /// CSS2.1 §14.2: The background of the root element becomes the background of the canvas.
+    /// If the root element has a transparent background, the body element's background is used.
+    /// </summary>
+    private static void EmitCanvasBackground(Fragment root, RectangleF viewport, List<DisplayItem> items)
+    {
+        Color canvasBg = FindCanvasBackground(root);
+
+        if (canvasBg.A > 0)
+            items.Add(new FillRectItem { Bounds = viewport, Color = canvasBg });
+    }
+
+    /// <summary>
+    /// Walks the fragment tree to find the canvas background color per CSS2.1 §14.2.
+    /// The root fragment is typically an anonymous wrapper created by the HTML parser.
+    /// Its first block child is the <c>html</c> element, whose first visible block
+    /// child is the <c>body</c> element (the <c>head</c> element is <c>display:none</c>).
+    /// </summary>
+    private static Color FindCanvasBackground(Fragment root)
+    {
+        // Check root itself (rare — the anonymous wrapper usually has no background)
+        if (root.Style.ActualBackgroundColor.A > 0)
+            return root.Style.ActualBackgroundColor;
+
+        // CSS2.1 §14.2 step 1: Use the root element's (html) background.
+        // The html element is the first block child of the anonymous wrapper.
+        Fragment? htmlFragment = FindFirstBlockChild(root);
+        if (htmlFragment == null)
+            return Color.Empty;
+
+        if (htmlFragment.Style.ActualBackgroundColor.A > 0)
+            return htmlFragment.Style.ActualBackgroundColor;
+
+        // CSS2.1 §14.2 step 2: If the root element's background is transparent,
+        // use the first visible block child of the root element (i.e. the body).
+        // The head element is display:none, so we skip it.
+        Fragment? bodyFragment = FindFirstBlockChild(htmlFragment);
+        if (bodyFragment != null && bodyFragment.Style.ActualBackgroundColor.A > 0)
+            return bodyFragment.Style.ActualBackgroundColor;
+
+        return Color.Empty;
+    }
+
+    /// <summary>
+    /// Returns the first child fragment that is a visible block-level element,
+    /// skipping <c>display:none</c> children (e.g. <c>&lt;head&gt;</c>).
+    /// </summary>
+    private static Fragment? FindFirstBlockChild(Fragment parent)
+    {
+        foreach (var child in parent.Children)
+        {
+            if (child.Style.Display == "none")
+                continue;
+            if (child.Style.Display is "block" or "list-item" or "table")
+                return child;
+        }
+        return null;
     }
 
     private static void PaintFragment(Fragment fragment, List<DisplayItem> items)

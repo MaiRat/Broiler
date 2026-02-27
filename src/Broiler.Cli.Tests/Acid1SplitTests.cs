@@ -132,6 +132,32 @@ public class Acid1SplitTests : IDisposable
             "The body background-color:white may not be applied.");
     }
 
+    /// <summary>
+    /// Verifies CSS2.1 §14.2 canvas background propagation: the <c>html</c>
+    /// element's blue background must cover the entire viewport, including
+    /// areas below and to the right of the body content box.
+    /// </summary>
+    [Fact]
+    public void Section1_BodyBorder_HtmlBgCoversEntireViewport()
+    {
+        var html = ReadSplitHtml("section1-body-border.html");
+        using var bitmap = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
+
+        // Check bottom-right corner (furthest from body content)
+        Assert.True(IsBlue(bitmap.GetPixel(RenderWidth - 2, RenderHeight - 2)),
+            "Bottom-right corner should be blue (CSS2.1 §14.2 canvas bg propagation).");
+
+        // Check bottom-left corner
+        Assert.True(IsBlue(bitmap.GetPixel(2, RenderHeight - 2)),
+            "Bottom-left corner should be blue (CSS2.1 §14.2 canvas bg propagation).");
+
+        // Count blue pixels in the bottom row (well below body content)
+        int blueBottomRow = CountPixels(bitmap, IsBlue, 0, RenderHeight - 5, RenderWidth, RenderHeight);
+        Assert.True(blueBottomRow > RenderWidth * 3,
+            $"Expected >{RenderWidth * 3} blue pixels in bottom rows, found {blueBottomRow}. " +
+            "Canvas background must fill the entire viewport height.");
+    }
+
     // -------------------------------------------------------------------------
     // Section 2: DT float:left with red background
     // -------------------------------------------------------------------------

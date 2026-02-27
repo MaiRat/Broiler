@@ -118,15 +118,43 @@ Playwright Chromium 145.0.7632.6. All pixel-diff ratios are measured at
   - Full acid1.html and Sections 2–6 rendered multiple times to verify
     determinism after float layout changes.
 
-### Priority 2 – Box Model / Containing Block (Sections 1, 9)
+### Priority 2 – Box Model / Containing Block (Sections 1, 9) ✅ Fixed
 
-- **Containing block width:** Percentage widths must resolve against the
-  content width of the containing block, not the padding-box or border-box.
-- **Body/html background propagation:** Implement the CSS1/CSS2.1 rule that
-  propagates `html` element background to the canvas when `body` has its own
-  background.
-- **Border-box vs content-box:** Ensure `width` sets the content-box width
-  and borders/padding are added outside it (CSS1 content-box model).
+- ✅ **Containing block width:** Verified that percentage widths correctly
+  resolve against the content width of the containing block (not the
+  padding-box or border-box). The existing `CssBox.PerformLayoutImp()`
+  already subtracts the containing block's padding and border before
+  resolving percentage values.
+- ✅ **Body/html background propagation:** Implemented CSS2.1 §14.2 canvas
+  background propagation. The root element's (`html`) background now fills
+  the entire viewport/canvas, not just the element's bounding box. If the
+  root element has a transparent background, the body element's background
+  is used for the canvas.
+- ✅ **Border-box vs content-box:** Verified that `width` sets the content-box
+  width and borders/padding are added outside it (CSS1 content-box model).
+  The existing code correctly adds `ActualPaddingLeft + ActualPaddingRight +
+  ActualBorderLeftWidth + ActualBorderRightWidth` after resolving the
+  explicit width value.
+
+#### Changes Made
+
+- `PaintWalker.Paint()`: Added `viewport` parameter and
+  `EmitCanvasBackground()` / `FindCanvasBackground()` methods that implement
+  CSS2.1 §14.2 canvas background propagation. The root element's background
+  is emitted as a `FillRectItem` covering the full viewport before painting
+  the fragment tree.
+- `HtmlContainerInt.PerformPaint()`: Computes the viewport rectangle from
+  `MaxSize`/`PageSize` and passes it to `PaintWalker.Paint()`.
+- Added 4 new programmatic tests in `Acid1ProgrammaticTests.cs`:
+  - `CanvasBackground_HtmlBgColor_CoversEntireViewport`
+  - `CanvasBackground_HtmlBgColor_CoversBelowContent`
+  - `CanvasBackground_Acid1Section1_HtmlBlueCoversViewportEdges`
+  - `CanvasBackground_Section9_PercentageWidthWithBlueBg`
+- Added 1 new split test in `Acid1SplitTests.cs`:
+  - `Section1_BodyBorder_HtmlBgCoversEntireViewport`
+- Added 2 new repeated render tests in `Acid1RepeatedRenderTests`:
+  - `Section1_BodyBorder_RepeatedRender_IsDeterministic`
+  - `Section9_PercentageWidth_RepeatedRender_IsDeterministic`
 
 ### Priority 3 – Border Rendering (Section 5)
 

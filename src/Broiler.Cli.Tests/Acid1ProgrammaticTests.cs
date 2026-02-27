@@ -1176,4 +1176,126 @@ public class Acid1ProgrammaticTests
             $"float:right (bottom={redBounds.Value.maxY}) when there isn't enough room. " +
             "Left float must not overlap with right float.");
     }
+
+    // -----------------------------------------------------------------
+    // 7. CSS2.1 §14.2 Canvas Background Propagation
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that the <c>html</c> element's background color fills the
+    /// entire viewport (CSS2.1 §14.2), not just the element's bounding box.
+    /// The bottom-right corner should be blue even when the content does not
+    /// extend that far.
+    /// </summary>
+    [Fact]
+    public void CanvasBackground_HtmlBgColor_CoversEntireViewport()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { background-color: blue; }
+            body { margin: 20px; background-color: white; width: 200px; height: 50px; }
+        </style></head><body><p style='color:black;'>Test</p></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 300, 150);
+
+        // All four corners of the viewport should be blue
+        Assert.True(IsBlue(bitmap.GetPixel(2, 2)),
+            "Top-left corner should be blue (html bg propagated to canvas).");
+        Assert.True(IsBlue(bitmap.GetPixel(298, 2)),
+            "Top-right corner should be blue (html bg propagated to canvas).");
+        Assert.True(IsBlue(bitmap.GetPixel(2, 148)),
+            "Bottom-left corner should be blue (html bg propagated to canvas).");
+        Assert.True(IsBlue(bitmap.GetPixel(298, 148)),
+            "Bottom-right corner should be blue (html bg propagated to canvas).");
+
+        // Body area should be white
+        Assert.True(IsWhite(bitmap.GetPixel(120, 40)),
+            "Body center should be white.");
+    }
+
+    /// <summary>
+    /// Verifies that the viewport area below the body content is covered by
+    /// the <c>html</c> element's background, not the default canvas clear
+    /// color (white).
+    /// </summary>
+    [Fact]
+    public void CanvasBackground_HtmlBgColor_CoversBelowContent()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { background-color: rgb(0,0,255); }
+            body { margin: 10px; width: 100px; height: 30px; background-color: white; }
+        </style></head><body><p>x</p></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 200, 100);
+
+        // Below the body's bottom margin (body ends at ~10+30+10 = 50px)
+        int blueBelow = CountPixels(bitmap, IsBlue, 0, 60, 200, 100);
+        Assert.True(blueBelow > 200,
+            $"Expected >200 blue pixels below body content, found {blueBelow}. " +
+            "Canvas background propagation must extend to the full viewport height.");
+    }
+
+    /// <summary>
+    /// Verifies the Acid1 Section 1 scenario: <c>html</c> has blue background,
+    /// <c>body</c> has white background with border. The viewport edges should
+    /// show the html element's blue background.
+    /// </summary>
+    [Fact]
+    public void CanvasBackground_Acid1Section1_HtmlBlueCoversViewportEdges()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; background-color: blue; color: white; }
+            body { margin: 1.5em; border: .5em solid black; padding: 0; width: 48em;
+                   background-color: white; }
+        </style></head><body>
+            <p style='color: black; font-size: 1em;'>Section 1 test</p>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 600, 200);
+
+        // Viewport corners should be blue
+        Assert.True(IsBlue(bitmap.GetPixel(2, 2)),
+            "Top-left corner should be blue (Acid1 Section 1 html bg).");
+        Assert.True(IsBlue(bitmap.GetPixel(2, 198)),
+            "Bottom-left corner should be blue (Acid1 Section 1 html bg).");
+
+        // Right edge beyond body width should be blue
+        Assert.True(IsBlue(bitmap.GetPixel(598, 50)),
+            "Right edge beyond body width should be blue.");
+    }
+
+    /// <summary>
+    /// Verifies that percentage widths resolve correctly when the
+    /// <c>html</c> element's background is properly propagated.
+    /// This combines the Section 9 layout with the Section 1 background
+    /// propagation check.
+    /// </summary>
+    [Fact]
+    public void CanvasBackground_Section9_PercentageWidthWithBlueBg()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; background-color: blue; color: white; }
+            body { margin: 1.5em; border: .5em solid black; padding: 0; width: 48em;
+                   background-color: white; }
+            dl { margin: 0; border: 0; padding: .5em; }
+            dt { background-color: rgb(204,0,0); margin: 0; padding: 0;
+                 border: 0; width: 10.638%; height: 2em; float: left; }
+        </style></head><body><dl><dt>x</dt></dl></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 600, 200);
+
+        // Viewport bottom-right should be blue (canvas background propagation)
+        Assert.True(IsBlue(bitmap.GetPixel(598, 198)),
+            "Bottom-right corner should be blue (canvas background).");
+
+        // dt element should have red pixels (percentage width resolved correctly)
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        Assert.NotNull(redBounds);
+
+        int dtWidth = redBounds.Value.maxX - redBounds.Value.minX + 1;
+        // 10.638% of ~470px (dl content width) = ~50px.
+        // ±10px tolerance for font-size and em-height differences.
+        Assert.True(dtWidth >= 40 && dtWidth <= 60,
+            $"dt width (10.638%) should be ~50px, but measured {dtWidth}px. " +
+            "Percentage width resolution with canvas bg propagation may be incorrect.");
+    }
 }
