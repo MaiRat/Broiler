@@ -1645,7 +1645,7 @@ public class Acid1ProgrammaticTests
             for (int x = 0; x < bitmap.Width; x++)
             {
                 var p = bitmap.GetPixel(x, y);
-                if (p.Red < 200 || p.Green < 200 || p.Blue < 200)
+                if (!IsWhite(p))
                 {
                     hasContent = true;
                     break;
