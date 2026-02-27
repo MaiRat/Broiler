@@ -38,15 +38,14 @@ namespace HtmlRenderer.Image.Tests;
 public class Acid1DifferentialReportGenerator
 {
     /// <summary>
-    /// Uses a generous 95 % pixel-diff threshold and 30 per-channel colour
-    /// tolerance because the HTML-Renderer engine is not yet fully CSS1-
-    /// conformant.  These values match <see cref="Acid1DifferentialTests"/>.
+    /// Uses a 20 % pixel-diff threshold (lowered from 95 % to catch major
+    /// float/layout regressions).  Matches <see cref="Acid1DifferentialTests"/>.
     /// </summary>
     private static readonly DifferentialTestConfig Config = new()
     {
-        DiffThreshold = 0.95,
+        DiffThreshold = 0.20,
         ColorTolerance = 30,
-        LayoutTolerancePx = 5.0
+        LayoutTolerancePx = 3.0
     };
 
     private static readonly string Acid1Dir = Path.Combine(
@@ -100,18 +99,26 @@ public class Acid1DifferentialReportGenerator
 
             using var report = await runner.RunAsync(html, testName);
 
+            // Detect float/block overlaps in the Broiler fragment tree
+            var overlaps = DifferentialTestRunner.DetectFloatOverlaps(html, Config.RenderConfig);
+
+            // Stricter severity thresholds to catch layout regressions earlier
             var severity = report.PixelDiff.DiffRatio switch
             {
-                >= 0.90 => "Critical",
-                >= 0.70 => "High",
-                >= 0.50 => "Medium",
+                >= 0.20 => "Critical",
+                >= 0.10 => "High",
+                >= 0.05 => "Medium",
                 _ => "Low"
             };
+
+            // Elevate severity if float overlaps are detected
+            if (overlaps.Count > 0 && severity is "Low" or "Medium")
+                severity = "High";
 
             results.Add(new SectionResult(
                 name, cssFeature, report.PixelDiff.DiffRatio,
                 report.PixelDiff.DiffPixelCount, report.PixelDiff.TotalPixelCount,
-                severity, report.Classification));
+                severity, report.Classification, overlaps.Count));
         }
 
         var markdown = BuildMarkdown(
@@ -171,13 +178,13 @@ public class Acid1DifferentialReportGenerator
         // ── Observed Errors ────────────────────────────────────────
         sb.AppendLine("## Observed Errors");
         sb.AppendLine();
-        sb.AppendLine("| Section | CSS1 Feature | Pixel Diff | Severity | Classification |");
-        sb.AppendLine("|---------|-------------|-----------|----------|----------------|");
+        sb.AppendLine("| Section | CSS1 Feature | Pixel Diff | Overlaps | Severity | Classification |");
+        sb.AppendLine("|---------|-------------|-----------|----------|----------|----------------|");
 
         foreach (var r in results)
         {
             var cls = r.Classification?.ToString() ?? "N/A";
-            sb.AppendLine($"| {r.Section} | {r.CssFeature} | {r.DiffRatio:P2} ({r.DiffPixels}/{r.TotalPixels}) | {r.Severity} | {cls} |");
+            sb.AppendLine($"| {r.Section} | {r.CssFeature} | {r.DiffRatio:P2} ({r.DiffPixels}/{r.TotalPixels}) | {r.OverlapCount} | {r.Severity} | {cls} |");
         }
 
         sb.AppendLine();
@@ -186,10 +193,10 @@ public class Acid1DifferentialReportGenerator
         sb.AppendLine("## Error Analysis");
         sb.AppendLine();
 
-        AppendSeveritySection(sb, results, "Critical", "≥ 90% pixel diff");
-        AppendSeveritySection(sb, results, "High", "≥ 70% pixel diff");
-        AppendSeveritySection(sb, results, "Medium", "≥ 50% pixel diff");
-        AppendSeveritySection(sb, results, "Low", "< 50% pixel diff");
+        AppendSeveritySection(sb, results, "Critical", "≥ 20% pixel diff");
+        AppendSeveritySection(sb, results, "High", "≥ 10% pixel diff or float overlaps");
+        AppendSeveritySection(sb, results, "Medium", "≥ 5% pixel diff");
+        AppendSeveritySection(sb, results, "Low", "< 5% pixel diff");
 
         // ── Traceability ───────────────────────────────────────────
         sb.AppendLine("## Traceability");
@@ -225,7 +232,8 @@ public class Acid1DifferentialReportGenerator
         foreach (var r in matching)
         {
             var cls = r.Classification?.ToString() ?? "N/A";
-            sb.AppendLine($"- **{r.Section}:** {r.DiffRatio:P2} – {r.CssFeature}. Classification: {cls}.");
+            var overlapInfo = r.OverlapCount > 0 ? $" **{r.OverlapCount} float overlap(s).**" : "";
+            sb.AppendLine($"- **{r.Section}:** {r.DiffRatio:P2} – {r.CssFeature}. Classification: {cls}.{overlapInfo}");
         }
         sb.AppendLine();
     }
@@ -244,5 +252,6 @@ public class Acid1DifferentialReportGenerator
         int DiffPixels,
         int TotalPixels,
         string Severity,
-        FailureClassification? Classification);
+        FailureClassification? Classification,
+        int OverlapCount);
 }

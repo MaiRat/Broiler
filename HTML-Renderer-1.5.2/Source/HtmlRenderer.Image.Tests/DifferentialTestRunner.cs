@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Threading.Tasks;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Core.IR;
@@ -196,6 +198,88 @@ public sealed class DifferentialTestRunner
             return null;
         }
     }
+    /// <summary>
+    /// Detects float/block overlaps in the Broiler fragment tree by collecting
+    /// all float and block-level fragments at the same nesting level and
+    /// checking for invalid bounding-box intersections.
+    /// </summary>
+    public static List<FloatOverlap> DetectFloatOverlaps(string html, DeterministicRenderConfig? config = null)
+    {
+        config ??= DeterministicRenderConfig.Default;
+        using var bitmap = PixelDiffRunner.RenderDeterministic(html, config, out var fragmentTree, out _);
+        if (fragmentTree is null) return [];
+
+        var overlaps = new List<FloatOverlap>();
+        CollectOverlaps(fragmentTree, overlaps);
+        return overlaps;
+    }
+
+    /// <summary>
+    /// Walks the fragment tree and checks sibling fragments for invalid overlaps.
+    /// Two sibling floats or a float and a block-level element should not overlap
+    /// unless one is positioned (position: absolute/fixed) or has clear applied.
+    /// </summary>
+    private static void CollectOverlaps(Fragment parent, List<FloatOverlap> overlaps)
+    {
+        var children = parent.Children;
+        for (int i = 0; i < children.Count; i++)
+        {
+            var a = children[i];
+            if (a.Size.Width <= 0 || a.Size.Height <= 0) continue;
+
+            bool aIsFloat = a.Style.Float is not ("none" or "");
+            bool aIsBlock = a.Style.Display is "block" or "list-item";
+
+            if (!aIsFloat && !aIsBlock) continue;
+
+            for (int j = i + 1; j < children.Count; j++)
+            {
+                var b = children[j];
+                if (b.Size.Width <= 0 || b.Size.Height <= 0) continue;
+
+                bool bIsFloat = b.Style.Float is not ("none" or "");
+                bool bIsBlock = b.Style.Display is "block" or "list-item";
+
+                if (!bIsFloat && !bIsBlock) continue;
+
+                // Skip if both are non-float blocks (normal flow stacking)
+                if (!aIsFloat && !bIsFloat) continue;
+
+                // Check for bounding-box intersection
+                var ra = a.Bounds;
+                var rb = b.Bounds;
+                if (RectsOverlap(ra, rb))
+                {
+                    overlaps.Add(new FloatOverlap(
+                        DescribeFragment(a), DescribeFragment(b),
+                        ToLayoutRect(ra), ToLayoutRect(rb)));
+                }
+            }
+
+            // Recurse into children
+            CollectOverlaps(a, overlaps);
+        }
+    }
+
+    private static bool RectsOverlap(RectangleF a, RectangleF b)
+    {
+        // Two rectangles overlap if they intersect with positive area
+        float overlapX = Math.Max(0, Math.Min(a.Right, b.Right) - Math.Max(a.Left, b.Left));
+        float overlapY = Math.Max(0, Math.Min(a.Bottom, b.Bottom) - Math.Max(a.Top, b.Top));
+        return overlapX > 1 && overlapY > 1; // > 1px to ignore sub-pixel touching
+    }
+
+    private static string DescribeFragment(Fragment f)
+    {
+        var kind = f.Style.Kind.ToString();
+        var floatVal = f.Style.Float;
+        var display = f.Style.Display;
+        return $"{kind} (display:{display}, float:{floatVal}, " +
+               $"bounds:{f.Bounds.X:F0},{f.Bounds.Y:F0} {f.Bounds.Width:F0}×{f.Bounds.Height:F0})";
+    }
+
+    private static LayoutRect ToLayoutRect(RectangleF r) =>
+        new(r.X, r.Y, r.Width, r.Height);
 }
 
 /// <summary>
@@ -206,3 +290,12 @@ public readonly record struct LayoutComparisonResult(
     LayoutRect Broiler,
     double MaxDelta,
     bool IsPass);
+
+/// <summary>
+/// Describes an invalid overlap between two float/block fragments.
+/// </summary>
+public sealed record FloatOverlap(
+    string FragmentA,
+    string FragmentB,
+    LayoutRect BoundsA,
+    LayoutRect BoundsB);
