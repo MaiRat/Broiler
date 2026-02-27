@@ -28,11 +28,63 @@ internal static class PaintWalker
     /// <summary>
     /// Paints the given <see cref="Fragment"/> tree and returns a flat <see cref="DisplayList"/>.
     /// </summary>
-    public static DisplayList Paint(Fragment root)
+    public static DisplayList Paint(Fragment root) => Paint(root, RectangleF.Empty);
+
+    /// <summary>
+    /// Paints the given <see cref="Fragment"/> tree and returns a flat <see cref="DisplayList"/>.
+    /// When <paramref name="viewport"/> is non-empty, CSS2.1&nbsp;§14.2 canvas background
+    /// propagation is applied: the root element's background fills the entire viewport.
+    /// </summary>
+    public static DisplayList Paint(Fragment root, RectangleF viewport)
     {
         var items = new List<DisplayItem>();
+
+        if (viewport.Width > 0 && viewport.Height > 0)
+            EmitCanvasBackground(root, viewport, items);
+
         PaintFragment(root, items);
         return new DisplayList { Items = items };
+    }
+
+    /// <summary>
+    /// CSS2.1 §14.2: The background of the root element becomes the background of the canvas.
+    /// If the root element has a transparent background, the body element's background is used.
+    /// </summary>
+    private static void EmitCanvasBackground(Fragment root, RectangleF viewport, List<DisplayItem> items)
+    {
+        Color canvasBg = FindCanvasBackground(root);
+
+        if (canvasBg.A > 0)
+            items.Add(new FillRectItem { Bounds = viewport, Color = canvasBg });
+    }
+
+    /// <summary>
+    /// Walks the fragment tree to find the canvas background color per CSS2.1 §14.2.
+    /// The root fragment may be an anonymous wrapper; in that case, the first child
+    /// with a non-transparent background (html element) is used. If that is also
+    /// transparent, the next level (body element) is checked.
+    /// </summary>
+    private static Color FindCanvasBackground(Fragment root)
+    {
+        // Check root itself
+        if (root.Style.ActualBackgroundColor.A > 0)
+            return root.Style.ActualBackgroundColor;
+
+        // Check first-level children (html element)
+        foreach (var child in root.Children)
+        {
+            if (child.Style.ActualBackgroundColor.A > 0)
+                return child.Style.ActualBackgroundColor;
+
+            // Check second-level children (body element)
+            foreach (var grandchild in child.Children)
+            {
+                if (grandchild.Style.ActualBackgroundColor.A > 0)
+                    return grandchild.Style.ActualBackgroundColor;
+            }
+        }
+
+        return Color.Empty;
     }
 
     private static void PaintFragment(Fragment fragment, List<DisplayItem> items)

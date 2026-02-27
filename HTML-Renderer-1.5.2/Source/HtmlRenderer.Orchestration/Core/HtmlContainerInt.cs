@@ -251,19 +251,23 @@ public sealed class HtmlContainerInt : IHtmlContainerInt, IDisposable
     {
         ArgumentNullException.ThrowIfNull(g);
 
+        RectangleF viewport;
         if (MaxSize.Height > 0)
         {
-            g.PushClip(new RectangleF(Location.X, Location.Y, Math.Min(MaxSize.Width, PageSize.Width), Math.Min(MaxSize.Height, PageSize.Height)));
+            viewport = new RectangleF(Location.X, Location.Y, Math.Min(MaxSize.Width, PageSize.Width), Math.Min(MaxSize.Height, PageSize.Height));
         }
         else
         {
-            g.PushClip(new RectangleF(MarginLeft, MarginTop, PageSize.Width, PageSize.Height));
+            viewport = new RectangleF(MarginLeft, MarginTop, PageSize.Width, PageSize.Height);
         }
+
+        g.PushClip(viewport);
 
         if (LatestFragmentTree != null)
         {
             // Paint path: Fragment tree → DisplayList → RGraphics
-            var displayList = PaintWalker.Paint(LatestFragmentTree);
+            // Pass viewport for CSS2.1 §14.2 canvas background propagation.
+            var displayList = PaintWalker.Paint(LatestFragmentTree, viewport);
             LatestDisplayList = displayList;
             RGraphicsRasterBackend.Instance.Render(displayList, g);
         }
