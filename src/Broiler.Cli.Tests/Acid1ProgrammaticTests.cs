@@ -1292,7 +1292,9 @@ public class Acid1ProgrammaticTests
         Assert.NotNull(redBounds);
 
         int dtWidth = redBounds.Value.maxX - redBounds.Value.minX + 1;
-        Assert.True(dtWidth >= 30 && dtWidth <= 85,
+        // 10.638% of ~470px (dl content width) = ~50px.
+        // ±10px tolerance for font-size and em-height differences.
+        Assert.True(dtWidth >= 40 && dtWidth <= 60,
             $"dt width (10.638%) should be ~50px, but measured {dtWidth}px. " +
             "Percentage width resolution with canvas bg propagation may be incorrect.");
     }

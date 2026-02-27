@@ -60,31 +60,49 @@ internal static class PaintWalker
 
     /// <summary>
     /// Walks the fragment tree to find the canvas background color per CSS2.1 §14.2.
-    /// The root fragment may be an anonymous wrapper; in that case, the first child
-    /// with a non-transparent background (html element) is used. If that is also
-    /// transparent, the next level (body element) is checked.
+    /// The root fragment is typically an anonymous wrapper created by the HTML parser.
+    /// Its first block child is the <c>html</c> element, whose first visible block
+    /// child is the <c>body</c> element (the <c>head</c> element is <c>display:none</c>).
     /// </summary>
     private static Color FindCanvasBackground(Fragment root)
     {
-        // Check root itself
+        // Check root itself (rare — the anonymous wrapper usually has no background)
         if (root.Style.ActualBackgroundColor.A > 0)
             return root.Style.ActualBackgroundColor;
 
-        // Check first-level children (html element)
-        foreach (var child in root.Children)
-        {
-            if (child.Style.ActualBackgroundColor.A > 0)
-                return child.Style.ActualBackgroundColor;
+        // CSS2.1 §14.2 step 1: Use the root element's (html) background.
+        // The html element is the first block child of the anonymous wrapper.
+        Fragment? htmlFragment = FindFirstBlockChild(root);
+        if (htmlFragment == null)
+            return Color.Empty;
 
-            // Check second-level children (body element)
-            foreach (var grandchild in child.Children)
-            {
-                if (grandchild.Style.ActualBackgroundColor.A > 0)
-                    return grandchild.Style.ActualBackgroundColor;
-            }
-        }
+        if (htmlFragment.Style.ActualBackgroundColor.A > 0)
+            return htmlFragment.Style.ActualBackgroundColor;
+
+        // CSS2.1 §14.2 step 2: If the root element's background is transparent,
+        // use the first visible block child of the root element (i.e. the body).
+        // The head element is display:none, so we skip it.
+        Fragment? bodyFragment = FindFirstBlockChild(htmlFragment);
+        if (bodyFragment != null && bodyFragment.Style.ActualBackgroundColor.A > 0)
+            return bodyFragment.Style.ActualBackgroundColor;
 
         return Color.Empty;
+    }
+
+    /// <summary>
+    /// Returns the first child fragment that is a visible block-level element,
+    /// skipping <c>display:none</c> children (e.g. <c>&lt;head&gt;</c>).
+    /// </summary>
+    private static Fragment? FindFirstBlockChild(Fragment parent)
+    {
+        foreach (var child in parent.Children)
+        {
+            if (child.Style.Display == "none")
+                continue;
+            if (child.Style.Display is "block" or "list-item" or "table")
+                return child;
+        }
+        return null;
     }
 
     private static void PaintFragment(Fragment fragment, List<DisplayItem> items)
