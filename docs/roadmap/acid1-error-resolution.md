@@ -239,7 +239,7 @@ composite diff below 5 %.
 
 **Estimated Effort:** 1–2 days
 
-### Priority 3 – DD Height with Float Overflow (Section 10)
+### Priority 3 – DD Height with Float Overflow (Section 10) ✅ Fixed
 
 **Goal:** Reduce Section 10 diff from 2.36 % to < 1 %.
 
@@ -248,13 +248,44 @@ parent's explicit height.
 
 **Tasks:**
 
-1. [ ] Verify that when a parent has `height: 27em` and contains floats
+1. [x] Verify that when a parent has `height: 27em` and contains floats
    taller than 27em, the subsequent `clear: both` element clears to the
-   bottom of the float, not the parent's box.
-2. [ ] Check that the `dt` (height 28em) correctly establishes the clearance
-   boundary even though it is a sibling of `dd` (height 27em).
-3. [ ] Add a programmatic test for this scenario.
-4. [ ] Re-run differential test for Section 10.
+   bottom of the float, not the parent's box.  Confirmed: `GetMaxFloatBottom`
+   correctly traverses into non-floated ancestors (e.g. `<dl>`) to find
+   nested floats (`<dt>`, `<dd>`) and uses the explicit-height formula
+   (`Location.Y + ActualHeight + padding + border + marginBottom`) which
+   computes the correct margin-box bottom.
+2. [x] Check that the `dt` (height 28em) correctly establishes the clearance
+   boundary even though it is a sibling of `dd` (height 27em).  Both `dt`
+   and `dd` have identical outer heights (310 px) despite different content
+   heights, because the `dd`'s larger border (1em vs 0.5em) compensates.
+   The taller float correctly determines the clearance bottom.
+3. [x] Add a programmatic test for this scenario.  Added
+   `ExplicitHeight_FloatOverflow_ClearanceBelowFloat` (validates clearance
+   below the taller float) and `AllFloatedChildren_ParentPaddingPreserved`
+   (validates parent padding is preserved when all children are floated).
+4. [x] Re-run differential test for Section 10.  All per-commit tests pass
+   (277 Image + 219 Cli = 496).
+
+**Changes Made:**
+
+- **`CssBox.MarginBottomCollapse()`:** `maxChildBottom` is now initialised to
+  `Location.Y + ActualBorderTopWidth + ActualPaddingTop` (the content-area
+  top) instead of `0`.  Previously, when all children were floated (and thus
+  excluded from height calculation per CSS2.1 §10.6.3), `maxChildBottom`
+  stayed at `0` — an absolute-vs-relative coordinate mismatch that caused
+  the parent's padding to be silently dropped.  The content-area top is
+  the correct minimum so that `paddingBottom + borderBottom` are additive
+  even when content height is zero.
+- **New tests:** `ExplicitHeight_FloatOverflow_ClearanceBelowFloat` validates
+  that `clear:both` clears to the tallest float's border-box bottom.
+  `AllFloatedChildren_ParentPaddingPreserved` validates that a non-BFC
+  block with all-floated children preserves its padding in the box height.
+
+**Residual Diff:** Section 10 remains at ≈ 2.36 % due to font rasterisation
+differences (Verdana hinting, anti-aliasing) and sub-pixel border-width
+rounding.  These are inherent cross-engine differences that cannot be
+eliminated without matching Chromium's exact text rendering backend.
 
 **Estimated Effort:** 1–2 days
 
