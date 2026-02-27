@@ -309,12 +309,12 @@ internal class CssBox : CssBoxProperties, IDisposable
                 {
                     double left = ContainingBlock.Location.X + ContainingBlock.ActualPaddingLeft + ActualMarginLeft + ContainingBlock.ActualBorderLeftWidth;
 
-                    // CSS2.1 §9.5: floats are out of normal flow. Non-floated,
-                    // non-cleared blocks must be positioned as if preceding
-                    // floats do not exist (the block box overlaps the float,
-                    // only inline content wraps around it).
+                    // CSS2.1 §9.5: floats are out of normal flow. Non-floated
+                    // blocks must be positioned as if preceding floats do not
+                    // exist.  For cleared elements this also prevents margin
+                    // collapsing with the float (CSS2.1 §8.3.1).
                     var flowPrev = prevSibling;
-                    if (Float == CssConstants.None && Clear == CssConstants.None
+                    if (Float == CssConstants.None
                         && flowPrev != null && flowPrev.Float != CssConstants.None)
                     {
                         flowPrev = DomUtils.GetPreviousInFlowSibling(flowPrev);

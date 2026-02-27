@@ -392,6 +392,77 @@ public class Acid1ProgrammaticTests
     }
 
     /// <summary>
+    /// CSS2.1 §8.3.1: when clearance is introduced, the cleared element's
+    /// margin-top must NOT be added above the float's margin-box bottom.
+    /// The margin is absorbed into the clearance space.
+    /// </summary>
+    [Fact]
+    public void ClearBoth_AfterFloat_ExactYPosition()
+    {
+        // Float: 80px tall at y=0, margin-bottom=0.
+        // Cleared div: margin-top=20px, height=30px.
+        // Expected: green starts at y=80 (margin absorbed into clearance),
+        // NOT at y=100 (margin incorrectly added on top of clearance).
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; }
+        </style></head><body>
+            <div style='float: left; width: 80px; height: 80px; background-color: red;'>a</div>
+            <div style='clear: both; margin-top: 20px; background-color: rgb(0,128,0); height: 30px;'>b</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(greenBounds);
+
+        // The cleared block must start at the float's bottom (y=80).
+        // CSS2.1 §8.3.1: clearance absorbs the margin-top.
+        Assert.True(greenBounds.Value.minY <= redBounds.Value.maxY + 2,
+            $"Cleared block starts at y={greenBounds.Value.minY}, " +
+            $"float ends at y={redBounds.Value.maxY}. " +
+            "CSS2.1 §8.3.1: margin-top should be absorbed into clearance, " +
+            "not added on top of the float.");
+    }
+
+    /// <summary>
+    /// CSS2.1 §9.5.2: clearance must clear to the float's margin-box
+    /// bottom (including margin-bottom), not just the border-box bottom.
+    /// </summary>
+    [Fact]
+    public void ClearBoth_FloatWithMarginBottom_ClearsToMarginBox()
+    {
+        // Float: 80px tall at y=0, margin-bottom=15px.
+        // Cleared div: margin=0, height=30px.
+        // Expected: green starts at y=95 (80+15, margin-box bottom).
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; }
+        </style></head><body>
+            <div style='float: left; width: 80px; height: 80px; margin-bottom: 15px; background-color: red;'>a</div>
+            <div style='clear: both; margin: 0; background-color: rgb(0,128,0); height: 30px;'>b</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(greenBounds);
+
+        // The cleared block must start at the float's margin-box bottom
+        // (border-box bottom + margin-bottom = 80 + 15 = 95).
+        int expectedGap = 15; // float margin-bottom
+        int actualGap = greenBounds.Value.minY - redBounds.Value.maxY - 1;
+
+        Assert.True(actualGap >= expectedGap - 2 && actualGap <= expectedGap + 2,
+            $"Gap between float and cleared block is {actualGap}px, expected ~{expectedGap}px. " +
+            "CSS2.1 §9.5.2: clearance should clear to the float's margin-box bottom.");
+    }
+
+    /// <summary>
     /// Regression test for float scope / BFC clearance (test5526c).
     /// <c>clear: both</c> after a <c>&lt;dl&gt;</c> should only clear the
     /// outer floats (<c>dt</c> float:left, <c>dd</c> float:right) — not
