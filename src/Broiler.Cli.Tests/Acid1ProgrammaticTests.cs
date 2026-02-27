@@ -1944,8 +1944,9 @@ public class Acid1ProgrammaticTests
         // The green div should start at y = 20 (parent paddingTop + paddingBottom).
         // Without the fix, the parent collapses to zero height, and
         // the green div starts at y = 0 (overlapping the parent).
-        Assert.True(greenBounds.Value.minY >= 15,
-            $"Next sibling starts at y={greenBounds.Value.minY}, expected >= 15. " +
+        // Allow ±2px tolerance for sub-pixel rounding.
+        Assert.True(greenBounds.Value.minY >= 18,
+            $"Next sibling starts at y={greenBounds.Value.minY}, expected >= 18 (≈20). " +
             "Parent with all-floated children should preserve its padding " +
             "(CSS2.1 §10.6.3: padding is additive to zero content height).");
     }
