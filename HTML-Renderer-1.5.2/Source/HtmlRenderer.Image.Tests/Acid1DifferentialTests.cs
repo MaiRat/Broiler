@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using TheArtOfDev.HtmlRenderer.Core.IR;
@@ -13,11 +14,9 @@ namespace HtmlRenderer.Image.Tests;
 /// (HTML-Renderer) and headless Chromium (via Playwright), then compare
 /// the pixel output.
 ///
-/// These tests intentionally use a high tolerance (95 % pixel diff) because
-/// the HTML-Renderer engine is not yet CSS1-conformant.  The purpose of
-/// these tests is to <b>document</b> discrepancies and establish a baseline
-/// for tracking rendering improvements over time, not to enforce pixel
-/// perfection.
+/// These tests use a 20 % pixel-diff tolerance to catch major layout
+/// regressions (float stacking, element overlaps, etc.) while still
+/// allowing for known cross-engine font/anti-aliasing differences.
 ///
 /// Playwright browsers must be installed before running:
 ///   <c>pwsh bin/Debug/net8.0/playwright.ps1 install chromium</c>
@@ -30,17 +29,16 @@ public class Acid1DifferentialTests : IAsyncLifetime
     private DifferentialTestRunner _runner = null!;
 
     /// <summary>
-    /// Uses a generous 95 % pixel-diff threshold because these tests are
-    /// designed to <b>document</b> discrepancies rather than enforce pixel
-    /// perfection.  The HTML-Renderer engine is not yet CSS1-conformant and
-    /// section-level tests show 72–92 % pixel differences against Chromium.
-    /// The threshold will be lowered as rendering accuracy improves.
+    /// Uses a 20 % pixel-diff threshold (lowered from the former 95 % to
+    /// catch major float/layout regressions that were previously missed).
+    /// ADR-010 shows actual diffs are ≤ 11.3 %, so 20 % provides headroom
+    /// while still detecting large visual mismatches.
     /// </summary>
     private static readonly DifferentialTestConfig Config = new()
     {
-        DiffThreshold = 0.95,
+        DiffThreshold = 0.20,
         ColorTolerance = 30,
-        LayoutTolerancePx = 5.0
+        LayoutTolerancePx = 3.0
     };
 
     private static readonly string ReportDir = Path.Combine(
@@ -165,12 +163,76 @@ public class Acid1DifferentialTests : IAsyncLifetime
         report.WriteReport(ReportDir);
 
         Assert.True(report.IsPass,
-            $"Acid1 differential test '{testName}' exceeded even the generous tolerance: " +
+            $"Acid1 differential test '{testName}' exceeded the tolerance: " +
             $"{report.PixelDiff.DiffRatio:P2} pixel difference " +
             $"({report.PixelDiff.DiffPixelCount}/{report.PixelDiff.TotalPixelCount} pixels differ). " +
             $"Threshold: {Config.DiffThreshold:P2}. " +
             $"Classification: {report.Classification?.ToString() ?? "N/A"}. " +
             $"Report: {ReportDir}");
+    }
+
+    private static string GetSourceDirectory([CallerFilePath] string path = "")
+    {
+        return Path.GetDirectoryName(path)!;
+    }
+}
+
+/// <summary>
+/// Float overlap detection tests for acid1.html sections.
+/// These tests check the Broiler layout tree for invalid float/block
+/// bounding-box intersections that are missed by pixel-diff thresholds.
+/// They run without Playwright (Broiler-only) and are included in every CI build.
+/// </summary>
+[Collection("Rendering")]
+public class Acid1FloatOverlapTests
+{
+    private static readonly DeterministicRenderConfig RenderConfig = DeterministicRenderConfig.Default;
+
+    private static readonly string Acid1Dir = Path.Combine(
+        GetSourceDirectory(), "..", "..", "..", "acid", "acid1");
+
+    [Fact]
+    public void Acid1Full_NoFloatOverlaps()
+    {
+        var html = File.ReadAllText(Path.Combine(Acid1Dir, "acid1.html"));
+        AssertNoFloatOverlaps(html);
+    }
+
+    [Fact]
+    public void Section4_LiFloatLeft_NoFloatOverlaps()
+    {
+        var html = ReadSplitHtml("section4-li-float-left.html");
+        AssertNoFloatOverlaps(html);
+    }
+
+    [Fact]
+    public void Section5_BlockquoteFloat_NoFloatOverlaps()
+    {
+        var html = ReadSplitHtml("section5-blockquote-float.html");
+        AssertNoFloatOverlaps(html);
+    }
+
+    [Fact]
+    public void Section6_H1Float_NoFloatOverlaps()
+    {
+        var html = ReadSplitHtml("section6-h1-float.html");
+        AssertNoFloatOverlaps(html);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────
+
+    private static string ReadSplitHtml(string filename)
+    {
+        return File.ReadAllText(Path.Combine(Acid1Dir, "split", filename));
+    }
+
+    private static void AssertNoFloatOverlaps(string html)
+    {
+        var overlaps = DifferentialTestRunner.DetectFloatOverlaps(html, RenderConfig);
+        Assert.True(overlaps.Count == 0,
+            $"Detected {overlaps.Count} float/block overlap(s):\n" +
+            string.Join("\n", overlaps.Select(o =>
+                $"  • {o.FragmentA} overlaps {o.FragmentB}")));
     }
 
     private static string GetSourceDirectory([CallerFilePath] string path = "")
