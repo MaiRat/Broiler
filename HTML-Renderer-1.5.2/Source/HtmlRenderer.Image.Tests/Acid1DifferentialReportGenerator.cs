@@ -37,6 +37,11 @@ namespace HtmlRenderer.Image.Tests;
 [Trait("Category", "DifferentialReport")]
 public class Acid1DifferentialReportGenerator
 {
+    /// <summary>
+    /// Uses a generous 95 % pixel-diff threshold and 30 per-channel colour
+    /// tolerance because the HTML-Renderer engine is not yet fully CSS1-
+    /// conformant.  These values match <see cref="Acid1DifferentialTests"/>.
+    /// </summary>
     private static readonly DifferentialTestConfig Config = new()
     {
         DiffThreshold = 0.95,

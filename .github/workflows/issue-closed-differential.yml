@@ -59,12 +59,19 @@ jobs:
       run: |
         if [ "${{ github.event_name }}" = "issues" ]; then
           echo "issue_number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
-          # Sanitise title for safe shell usage
-          title=$(echo "${{ github.event.issue.title }}" | tr -cd '[:alnum:] [:space:]._-')
-          echo "issue_title=$title" >> "$GITHUB_OUTPUT"
+          # Sanitise title: keep alphanumeric, spaces, dots, hyphens, underscores
+          title=$(echo "${{ github.event.issue.title }}" | tr -cd '[:alnum:]._-/ ' | tr -s ' ')
+          printf 'issue_title=%s\n' "$title" >> "$GITHUB_OUTPUT"
         else
-          echo "issue_number=${{ github.event.inputs.issue_number || '0' }}" >> "$GITHUB_OUTPUT"
-          echo "issue_title=${{ github.event.inputs.issue_title || 'Manual run' }}" >> "$GITHUB_OUTPUT"
+          num="${{ github.event.inputs.issue_number || '0' }}"
+          # Validate issue number is numeric
+          if ! echo "$num" | grep -qE '^[0-9]+$'; then
+            num="0"
+          fi
+          echo "issue_number=$num" >> "$GITHUB_OUTPUT"
+          title="${{ github.event.inputs.issue_title || 'Manual run' }}"
+          title=$(echo "$title" | tr -cd '[:alnum:]._-/ ' | tr -s ' ')
+          printf 'issue_title=%s\n' "$title" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Generate Acid1 Differential Report
