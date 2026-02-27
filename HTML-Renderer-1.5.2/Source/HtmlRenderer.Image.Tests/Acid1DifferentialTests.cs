@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using TheArtOfDev.HtmlRenderer.Core.IR;
 using TheArtOfDev.HtmlRenderer.Image;
@@ -152,7 +153,9 @@ public class Acid1DifferentialTests : IAsyncLifetime
     /// <summary>
     /// Runs the differential test and always writes a report so that the
     /// discrepancies are documented even when the test passes (i.e. the
-    /// diff is within the generous tolerance).
+    /// diff is within the generous tolerance).  Also detects float/block
+    /// overlaps in the Broiler fragment tree – these indicate layout
+    /// errors (float stacking/collision) that pixel-diff alone may miss.
     /// </summary>
     private async Task AssertAndReportAsync(
         string html, [CallerMemberName] string testName = "")
@@ -162,13 +165,28 @@ public class Acid1DifferentialTests : IAsyncLifetime
         // Always write reports for acid1 tests – the purpose is documentation.
         report.WriteReport(ReportDir);
 
-        Assert.True(report.IsPass,
-            $"Acid1 differential test '{testName}' exceeded the tolerance: " +
-            $"{report.PixelDiff.DiffRatio:P2} pixel difference " +
-            $"({report.PixelDiff.DiffPixelCount}/{report.PixelDiff.TotalPixelCount} pixels differ). " +
-            $"Threshold: {Config.DiffThreshold:P2}. " +
-            $"Classification: {report.Classification?.ToString() ?? "N/A"}. " +
-            $"Report: {ReportDir}");
+        // Detect float/block overlaps in the Broiler fragment tree
+        var overlaps = DifferentialTestRunner.DetectFloatOverlaps(html, Config.RenderConfig);
+
+        var msg = new StringBuilder();
+        msg.Append($"Acid1 differential test '{testName}': ");
+        msg.Append($"{report.PixelDiff.DiffRatio:P2} pixel difference ");
+        msg.Append($"({report.PixelDiff.DiffPixelCount}/{report.PixelDiff.TotalPixelCount} pixels differ). ");
+        msg.Append($"Threshold: {Config.DiffThreshold:P2}. ");
+        msg.Append($"Classification: {report.Classification?.ToString() ?? "N/A"}. ");
+
+        if (overlaps.Count > 0)
+        {
+            msg.AppendLine();
+            msg.AppendLine($"Float/block overlaps detected ({overlaps.Count}):");
+            foreach (var o in overlaps)
+                msg.AppendLine($"  • {o.FragmentA} overlaps {o.FragmentB}");
+        }
+
+        msg.Append($"Report: {ReportDir}");
+
+        // Fail if pixel diff exceeds threshold OR float overlaps are detected
+        Assert.True(report.IsPass && overlaps.Count == 0, msg.ToString());
     }
 
     private static string GetSourceDirectory([CallerFilePath] string path = "")
