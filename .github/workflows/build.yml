@@ -30,7 +30,7 @@ jobs:
       run: dotnet build Broiler.slnx --no-restore --configuration Release
 
     - name: Test
-      run: dotnet test Broiler.slnx --no-build --configuration Release --verbosity normal --filter "Category!=Differential"
+      run: dotnet test Broiler.slnx --no-build --configuration Release --verbosity normal --filter "Category!=Differential&Category!=DifferentialReport"
 
     - name: Acid1 Tests
       # Dedicated Acid1 step for clear pass/fail visibility in CI.
