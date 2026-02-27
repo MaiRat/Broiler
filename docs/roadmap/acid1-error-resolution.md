@@ -163,11 +163,10 @@ composite diff below 5 %.
    `padding: 1em`.  Verify that the percentage resolves against 340 px
    (the content width), not 380 px (the border-box width).
 2. [ ] Compare the resolved pixel width of `dt` (`width: 10.638 %` of the
-   `dl`'s content width) between Broiler and Chromium.  The `dl` has
-   `padding: .5em` and the `body` has `width: 48em`, so the `dl`'s content
-   width should be 48em − 0.5em × 2 = 47em (after body border of .5em is
-   accounted for by the width property).  10.638 % of 47em = 4.99986em ≈
-   50 px.
+   `dl`'s content width) between Broiler and Chromium.  The `body` has
+   `width: 48em` (content width) and the `dl` has `padding: .5em` per side
+   with `margin: 0` and `border: 0`, so the `dl`'s content width is
+   48em − 0.5em × 2 = 47em.  10.638 % of 47em = 4.99986em ≈ 50 px.
 3. [ ] Check whether `min-width` and `max-width` on the `dd` (both set to
    `34em`) interact correctly with the percentage width resolution of child
    elements.
@@ -259,13 +258,13 @@ and will never reach 0 % without using identical text rendering backends.
 As fix priorities are completed, the differential test threshold should be
 tightened:
 
-| Milestone | Threshold | Trigger |
-|-----------|-----------|---------|
+| Milestone | Threshold | Prerequisite |
+|-----------|-----------|--------------|
 | Current | 20 % | All sections pass |
-| After Priority 1 | 12 % | Section 9 < 5 % |
-| After Priorities 1–3 | 8 % | All sections < 5 % |
-| After Priorities 1–4 | 5 % | All sections < 1.5 % |
-| Final target | 3 % | Font rasterisation only |
+| After Priority 1 | 12 % | Section 9 drops below 5 % |
+| After Priorities 1–3 | 8 % | All sections drop below 5 % |
+| After Priorities 1–4 | 5 % | All sections drop below 1.5 % |
+| Final target | 3 % | Only font rasterisation diffs remain |
 
 ---
 
