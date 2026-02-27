@@ -80,6 +80,26 @@ public class Acid1SplitTests : IDisposable
     private static bool IsRed(SKColor p) => p.Red > 150 && p.Green < 50 && p.Blue < 50;
     private static bool IsGold(SKColor p) => p.Red > 230 && p.Green > 150 && p.Green < 230 && p.Blue < 30;
 
+    /// <summary>
+    /// Returns the bounding box (minX, minY, maxX, maxY) of pixels
+    /// matching a predicate, or <c>null</c> if no pixels match.
+    /// </summary>
+    private static (int minX, int minY, int maxX, int maxY)? GetColorBounds(
+        SKBitmap bitmap, Func<SKColor, bool> predicate)
+    {
+        int minX = bitmap.Width, minY = bitmap.Height, maxX = -1, maxY = -1;
+        for (int y = 0; y < bitmap.Height; y++)
+            for (int x = 0; x < bitmap.Width; x++)
+                if (predicate(bitmap.GetPixel(x, y)))
+                {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+        return maxX < 0 ? null : (minX, minY, maxX, maxY);
+    }
+
     // -------------------------------------------------------------------------
     // Section 1: Body border and backgrounds
     // -------------------------------------------------------------------------
@@ -384,6 +404,38 @@ public class Acid1SplitTests : IDisposable
         Assert.True(blackPixels > 50,
             $"Expected >50 black pixels from blockquote asymmetric borders, found {blackPixels}. " +
             "The blockquote asymmetric border-width may not be rendered.");
+    }
+
+    /// <summary>
+    /// Verifies that the bottom border (2em) of the blockquote in Section 5
+    /// is visibly thicker than the top border (1em), confirming that
+    /// asymmetric em-unit border widths are resolved and rendered correctly.
+    /// </summary>
+    [Fact]
+    public void Section5_BlockquoteFloat_BottomBorderThickerThanTop()
+    {
+        var html = ReadSplitHtml("section5-blockquote-float.html");
+        using var bitmap = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
+
+        var goldBounds = GetColorBounds(bitmap, IsGold);
+        var blackBounds = GetColorBounds(bitmap, IsBlack);
+
+        Assert.NotNull(goldBounds);
+        Assert.NotNull(blackBounds);
+
+        // Count black pixels in the top border region (above gold)
+        int topBorderBlack = CountPixels(bitmap, IsBlack,
+            goldBounds.Value.minX, blackBounds.Value.minY,
+            goldBounds.Value.maxX + 1, goldBounds.Value.minY);
+        // Count black pixels in the bottom border region (below gold)
+        int bottomBorderBlack = CountPixels(bitmap, IsBlack,
+            goldBounds.Value.minX, goldBounds.Value.maxY + 1,
+            goldBounds.Value.maxX + 1, blackBounds.Value.maxY + 1);
+
+        Assert.True(bottomBorderBlack > topBorderBlack,
+            $"Bottom border (2em) should have more black pixels ({bottomBorderBlack}) " +
+            $"than top border (1em, {topBorderBlack}). " +
+            "Asymmetric em-unit border rendering may be incorrect in Section 5.");
     }
 
     // -------------------------------------------------------------------------
