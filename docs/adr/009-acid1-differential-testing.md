@@ -156,12 +156,33 @@ Playwright Chromium 145.0.7632.6. All pixel-diff ratios are measured at
   - `Section1_BodyBorder_RepeatedRender_IsDeterministic`
   - `Section9_PercentageWidth_RepeatedRender_IsDeterministic`
 
-### Priority 3 – Border Rendering (Section 5)
+### Priority 3 – Border Rendering (Section 5) ✅ Fixed
 
-- **Asymmetric borders:** Support different widths per side
-  (`border-width: 1em 1.5em 2em .5em`).
-- **Em-unit borders:** Ensure `em`-based border widths are resolved against
-  the element's computed `font-size`.
+- ✅ **Asymmetric borders:** Solid borders with different widths per side
+  (`border-width: 1em 1.5em 2em .5em`) are now rendered as CSS-compliant
+  trapezoids instead of thick lines. Each border side is drawn as a filled
+  polygon with proper diagonal corner joins, matching how Chromium renders
+  asymmetric solid borders.
+- ✅ **Em-unit borders:** Verified that `em`-based border widths are correctly
+  resolved against the element's computed `font-size` via
+  `CssValueParser.GetActualBorderWidth()` → `ParseLength()`.
+
+#### Changes Made
+
+- `RGraphicsRasterBackend.RenderDrawBorder()`: Changed solid border rendering
+  from thick lines (`DrawLine` with pen width) to filled polygons
+  (`DrawPolygon` with 4-point trapezoid), matching the approach used by the
+  old `BordersDrawHandler` for inset/outset borders. Dotted and dashed borders
+  continue to use the line-based approach for correct dash pattern rendering.
+- Added 1 new IR test in `IRTypesTests.cs`:
+  - `PaintWalker_AsymmetricBorder_EmitsDrawBorderItemWithCorrectWidths`
+- Added 4 new programmatic tests in `Acid1ProgrammaticTests.cs`:
+  - `AsymmetricBorder_EmUnit_BottomWiderThanTop`
+  - `AsymmetricBorder_EmUnit_RightWiderThanLeft`
+  - `AsymmetricBorder_Solid_NoCornersGap`
+  - `AsymmetricBorder_Acid1Section5_CorrectBorderBoxSize`
+- Added 1 new split test in `Acid1SplitTests.cs`:
+  - `Section5_BlockquoteFloat_BottomBorderThickerThanTop`
 
 ### Priority 4 – Typography (Section 7)
 

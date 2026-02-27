@@ -77,33 +77,82 @@ internal sealed class RGraphicsRasterBackend : IRasterBackend
         // Top border
         if (widths.Top > 0 && item.TopColor.A > 0 && IsBorderStyleVisible(item.TopStyle))
         {
-            var pen = CreateBorderPen(g, item.TopStyle, item.TopColor, widths.Top);
-            g.DrawLine(pen, Math.Ceiling(bounds.Left), bounds.Top + widths.Top / 2,
-                bounds.Right - 1, bounds.Top + widths.Top / 2);
+            if (item.TopStyle == "solid")
+            {
+                // Trapezoid rendering for correct corner joins with asymmetric widths
+                var pts = new PointF[4];
+                pts[0] = new PointF(bounds.Left, bounds.Top);
+                pts[1] = new PointF(bounds.Right, bounds.Top);
+                pts[2] = new PointF((float)(bounds.Right - widths.Right), (float)(bounds.Top + widths.Top));
+                pts[3] = new PointF((float)(bounds.Left + widths.Left), (float)(bounds.Top + widths.Top));
+                g.DrawPolygon(g.GetSolidBrush(item.TopColor), pts);
+            }
+            else
+            {
+                var pen = CreateBorderPen(g, item.TopStyle, item.TopColor, widths.Top);
+                g.DrawLine(pen, Math.Ceiling(bounds.Left), bounds.Top + widths.Top / 2,
+                    bounds.Right - 1, bounds.Top + widths.Top / 2);
+            }
         }
 
         // Left border
         if (widths.Left > 0 && item.LeftColor.A > 0 && IsBorderStyleVisible(item.LeftStyle))
         {
-            var pen = CreateBorderPen(g, item.LeftStyle, item.LeftColor, widths.Left);
-            g.DrawLine(pen, bounds.Left + widths.Left / 2, Math.Ceiling(bounds.Top),
-                bounds.Left + widths.Left / 2, Math.Floor(bounds.Bottom));
+            if (item.LeftStyle == "solid")
+            {
+                var pts = new PointF[4];
+                pts[0] = new PointF(bounds.Left, bounds.Top);
+                pts[1] = new PointF((float)(bounds.Left + widths.Left), (float)(bounds.Top + widths.Top));
+                pts[2] = new PointF((float)(bounds.Left + widths.Left), (float)(bounds.Bottom - widths.Bottom));
+                pts[3] = new PointF(bounds.Left, bounds.Bottom);
+                g.DrawPolygon(g.GetSolidBrush(item.LeftColor), pts);
+            }
+            else
+            {
+                var pen = CreateBorderPen(g, item.LeftStyle, item.LeftColor, widths.Left);
+                g.DrawLine(pen, bounds.Left + widths.Left / 2, Math.Ceiling(bounds.Top),
+                    bounds.Left + widths.Left / 2, Math.Floor(bounds.Bottom));
+            }
         }
 
         // Bottom border
         if (widths.Bottom > 0 && item.BottomColor.A > 0 && IsBorderStyleVisible(item.BottomStyle))
         {
-            var pen = CreateBorderPen(g, item.BottomStyle, item.BottomColor, widths.Bottom);
-            g.DrawLine(pen, Math.Ceiling(bounds.Left), bounds.Bottom - widths.Bottom / 2,
-                bounds.Right - 1, bounds.Bottom - widths.Bottom / 2);
+            if (item.BottomStyle == "solid")
+            {
+                var pts = new PointF[4];
+                pts[0] = new PointF((float)(bounds.Left + widths.Left), (float)(bounds.Bottom - widths.Bottom));
+                pts[1] = new PointF((float)(bounds.Right - widths.Right), (float)(bounds.Bottom - widths.Bottom));
+                pts[2] = new PointF(bounds.Right, bounds.Bottom);
+                pts[3] = new PointF(bounds.Left, bounds.Bottom);
+                g.DrawPolygon(g.GetSolidBrush(item.BottomColor), pts);
+            }
+            else
+            {
+                var pen = CreateBorderPen(g, item.BottomStyle, item.BottomColor, widths.Bottom);
+                g.DrawLine(pen, Math.Ceiling(bounds.Left), bounds.Bottom - widths.Bottom / 2,
+                    bounds.Right - 1, bounds.Bottom - widths.Bottom / 2);
+            }
         }
 
         // Right border
         if (widths.Right > 0 && item.RightColor.A > 0 && IsBorderStyleVisible(item.RightStyle))
         {
-            var pen = CreateBorderPen(g, item.RightStyle, item.RightColor, widths.Right);
-            g.DrawLine(pen, bounds.Right - widths.Right / 2, Math.Ceiling(bounds.Top),
-                bounds.Right - widths.Right / 2, Math.Floor(bounds.Bottom));
+            if (item.RightStyle == "solid")
+            {
+                var pts = new PointF[4];
+                pts[0] = new PointF((float)(bounds.Right - widths.Right), (float)(bounds.Top + widths.Top));
+                pts[1] = new PointF(bounds.Right, bounds.Top);
+                pts[2] = new PointF(bounds.Right, bounds.Bottom);
+                pts[3] = new PointF((float)(bounds.Right - widths.Right), (float)(bounds.Bottom - widths.Bottom));
+                g.DrawPolygon(g.GetSolidBrush(item.RightColor), pts);
+            }
+            else
+            {
+                var pen = CreateBorderPen(g, item.RightStyle, item.RightColor, widths.Right);
+                g.DrawLine(pen, bounds.Right - widths.Right / 2, Math.Ceiling(bounds.Top),
+                    bounds.Right - widths.Right / 2, Math.Floor(bounds.Bottom));
+            }
         }
     }
 

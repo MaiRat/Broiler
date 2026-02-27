@@ -741,6 +741,45 @@ public class IRTypesTests
     }
 
     [Fact]
+    public void PaintWalker_AsymmetricBorder_EmitsDrawBorderItemWithCorrectWidths()
+    {
+        // Acid1 Section 5: border-width: 1em 1.5em 2em .5em → 10 15 20 5 at 10px font
+        var fragment = new Fragment
+        {
+            Location = new PointF(20, 10),
+            Size = new SizeF(70, 140),
+            Border = new BoxEdges(10, 15, 20, 5),
+            Style = new ComputedStyle
+            {
+                Display = "block",
+                Visibility = "visible",
+                BorderTopStyle = "solid",
+                BorderRightStyle = "solid",
+                BorderBottomStyle = "solid",
+                BorderLeftStyle = "solid",
+                Border = new BoxEdges(10, 15, 20, 5),
+                ActualBorderTopColor = Color.Black,
+                ActualBorderRightColor = Color.Black,
+                ActualBorderBottomColor = Color.Black,
+                ActualBorderLeftColor = Color.Black,
+            },
+        };
+
+        var displayList = PaintWalker.Paint(fragment);
+        var borderItems = displayList.Items.OfType<DrawBorderItem>().ToList();
+        Assert.Single(borderItems);
+        var item = borderItems[0];
+        Assert.Equal(10, item.Widths.Top);
+        Assert.Equal(15, item.Widths.Right);
+        Assert.Equal(20, item.Widths.Bottom);
+        Assert.Equal(5, item.Widths.Left);
+        Assert.Equal(Color.Black, item.TopColor);
+        Assert.Equal(Color.Black, item.RightColor);
+        Assert.Equal(Color.Black, item.BottomColor);
+        Assert.Equal(Color.Black, item.LeftColor);
+    }
+
+    [Fact]
     public void PaintWalker_TextInline_EmitsDrawTextItem()
     {
         var inlineStyle = new ComputedStyle

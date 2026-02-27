@@ -1298,4 +1298,176 @@ public class Acid1ProgrammaticTests
             $"dt width (10.638%) should be ~50px, but measured {dtWidth}px. " +
             "Percentage width resolution with canvas bg propagation may be incorrect.");
     }
+
+    // -----------------------------------------------------------------
+    // Priority 3: Asymmetric border rendering (CSS1 Section 5)
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that a blockquote with asymmetric em-unit borders
+    /// (<c>border-width: 1em 1.5em 2em .5em</c>) renders each border
+    /// side with the correct proportional width. The bottom border (2em)
+    /// should be twice as wide as the top border (1em), and the right
+    /// border (1.5em) should be three times wider than the left (.5em).
+    /// </summary>
+    [Fact]
+    public void AsymmetricBorder_EmUnit_BottomWiderThanTop()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            blockquote {
+              margin: 20px;
+              border-width: 1em 1.5em 2em .5em;
+              border-style: solid; border-color: black;
+              padding: 0; width: 5em; height: 5em;
+              background-color: #FC0;
+            }
+        </style></head><body><blockquote>x</blockquote></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 200, 150);
+
+        var goldBounds = GetColorBounds(bitmap, IsGold);
+        var blackBounds = GetColorBounds(bitmap, IsBlack);
+
+        Assert.NotNull(goldBounds);
+        Assert.NotNull(blackBounds);
+
+        // Bottom border (2em = 20px) should be thicker than top border (1em = 10px).
+        // Measure black pixels above and below the gold region.
+        int blackAboveGold = CountPixels(bitmap, IsBlack,
+            blackBounds.Value.minX, blackBounds.Value.minY,
+            blackBounds.Value.maxX + 1, goldBounds.Value.minY);
+        int blackBelowGold = CountPixels(bitmap, IsBlack,
+            blackBounds.Value.minX, goldBounds.Value.maxY + 1,
+            blackBounds.Value.maxX + 1, blackBounds.Value.maxY + 1);
+
+        Assert.True(blackBelowGold > blackAboveGold,
+            $"Bottom border (2em) should have more black pixels ({blackBelowGold}) " +
+            $"than top border (1em, {blackAboveGold}). " +
+            "Asymmetric em-unit borders may not be rendering correctly.");
+    }
+
+    /// <summary>
+    /// Verifies that the left border (.5em = 5px) is narrower than the
+    /// right border (1.5em = 15px) for a blockquote with asymmetric borders.
+    /// </summary>
+    [Fact]
+    public void AsymmetricBorder_EmUnit_RightWiderThanLeft()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            blockquote {
+              margin: 20px;
+              border-width: 1em 1.5em 2em .5em;
+              border-style: solid; border-color: black;
+              padding: 0; width: 5em; height: 5em;
+              background-color: #FC0;
+            }
+        </style></head><body><blockquote>x</blockquote></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 200, 150);
+
+        var goldBounds = GetColorBounds(bitmap, IsGold);
+        var blackBounds = GetColorBounds(bitmap, IsBlack);
+
+        Assert.NotNull(goldBounds);
+        Assert.NotNull(blackBounds);
+
+        // Left border (.5em = 5px) should be narrower than right (1.5em = 15px).
+        int blackLeftOfGold = CountPixels(bitmap, IsBlack,
+            blackBounds.Value.minX, blackBounds.Value.minY,
+            goldBounds.Value.minX, blackBounds.Value.maxY + 1);
+        int blackRightOfGold = CountPixels(bitmap, IsBlack,
+            goldBounds.Value.maxX + 1, blackBounds.Value.minY,
+            blackBounds.Value.maxX + 1, blackBounds.Value.maxY + 1);
+
+        Assert.True(blackRightOfGold > blackLeftOfGold,
+            $"Right border (1.5em) should have more black pixels ({blackRightOfGold}) " +
+            $"than left border (.5em, {blackLeftOfGold}). " +
+            "Asymmetric em-unit borders may not be rendering correctly.");
+    }
+
+    /// <summary>
+    /// Verifies that asymmetric borders do not leave gaps or visible
+    /// background at the corners. With solid borders, the corner diagonal
+    /// joins should be filled.
+    /// </summary>
+    [Fact]
+    public void AsymmetricBorder_Solid_NoCornersGap()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            div {
+              margin: 30px;
+              border-width: 10px 20px 15px 5px;
+              border-style: solid; border-color: black;
+              padding: 0; width: 60px; height: 40px;
+              background-color: #FC0;
+            }
+        </style></head><body><div>x</div></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 200, 150);
+
+        // Check the top-right corner area: between gold and the outer edge,
+        // there should be no white (background) pixels leaking through.
+        // The corner area spans from (gold.maxX, border.minY) to (border.maxX, gold.minY).
+        var goldBounds = GetColorBounds(bitmap, IsGold);
+        var blackBounds = GetColorBounds(bitmap, IsBlack);
+
+        Assert.NotNull(goldBounds);
+        Assert.NotNull(blackBounds);
+
+        // Sample pixels in the top-right corner region
+        int cornerWhite = CountPixels(bitmap, IsWhite,
+            goldBounds.Value.maxX + 1, blackBounds.Value.minY,
+            blackBounds.Value.maxX + 1, goldBounds.Value.minY);
+
+        Assert.True(cornerWhite == 0,
+            $"Found {cornerWhite} white pixels in the top-right corner region. " +
+            "Solid asymmetric borders should have no gaps at corners.");
+    }
+
+    /// <summary>
+    /// Verifies that Acid1 Section 5 blockquote renders with the correct
+    /// overall border-box dimensions when using em-unit asymmetric borders.
+    /// Content: 5em×9em = 50×90px, border: 1em 1.5em 2em .5em = 10+15+20+5,
+    /// padding: 1em 0 = 10px top/bottom → total ~70×140px border-box.
+    /// </summary>
+    [Fact]
+    public void AsymmetricBorder_Acid1Section5_CorrectBorderBoxSize()
+    {
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; background-color: white; }
+            blockquote {
+              margin: 10px;
+              border-width: 1em 1.5em 2em .5em;
+              border-style: solid; border-color: black;
+              padding: 1em 0; width: 5em; height: 9em;
+              float: left; background-color: #FC0;
+            }
+        </style></head><body><blockquote>bar maids,</blockquote></body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 200, 200);
+
+        var blackBounds = GetColorBounds(bitmap, IsBlack);
+        Assert.NotNull(blackBounds);
+
+        int bboxWidth = blackBounds.Value.maxX - blackBounds.Value.minX + 1;
+        int bboxHeight = blackBounds.Value.maxY - blackBounds.Value.minY + 1;
+
+        // Expected border-box: width = 50 + 5 + 15 = 70px, height = 90 + 10 + 10 + 20 = 140px
+        // (content + left-border + right-border, content + top-border + padding-top + padding-bottom + bottom-border)
+        // Allow ±5px tolerance for sub-pixel rounding.
+        Assert.True(bboxWidth >= 60 && bboxWidth <= 80,
+            $"Border-box width should be ~70px (5em content + .5em left + 1.5em right), " +
+            $"but measured {bboxWidth}px.");
+
+        Assert.True(bboxHeight >= 125 && bboxHeight <= 155,
+            $"Border-box height should be ~140px (9em content + 1em padding*2 + 1em top + 2em bottom), " +
+            $"but measured {bboxHeight}px.");
+    }
 }
