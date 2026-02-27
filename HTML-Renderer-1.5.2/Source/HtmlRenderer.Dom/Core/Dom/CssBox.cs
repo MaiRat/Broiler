@@ -750,7 +750,10 @@ internal class CssBox : CssBoxProperties, IDisposable
 
         // Use the maximum ActualBottom across all children to handle
         // floated children that may not be the last in source order.
-        double maxChildBottom = 0;
+        // Initialize to the content-area top so that padding is preserved
+        // even when all children are floated (CSS2.1 §10.6.3: content
+        // height is zero but padding is additive).
+        double maxChildBottom = Location.Y + ActualBorderTopWidth + ActualPaddingTop;
         
         foreach (var child in Boxes)
         {

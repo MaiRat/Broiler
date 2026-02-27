@@ -1855,4 +1855,98 @@ public class Acid1ProgrammaticTests
             "Percentage may be resolving against padding-box or border-box " +
             "instead of content-box width.");
     }
+
+    /// <summary>
+    /// CSS2.1 §10.6.3 / §9.5.2: When a parent has an explicit height and
+    /// its floated siblings extend beyond that height, the subsequent
+    /// <c>clear: both</c> element must clear to the bottom of the tallest
+    /// float, not the parent's explicit height boundary.  This validates
+    /// the Acid1 Section 10 scenario: <c>dt</c> (height:28em, float:left)
+    /// and <c>dd</c> (height:27em, float:right) are siblings inside a
+    /// <c>dl</c>, and <c>clear:both</c> clears below both.
+    /// </summary>
+    [Fact]
+    public void ExplicitHeight_FloatOverflow_ClearanceBelowFloat()
+    {
+        // dt: float:left, 80px content + 10px padding + 5px border = 95px border-box height
+        // dd: float:right, 70px content + 10px padding + 10px border = 90px border-box height
+        // dt is taller.  clear:both paragraph must start at y = dt border-box bottom.
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; }
+            dl { margin: 0; border: 0; padding: 5px; }
+            dt { float: left; width: 50px; height: 80px; padding: 5px;
+                 border: 2.5px solid black; margin: 0; background-color: red; }
+            dd { float: right; width: 200px; height: 70px; padding: 5px;
+                 border: 5px solid black; margin: 0; }
+            p { margin: 0; }
+        </style></head><body>
+            <dl>
+                <dt>dt</dt>
+                <dd>dd</dd>
+            </dl>
+            <p style='clear: both; background-color: rgb(0,128,0); height: 20px;'>cleared</p>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 200);
+
+        var redBounds = GetColorBounds(bitmap, IsRed);
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+
+        Assert.NotNull(redBounds);
+        Assert.NotNull(greenBounds);
+
+        // dt border-box height: 80 + 10 (padding) + 5 (border) = 95px
+        // dt starts at y = dl.paddingTop = 5
+        // dt bottom = 5 + 95 = 100
+        // dd border-box height: 70 + 10 + 10 = 90px → dd bottom = 5 + 90 = 95
+        // dt is taller → clearance bottom = 100
+        // Cleared p must start at y ≈ 100 (± tolerance for sub-pixel)
+        Assert.True(greenBounds.Value.minY >= redBounds.Value.maxY - 1,
+            $"Cleared paragraph starts at y={greenBounds.Value.minY}, " +
+            $"but dt (taller float) ends at y={redBounds.Value.maxY}. " +
+            "CSS2.1 §9.5.2: clear:both must clear to the tallest float's " +
+            "border-box bottom, not the shorter float's.");
+
+        // The cleared p should not be more than 5px below the float
+        // (tolerance for margin-box clearance)
+        Assert.True(greenBounds.Value.minY <= redBounds.Value.maxY + 5,
+            $"Cleared paragraph at y={greenBounds.Value.minY} is too far " +
+            $"below dt bottom at y={redBounds.Value.maxY}. " +
+            "Excessive clearance gap detected.");
+    }
+
+    /// <summary>
+    /// CSS2.1 §10.6.3: A non-BFC block element whose children are all
+    /// floated should still have its padding contribute to the box height
+    /// (content height is zero, but padding is additive).
+    /// </summary>
+    [Fact]
+    public void AllFloatedChildren_ParentPaddingPreserved()
+    {
+        // Parent: padding 10px, no border, all children floated.
+        // Expected: parent height = paddingTop + paddingBottom = 20px
+        // (content height = 0 because all children are out-of-flow).
+        // The next sibling should start 20px below the parent's top.
+        const string html = @"<html><head><style type='text/css'>
+            body { margin: 0; padding: 0; }
+        </style></head><body>
+            <div style='padding: 10px; background-color: red;'>
+                <div style='float: left; width: 50px; height: 50px; background-color: rgb(0,0,255);'>a</div>
+            </div>
+            <div style='background-color: rgb(0,128,0); height: 20px;'>b</div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 100);
+
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+        Assert.NotNull(greenBounds);
+
+        // The green div should start at y = 20 (parent paddingTop + paddingBottom).
+        // Without the fix, the parent collapses to zero height, and
+        // the green div starts at y = 0 (overlapping the parent).
+        Assert.True(greenBounds.Value.minY >= 15,
+            $"Next sibling starts at y={greenBounds.Value.minY}, expected >= 15. " +
+            "Parent with all-floated children should preserve its padding " +
+            "(CSS2.1 §10.6.3: padding is additive to zero content height).");
+    }
 }
