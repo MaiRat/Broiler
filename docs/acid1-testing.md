@@ -145,19 +145,23 @@ dotnet test src/Broiler.Cli.Tests/ --filter "FullyQualifiedName~Acid1" --verbosi
 
 ## Current Status
 
-The Acid1 test suite currently achieves approximately **45% similarity** with
-the W3C reference rendering. Recent improvements include:
+All four fix priorities from ADR-009 have been completed.  The Acid1 test
+suite now achieves **< 12 % pixel diff** against headless Chromium for the
+full page, with most individual sections below 3 %.  Recent improvements:
 
-- **Priority 1 (Float Layout):** Fixed float positioning algorithm for CSS1
-  §5.5.25/5.5.26 compliance. Sections 2–6 now render with correct float
-  stacking and collision detection.
-- **Priority 2 (Box Model / Canvas Background):** Implemented CSS2.1 §14.2
-  canvas background propagation. The `html` element's background now fills
-  the entire viewport, matching Chromium's behaviour for Sections 1 and 9.
+- **Priority 1 (Float Layout):** ✅ Fixed. Sections 2–6 dropped from
+  82–92 % to < 2 %.
+- **Priority 2 (Box Model / Canvas Background):** ✅ Fixed. Section 1
+  89.97 % → 1.64 %, Section 9 84.64 % → 10.67 %.
+- **Priority 3 (Border Rendering):** ✅ Fixed. Section 5 92.00 % → 0.57 %.
+- **Priority 4 (Typography / Line-Height):** ✅ Fixed. Section 7
+  85.22 % → 1.55 %.
 
-The remaining differences are attributed to border rendering (Priority 3) and
-typography/line-height (Priority 4). See
-[ADR-009](adr/009-acid1-differential-testing.md) for the fix roadmap.
+Remaining differences are primarily due to percentage-width containing-block
+resolution (Section 9), clear distance computation, and cross-engine font
+rasterisation.  See the
+[Acid1 Error Resolution Roadmap](roadmap/acid1-error-resolution.md) for the
+next-phase fix plan.
 
 ## Differential Testing (Chromium Comparison)
 
@@ -199,20 +203,22 @@ JSON diagnostics (fragment tree, display list).
 
 | Section | CSS1 Feature | Pixel Diff |
 |---------|-------------|-----------|
-| Full page | All features combined | < 50 % |
-| 1 – Body border | html/body backgrounds + border | 89.97 % |
-| 2 – dt float:left | Float + percentage width | 86.30 % |
-| 3 – dd float:right | Float + border + side-by-side | 84.16 % |
-| 4 – li float:left | Multiple float stacking | 82.05 % |
-| 5 – blockquote | Float + asymmetric borders | 92.00 % |
-| 6 – h1 float | Float + black background | 91.23 % |
-| 7 – form line-height | line-height: 1.9 | 85.22 % |
-| 8 – clear:both | Clear after floats | 72.17 % |
-| 9 – % width | Percentage widths | 84.64 % |
-| 10 – dd height | Content-box height | < 50 % |
+| Full page | All features combined | 11.26 % |
+| 1 – Body border | html/body backgrounds + border | 1.64 % |
+| 2 – dt float:left | Float + percentage width | 0.89 % |
+| 3 – dd float:right | Float + border + side-by-side | 0.65 % |
+| 4 – li float:left | Multiple float stacking | 1.05 % |
+| 5 – blockquote | Float + asymmetric borders | 0.57 % |
+| 6 – h1 float | Float + black background | 0.65 % |
+| 7 – form line-height | line-height: 1.9 | 1.55 % |
+| 8 – clear:both | Clear after floats | 2.84 % |
+| 9 – % width | Percentage widths | 10.67 % |
+| 10 – dd height | Content-box height | 2.36 % |
 
-See [ADR-009](adr/009-acid1-differential-testing.md) for detailed error
-documentation and the fix roadmap.
+See [ADR-009](adr/009-acid1-differential-testing.md) for the original error
+documentation and fix roadmap, and the
+[Acid1 Error Resolution Roadmap](roadmap/acid1-error-resolution.md) for the
+next-phase plan.
 
 ## Troubleshooting
 
