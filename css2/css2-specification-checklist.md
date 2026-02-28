@@ -9,6 +9,37 @@ audit CSS 2.1 support in the html-renderer.
 
 ---
 
+## Chapter Checklists
+
+Detailed per-chapter checklists with granular specification rules and
+implementation targets:
+
+| Chapter | Title | Checklist |
+|---------|-------|-----------|
+| 1 | About the CSS 2.1 Specification | [chapter-1-checklist.md](chapter-1-checklist.md) |
+| 2 | Introduction to CSS 2.1 | [chapter-2-checklist.md](chapter-2-checklist.md) |
+| 3 | Conformance: Requirements and Recommendations | [chapter-3-checklist.md](chapter-3-checklist.md) |
+| 4 | Syntax and Basic Data Types | [chapter-4-checklist.md](chapter-4-checklist.md) |
+| 5 | Selectors | [chapter-5-checklist.md](chapter-5-checklist.md) |
+| 6 | Cascading and Inheritance | [chapter-6-checklist.md](chapter-6-checklist.md) |
+| 7 | Media Types | [chapter-7-checklist.md](chapter-7-checklist.md) |
+| 8 | Box Model | [chapter-8-checklist.md](chapter-8-checklist.md) |
+| 9 | Visual Formatting Model | [chapter-9-checklist.md](chapter-9-checklist.md) |
+| 10 | Visual Formatting Model Details | [chapter-10-checklist.md](chapter-10-checklist.md) |
+| 11 | Visual Effects | [chapter-11-checklist.md](chapter-11-checklist.md) |
+| 12 | Generated Content, Automatic Numbering, and Lists | [chapter-12-checklist.md](chapter-12-checklist.md) |
+| 13 | Paged Media | [chapter-13-checklist.md](chapter-13-checklist.md) |
+| 14 | Colors and Backgrounds | [chapter-14-checklist.md](chapter-14-checklist.md) |
+| 15 | Fonts | [chapter-15-checklist.md](chapter-15-checklist.md) |
+| 16 | Text | [chapter-16-checklist.md](chapter-16-checklist.md) |
+| 17 | Tables | [chapter-17-checklist.md](chapter-17-checklist.md) |
+| 18 | User Interface | [chapter-18-checklist.md](chapter-18-checklist.md) |
+| A | Aural Style Sheets | [appendix-a-checklist.md](appendix-a-checklist.md) |
+| D | Default Style Sheet for HTML 4 | [appendix-d-checklist.md](appendix-d-checklist.md) |
+| E | Elaborate Description of Stacking Contexts | [appendix-e-checklist.md](appendix-e-checklist.md) |
+
+---
+
 ## Chapter 4 — Syntax and Basic Data Types
 
 - [ ] Tokenization and parsing rules
