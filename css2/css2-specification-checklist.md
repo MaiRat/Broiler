@@ -340,23 +340,37 @@ implementation targets:
 
 ### 17.1–17.4 Table Model
 
-- [ ] Table box generation (`display: table`, `inline-table`)
-- [ ] Table row/column/cell/caption box generation
-- [ ] Anonymous table objects (missing wrappers)
-- [ ] Table layers: cells → rows → row groups → columns → column groups → table
+- [x] Table box generation (`display: table`, `inline-table`)
+  <!-- Verified: Css2Chapter17Tests – S17_2_DisplayTable_BlockLevel, S17_2_DisplayInlineTable -->
+- [x] Table row/column/cell/caption box generation
+  <!-- Verified: Css2Chapter17Tests – S17_2_DisplayTableRow through S17_2_DisplayTableCaption -->
+- [x] Anonymous table objects (missing wrappers)
+  <!-- Verified: Css2Chapter17Tests – S17_2_1_* tests for anonymous table/row/column wrappers -->
+- [x] Table layers: cells → rows → row groups → columns → column groups → table
+  <!-- Verified: Css2Chapter17Tests – S17_5_1_* layer tests (1-6) -->
 
 ### 17.5–17.6 Table Layout
 
-- [ ] `table-layout: auto` — automatic layout algorithm
-- [ ] `table-layout: fixed` — fixed layout algorithm
-- [ ] `border-collapse: separate` — separate border model
-- [ ] `border-collapse: collapse` — collapsing border model
-- [ ] `border-spacing` — spacing between cell borders (separate model)
-- [ ] `empty-cells: show | hide` — rendering of empty cells (separate model)
-- [ ] `caption-side: top | bottom` — caption position
-- [ ] Border conflict resolution in collapsing model
-- [ ] Column width computation
-- [ ] Horizontal and vertical alignment in cells
+- [x] `table-layout: auto` — automatic layout algorithm
+  <!-- Verified: Css2Chapter17Tests – S17_5_2_2_AutoLayout_* tests -->
+- [x] `table-layout: fixed` — fixed layout algorithm
+  <!-- Verified: Css2Chapter17Tests – S17_5_2_1_FixedLayout_* tests -->
+- [x] `border-collapse: separate` — separate border model
+  <!-- Verified: Css2Chapter17Tests – S17_6_1_SeparateBorders, S17_6_1_Golden_SeparateBorders -->
+- [x] `border-collapse: collapse` — collapsing border model
+  <!-- Verified: Css2Chapter17Tests – S17_6_2_CollapsingBorders, S17_6_2_Golden_CollapsingBorders -->
+- [x] `border-spacing` — spacing between cell borders (separate model)
+  <!-- Verified: Css2Chapter17Tests – S17_6_1_BorderSpacing_OneValue, S17_6_1_BorderSpacing_TwoValues -->
+- [x] `empty-cells: show | hide` — rendering of empty cells (separate model)
+  <!-- Verified: Css2Chapter17Tests – S17_6_1_1_EmptyCellsShow, S17_6_1_1_EmptyCellsHide -->
+- [x] `caption-side: top | bottom` — caption position
+  <!-- Verified: Css2Chapter17Tests – S17_4_1_CaptionSideTop, S17_4_1_CaptionSideBottom -->
+- [x] Border conflict resolution in collapsing model
+  <!-- Verified: Css2Chapter17Tests – S17_6_2_1_* border conflict tests -->
+- [x] Column width computation
+  <!-- Verified: Css2Chapter17Tests – S17_3_ColumnWidthSetsMinimum, S17_5_2_* width algorithm tests -->
+- [x] Horizontal and vertical alignment in cells
+  <!-- Verified: Css2Chapter17Tests – S17_5_4_TextAlignInCells, S17_5_4_ColumnAlignmentInheritance -->
 
 ## Chapter 18 — User Interface
 
