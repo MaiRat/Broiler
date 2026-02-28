@@ -55,17 +55,17 @@ public sealed class DifferentialTestRunner
 
         var pixelDiff = PixelDiffRunner.Compare(normBroiler, normChromium, crossEngineConfig);
 
-        // 5. Classify failure (if any)
-        FailureClassification? classification = null;
-        string? fragmentJson = null;
-        string? displayListJson = null;
+        // 5. Always capture diagnostics and classify the difference so that
+        //    reports contain meaningful data even when the diff is within
+        //    the tolerance (i.e. the test passes).
+        string? fragmentJson = fragmentTree is not null
+            ? FragmentJsonDumper.ToJson(fragmentTree)
+            : null;
+        string? displayListJson = displayList?.ToJson();
 
-        if (!pixelDiff.IsMatch || pixelDiff.DiffRatio > _config.DiffThreshold)
+        FailureClassification? classification = null;
+        if (pixelDiff.DiffPixelCount > 0)
         {
-            fragmentJson = fragmentTree is not null
-                ? FragmentJsonDumper.ToJson(fragmentTree)
-                : null;
-            displayListJson = displayList?.ToJson();
             classification = PixelDiffRunner.ClassifyFailure(
                 html, fragmentJson, displayListJson, renderConfig);
         }
