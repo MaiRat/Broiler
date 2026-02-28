@@ -691,7 +691,9 @@ public class Css2Chapter17Tests
     [Fact]
     public void S17_5_1_Layer6_CellBackground()
     {
-        // Use lime (#00FF00) instead of green (#008000) for reliable channel detection.
+        // Use lime (#00FF00, G=255) instead of green (#008000, G=128) because
+        // the named color green has a low green channel value that does not
+        // exceed the HighChannel threshold (200).
         const string html =
             @"<table style='width:200px;background-color:red;border-collapse:collapse;'>
                 <tr style='background-color:blue;'>
