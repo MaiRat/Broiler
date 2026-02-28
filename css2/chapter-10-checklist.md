@@ -190,5 +190,7 @@ algorithms for computing widths, heights, margins, and line heights.
 
 **Verification summary:** 87/87 checkpoints verified (100%). All verified
 by tests in `Css2Chapter10Tests.cs` (132 tests, 15 golden baselines).
+Multiple tests verify individual checkpoints across different scenarios
+and edge cases.
 
 [← Back to main checklist](css2-specification-checklist.md)

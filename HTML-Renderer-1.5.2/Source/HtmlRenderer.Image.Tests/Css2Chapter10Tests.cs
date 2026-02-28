@@ -497,8 +497,8 @@ public class Css2Chapter10Tests
         var fragment = BuildFragmentTree(html);
         Assert.NotNull(fragment);
         LayoutInvariantChecker.AssertValid(fragment);
-        // Total: 50 + 10 + 20 + 200 + 20 + 10 + 50 = 360, which is < 400.
-        // The element should be positioned correctly within the parent.
+        // Total: 50 + 10 + 20 + 200 + 20 + 10 + 50 = 360 (< 400).
+        // Border-box width = 200 + 20 + 20 + 10 + 10 = 260 (excludes margins).
         var inner = fragment.Children[0].Children[0];
         Assert.True(inner.Size.Width > 255 && inner.Size.Width < 265,
             $"Width (border-box) should be ~260px (200+20+20+10+10), got {inner.Size.Width}");
