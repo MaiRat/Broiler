@@ -51,6 +51,25 @@ public class Acid1DifferentialReportGenerator
     private static readonly string Acid1Dir = Path.Combine(
         GetSourceDirectory(), "..", "..", "..", "acid", "acid1");
 
+    /// <summary>
+    /// Maps each acid1 section to its primary cross-engine difference
+    /// category based on analysis of known discrepancies.
+    /// </summary>
+    internal static readonly Dictionary<string, DifferenceCategory> SectionCategories = new()
+    {
+        ["Full page"] = DifferenceCategory.RenderingEngineBug,
+        ["1 – Body border"] = DifferenceCategory.StyleMismatch,
+        ["2 – `dt` float:left"] = DifferenceCategory.FontRasterisation,
+        ["3 – `dd` float:right"] = DifferenceCategory.FontRasterisation,
+        ["4 – `li` float:left"] = DifferenceCategory.FontRasterisation,
+        ["5 – `blockquote`"] = DifferenceCategory.FontRasterisation,
+        ["6 – `h1` float"] = DifferenceCategory.FontRasterisation,
+        ["7 – `form` line-height"] = DifferenceCategory.StyleMismatch,
+        ["8 – `clear:both`"] = DifferenceCategory.PositionError,
+        ["9 – Percentage width"] = DifferenceCategory.PositionError,
+        ["10 – `dd` height/clearance"] = DifferenceCategory.PositionError
+    };
+
     // ── Report generation ──────────────────────────────────────────
 
     [Fact]
@@ -115,10 +134,13 @@ public class Acid1DifferentialReportGenerator
             if (overlaps.Count > 0 && severity is "Low" or "Medium")
                 severity = "High";
 
+            var category = SectionCategories.GetValueOrDefault(
+                name, DifferenceCategory.RenderingEngineBug);
+
             results.Add(new SectionResult(
                 name, cssFeature, report.PixelDiff.DiffRatio,
                 report.PixelDiff.DiffPixelCount, report.PixelDiff.TotalPixelCount,
-                severity, report.Classification, overlaps.Count));
+                severity, report.Classification, overlaps.Count, category));
         }
 
         var markdown = BuildMarkdown(
@@ -178,13 +200,13 @@ public class Acid1DifferentialReportGenerator
         // ── Observed Errors ────────────────────────────────────────
         sb.AppendLine("## Observed Errors");
         sb.AppendLine();
-        sb.AppendLine("| Section | CSS1 Feature | Pixel Diff | Overlaps | Severity | Classification |");
-        sb.AppendLine("|---------|-------------|-----------|----------|----------|----------------|");
+        sb.AppendLine("| Section | CSS1 Feature | Pixel Diff | Overlaps | Severity | Classification | Category |");
+        sb.AppendLine("|---------|-------------|-----------|----------|----------|----------------|----------|");
 
         foreach (var r in results)
         {
             var cls = r.Classification?.ToString() ?? "N/A";
-            sb.AppendLine($"| {r.Section} | {r.CssFeature} | {r.DiffRatio:P2} ({r.DiffPixels}/{r.TotalPixels}) | {r.OverlapCount} | {r.Severity} | {cls} |");
+            sb.AppendLine($"| {r.Section} | {r.CssFeature} | {r.DiffRatio:P2} ({r.DiffPixels}/{r.TotalPixels}) | {r.OverlapCount} | {r.Severity} | {cls} | {r.Category} |");
         }
 
         sb.AppendLine();
@@ -233,7 +255,7 @@ public class Acid1DifferentialReportGenerator
         {
             var cls = r.Classification?.ToString() ?? "N/A";
             var overlapInfo = r.OverlapCount > 0 ? $" **{r.OverlapCount} float overlap(s).**" : "";
-            sb.AppendLine($"- **{r.Section}:** {r.DiffRatio:P2} – {r.CssFeature}. Classification: {cls}.{overlapInfo}");
+            sb.AppendLine($"- **{r.Section}:** {r.DiffRatio:P2} – {r.CssFeature}. Classification: {cls}. Category: {r.Category}.{overlapInfo}");
         }
         sb.AppendLine();
     }
@@ -253,5 +275,6 @@ public class Acid1DifferentialReportGenerator
         int TotalPixels,
         string Severity,
         FailureClassification? Classification,
-        int OverlapCount);
+        int OverlapCount,
+        DifferenceCategory Category);
 }

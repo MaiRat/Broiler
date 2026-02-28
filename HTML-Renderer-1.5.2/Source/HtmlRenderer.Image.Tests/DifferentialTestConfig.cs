@@ -37,3 +37,25 @@ public sealed record DifferentialTestConfig
     /// <summary>Returns a default configuration instance.</summary>
     public static DifferentialTestConfig Default { get; } = new();
 }
+
+/// <summary>
+/// Categorises cross-engine rendering differences between Broiler and
+/// Chromium for the Acid1 visual comparison (Issue #171).
+/// </summary>
+public enum DifferenceCategory
+{
+    /// <summary>Element positions differ between engines (X/Y offset).</summary>
+    PositionError,
+
+    /// <summary>Visual style differs (colour, border width, background, font).</summary>
+    StyleMismatch,
+
+    /// <summary>An element is present in one engine but missing in the other.</summary>
+    MissingOrExtraElement,
+
+    /// <summary>Known rendering engine limitation or spec interpretation difference.</summary>
+    RenderingEngineBug,
+
+    /// <summary>Cross-engine font rasterisation / anti-aliasing difference (irreducible).</summary>
+    FontRasterisation
+}

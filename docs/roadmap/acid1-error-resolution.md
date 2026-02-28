@@ -307,6 +307,9 @@ eliminated without matching Chromium's exact text rendering backend.
 
 **Estimated Effort:** 2–3 days
 
+**See also:** [ADR-018](../adr/018-acid1-visual-comparison.md) for element-level
+analysis of all remaining differences.
+
 ### Priority 5 – Font Rasterisation (Sections 2–6)
 
 **Goal:** Accept and document the irreducible font rendering differences.
@@ -324,6 +327,9 @@ and will never reach 0 % without using identical text rendering backends.
 3. [ ] Document accepted residual diff levels in the ADR.
 
 **Estimated Effort:** 1 day
+
+**See also:** [ADR-018](../adr/018-acid1-visual-comparison.md) for the full
+element-by-element visual comparison and difference categorisation.
 
 ---
 

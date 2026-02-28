@@ -234,7 +234,8 @@ to identify colour/position patterns and prioritise renderer fixes.
 | 10 – dd height | Content-box height | 2.36 % |
 
 See [ADR-009](adr/009-acid1-differential-testing.md) for the original error
-documentation and fix roadmap, and the
+documentation and fix roadmap, [ADR-018](adr/018-acid1-visual-comparison.md)
+for the element-by-element visual comparison, and the
 [Acid1 Error Resolution Roadmap](roadmap/acid1-error-resolution.md) for the
 next-phase plan.
 
