@@ -12,40 +12,60 @@
 
 ---
 
-## Current State (2026-02-27)
+## Current State (2026-02-28)
 
 Differential tests run at 800×600 viewport, 30-per-channel colour tolerance,
 3 px layout tolerance.  All 11 acid1 differential tests pass the 20 %
 pixel-diff threshold.  Zero float/block overlaps detected.
 
-| # | Section | CSS1 Feature | Pixel Diff | Severity | Trend vs ADR-009 |
-|---|---------|-------------|-----------|----------|------------------|
-| — | Full page | All CSS1 features combined | 11.26 % | High | ↓ from > 50 % |
-| 1 | Body border | `html` bg, `body` bg + border | 1.64 % | Low | ↓ from 89.97 % |
-| 2 | `dt` float:left | `float:left`, percentage width | 0.89 % | Low | ↓ from 86.30 % |
-| 3 | `dd` float:right | `float:right`, border, side-by-side | 0.65 % | Low | ↓ from 84.16 % |
-| 4 | `li` float:left | Multiple `float:left` stacking | 1.05 % | Low | ↓ from 82.05 % |
-| 5 | `blockquote` | `float:left`, asymmetric borders | 0.57 % | Low | ↓ from 92.00 % |
-| 6 | `h1` float | `float:left`, black bg, font-weight | 0.65 % | Low | ↓ from 91.23 % |
-| 7 | `form` line-height | `line-height: 1.9` on form `<p>` | 1.55 % | Low | ↓ from 85.22 % |
-| 8 | `clear:both` | `clear:both` after floats | 2.84 % | Low | ↓ from 72.17 % |
-| 9 | Percentage width | `10.638 %` and `41.17 %` widths | 10.67 % | **High** | ↓ from 84.64 % |
-| 10 | `dd` height/clearance | Content-box height, float clearance | 2.36 % | Low | ↓ from < 50 % |
+Data source: [ADR-020](../adr/020-acid1-differential-testing-errors.md),
+auto-generated after closing issue
+[#172](https://github.com/MaiRat/Broiler/issues/172).
+
+| # | Section | CSS1 Feature | Pixel Diff | Severity | Category | Trend vs ADR-009 |
+|---|---------|-------------|-----------|----------|----------|------------------|
+| — | Full page | All CSS1 features combined | 11.26 % | High | RenderingEngineBug | ↓ from > 50 % |
+| 1 | Body border | `html` bg, `body` bg + border | 1.64 % | Low | StyleMismatch | ↓ from 89.97 % |
+| 2 | `dt` float:left | `float:left`, percentage width | 1.74 % | Low | FontRasterisation | ↓ from 86.30 % |
+| 3 | `dd` float:right | `float:right`, border, side-by-side | 1.37 % | Low | FontRasterisation | ↓ from 84.16 % |
+| 4 | `li` float:left | Multiple `float:left` stacking | 1.05 % | Low | FontRasterisation | ↓ from 82.05 % |
+| 5 | `blockquote` | `float:left`, asymmetric borders | 1.95 % | Low | FontRasterisation | ↓ from 92.00 % |
+| 6 | `h1` float | `float:left`, black bg, font-weight | 1.92 % | Low | FontRasterisation | ↓ from 91.23 % |
+| 7 | `form` line-height | `line-height: 1.9` on form `<p>` | 1.55 % | Low | StyleMismatch | ↓ from 85.22 % |
+| 8 | `clear:both` | `clear:both` after floats | 1.50 % | Low | PositionError | ↓ from 72.17 % |
+| 9 | Percentage width | `10.638 %` and `41.17 %` widths | 1.14 % | Low | PositionError | ↓ from 84.64 % |
+| 10 | `dd` height/clearance | Content-box height, float clearance | 2.36 % | Low | PositionError | ↓ from < 50 % |
+
+> **Note on measurement variance:** The values above are from ADR-020
+> (CI environment, 2026-02-28).  Previous locally-measured values (roadmap
+> 2026-02-27) showed S2=0.89 %, S3=0.65 %, S5=0.57 %, S6=0.65 %,
+> S8=2.84 %, S9=10.67 %.  The differences are due to cross-environment
+> font rasterisation variance (font availability, hinting, anti-aliasing)
+> and are not rendering regressions — commit `ee61a77` changed only test
+> infrastructure.  ADR-020 CI measurements are used as the authoritative
+> baseline going forward.  See [ADR-021](../adr/021-acid1-rendering-bug-investigation.md)
+> for the full regression analysis.
 
 ### Summary of Progress
 
 All four ADR-009 priorities have been completed:
 
 - **Priority 1 – Float layout:** ✅ Fixed. Diffs dropped from 82–92 % to < 2 %.
-- **Priority 2 – Box model / canvas bg:** ✅ Fixed. S1 89.97 % → 1.64 %, S9 84.64 % → 10.67 %.
-- **Priority 3 – Border rendering:** ✅ Fixed. S5 92.00 % → 0.57 %.
+- **Priority 2 – Box model / canvas bg:** ✅ Fixed. S1 89.97 % → 1.64 %, S9 84.64 % → 1.14 %.
+- **Priority 3 – Border rendering:** ✅ Fixed. S5 92.00 % → 1.95 %.
 - **Priority 4 – Typography / line-height:** ✅ Fixed. S7 85.22 % → 1.55 %.
+
+All individual sections are now below 2.5 %.  The 11.26 % full-page composite
+is the aggregate of individually small per-section differences, amplified by
+cascading layout offsets and spatial accumulation in the combined viewport.
+See [ADR-021](../adr/021-acid1-rendering-bug-investigation.md) for root cause
+breakdown and feature contribution analysis.
 
 ---
 
 ## Documented Errors
 
-### Error 1 – Percentage Width Containing Block (Section 9, 10.67 %)
+### Error 1 – Percentage Width Containing Block (Section 9, 1.14 %)
 
 **Description:** The `dt` element uses `width: 10.638 %` and the `#bar`
 element uses `width: 41.17 %`.  Both resolve their percentage widths against
@@ -53,19 +73,18 @@ the containing block.  The Broiler renderer computes a slightly different
 containing-block width than Chromium, causing the resolved pixel widths to
 differ.  This cascades into horizontal position offsets for sibling elements.
 
-**Root Cause:** The `dd` element is `float:right` with explicit `width: 34em`,
-`border: 1em solid black`, `padding: 1em`, and `margin: 0 0 0 1em`.  The
-`#bar` child div's 41.17 % width must resolve against the `dd`'s *content*
-width (34 em = 340 px).  Broiler may be using the wrong reference width
-(padding-box instead of content-box, or rounding differently) when resolving
-percentage widths inside floated elements with explicit widths.
+**Root Cause:** The original root cause (non-floated blocks incorrectly pushed
+below floats instead of overlapping per CSS2.1 §9.5) was fixed in Priority 1.
+The residual 1.14 % diff is from accumulated sub-pixel rounding in percentage
+width resolution: each intermediate calculation rounds to integer pixels,
+causing small cumulative offsets.
 
 **CSS1 Reference:** CSS1 §5.3.4 – percentage widths refer to the width of the
 parent element's content area.
 
-**Affected Pixels:** 51,197 / 480,000 (10.67 %)
+**Affected Pixels:** 5,458 / 480,000 (1.14 %)
 
-### Error 2 – Clear Distance Computation (Section 8, 2.84 %)
+### Error 2 – Clear Distance Computation (Section 8, 1.50 %)
 
 **Description:** The `clear: both` paragraph is positioned below the floated
 `div`, but the vertical distance between the bottom of the float and the top
@@ -75,11 +94,12 @@ of the cleared paragraph differs by a few pixels compared to Chromium.
 correctly moves the element below floats, but the exact `cury` (current Y
 position) after clearance may not account for margin collapsing between the
 float's margin-bottom and the cleared element's margin-top as precisely as
-Chromium does.
+Chromium does.  The original severe mismatch was fixed in Priority 2; the
+residual 1.50 % is from sub-pixel rounding in the clearance distance.
 
 **CSS1 Reference:** CSS1 §5.5.26 – the clear property.
 
-**Affected Pixels:** 13,628 / 480,000 (2.84 %)
+**Affected Pixels:** 7,192 / 480,000 (1.50 %)
 
 ### Error 3 – DD Content-Box Height with Floats (Section 10, 2.36 %)
 
@@ -130,9 +150,9 @@ also render differently.
 
 **Affected Pixels:** 7,457 / 480,000 (1.55 %)
 
-### Error 6 – Float Stacking Minor Offsets (Sections 2–6, < 1.1 %)
+### Error 6 – Float Stacking Minor Offsets (Sections 2–6, < 2 %)
 
-**Description:** Individual float sections show < 1.1 % pixel differences,
+**Description:** Individual float sections show < 2 % pixel differences,
 primarily due to font rasterisation and minor sub-pixel positioning.
 
 **Root Cause:** Cross-engine font rendering differences (anti-aliasing,
@@ -142,7 +162,7 @@ text rendering pipeline.
 
 **CSS1 Reference:** N/A – font rasterisation is not covered by CSS1.
 
-**Affected Pixels:** 2,748–5,027 / 480,000 (0.57–1.05 %)
+**Affected Pixels:** 5,027–9,348 / 480,000 (1.05–1.95 %)
 
 ---
 
@@ -289,26 +309,41 @@ eliminated without matching Chromium's exact text rendering backend.
 
 **Estimated Effort:** 1–2 days
 
-### Priority 4 – Sub-Pixel Rounding (Sections 1, 7)
+### Priority 4 – Sub-Pixel Rounding (Sections 1, 7, 8, 9, 10)
 
-**Goal:** Reduce Sections 1 and 7 diffs from ~1.5 % to < 1 %.
+**Goal:** Reduce remaining PositionError and StyleMismatch diffs.  Target:
+all sections below 1.5 %, full-page composite below 8 %.
 
-**Impact:** Low – these are minor visual differences.
+**Impact:** Medium – these sections contribute ~4 pp to the full-page diff.
+Fixing them would bring the full-page composite from 11.26 % towards ~7 %.
 
 **Tasks:**
 
-1. [ ] Audit the `em`-to-pixel conversion for fractional values (`.5em`,
-   `1.5em`) to ensure rounding matches CSS conventions (round half up,
-   consistent direction).
-2. [ ] Investigate whether form widget placeholder rendering can be improved
-   to more closely match Chromium's radio button size and position.
-3. [ ] Consider adding sub-pixel layout support to the paint pipeline to
+1. [ ] Audit the `em`-to-pixel conversion in `CssValueParser.ParseLength()`
+   for fractional values (`.5em`, `1.5em`, `1.9em`) to ensure rounding matches
+   CSS conventions (round half up, consistent direction).
+2. [ ] Investigate whether intermediate percentage width calculations in
+   `CssBox.PerformLayoutImp()` can preserve fractional pixels longer before
+   rounding to integer, reducing accumulated rounding errors in Section 9.
+3. [ ] Audit clearance distance computation in `CssBox.PerformLayoutImp()` for
+   sub-pixel precision when computing `cury` after `clear:both` (Section 8).
+4. [ ] Investigate whether form widget placeholder rendering can be improved
+   to more closely match Chromium's radio button size and position (Section 7).
+5. [ ] Consider adding sub-pixel layout support to the paint pipeline to
    avoid integer rounding at intermediate layout stages.
+6. [ ] Add targeted regression tests:
+   - `SubPixelEm_HalfEm_RoundsCorrectly` (`.5em` → 5 px at 10 px font-size)
+   - `PercentageWidth_CascadingRounding_PreservesPrecision` (41.17 % of 340 px)
+   - `ClearDistance_SubPixelPrecision_MatchesChromium`
 
 **Estimated Effort:** 2–3 days
 
+**Milestone:** M1 (Sub-pixel audit) — all sections below 2 %, full-page
+below 8 %.
+
 **See also:** [ADR-018](../adr/018-acid1-visual-comparison.md) for element-level
-analysis of all remaining differences.
+analysis and [ADR-021](../adr/021-acid1-rendering-bug-investigation.md) for the
+full investigation.
 
 ### Priority 5 – Font Rasterisation (Sections 2–6)
 
@@ -338,13 +373,16 @@ element-by-element visual comparison and difference categorisation.
 As fix priorities are completed, the differential test threshold should be
 tightened:
 
-| Milestone | Threshold | Prerequisite |
-|-----------|-----------|--------------|
-| Current | 20 % | All sections pass |
-| After Priority 1 | 12 % | Section 9 drops below 5 % |
-| After Priorities 1–3 | 8 % | All sections drop below 5 % |
-| After Priorities 1–4 | 5 % | All sections drop below 1.5 % |
-| Final target | 3 % | Only font rasterisation diffs remain |
+| Milestone | Threshold | Prerequisite | Target Date |
+|-----------|-----------|--------------|-------------|
+| Current | 20 % | All sections pass | ✅ Achieved |
+| M1: After Priority 4 | 8 % | All sections below 2 % | TBD |
+| M2: After Priority 5 | 6 % | All sections below 1.5 % | TBD |
+| Final target | 5 % | Only font rasterisation diffs remain | TBD |
+
+**Note:** The irreducible font rasterisation floor is estimated at ~4 % of the
+full-page composite.  A threshold below 5 % may not be achievable without
+matching Chromium's exact text rendering backend.
 
 ---
 
@@ -382,8 +420,12 @@ Each priority should add focused programmatic tests:
 
 - **ADR-009** (`009-acid1-differential-testing.md`) – Original baseline and
   completed fix roadmap (Priorities 1–4 all ✅).
-- **ADR-010/011/012** – Auto-generated point-in-time snapshots of
+- **ADR-010–020** – Auto-generated point-in-time snapshots of
   discrepancies after issue closures.
+- **ADR-018** (`018-acid1-visual-comparison.md`) – Element-by-element visual
+  comparison and difference categorisation.
+- **ADR-021** (`021-acid1-rendering-bug-investigation.md`) – Investigation of
+  the 11.26 % RenderEngineBug, regression analysis, and feature contribution.
 - **W3C Compliance Roadmap** (`docs/roadmap/w3c-html-compliance.md`) – Broader
   HTML5/CSS3 compliance effort.  This roadmap focuses specifically on CSS1
   conformance as measured by the Acid1 test.
@@ -392,10 +434,18 @@ Each priority should add focused programmatic tests:
 
 ## Timeline
 
-| Phase | Priority | Target Diff | Estimated Duration |
-|-------|----------|------------|-------------------|
-| Phase A | Priority 1 (Section 9) | < 5 % | 2–3 days |
-| Phase B | Priorities 2–3 (Sections 8, 10) | < 3 % | 2–4 days |
-| Phase C | Priority 4 (Sections 1, 7) | < 1.5 % | 2–3 days |
-| Phase D | Priority 5 (Documentation) | Accepted | 1 day |
-| **Total** | | **< 3 % all sections** | **7–11 days** |
+| Phase | Priority | Target Diff | Estimated Duration | Status |
+|-------|----------|------------|-------------------|--------|
+| Phase A | Priorities 1–3 | All sections < 5 % | 5–9 days | ✅ Complete |
+| Phase B | Priority 4 (Sub-pixel) | Full-page < 8 % | 2–3 days | Planned |
+| Phase C | Priority 5 (Documentation) | Accepted | 1 day | Planned |
+| **Total** | | **< 8 % full-page** | **8–13 days** | |
+
+**Realistic final target:** 5–7 % full-page diff (irreducible font
+rasterisation floor of ~4 %).
+
+## Investigation Reference
+
+See [ADR-021](../adr/021-acid1-rendering-bug-investigation.md) for the full
+investigation of the 11.26 % RenderEngineBug, including regression analysis,
+root cause breakdown, and per-category contribution to the full-page diff.
