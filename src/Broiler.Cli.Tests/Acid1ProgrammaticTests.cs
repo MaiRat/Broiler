@@ -563,6 +563,78 @@ public class Acid1ProgrammaticTests
             "dd height=80). Blockquote is escaping the dd container.");
     }
 
+    /// <summary>
+    /// Regression test for CSS2.1 §9.5.1 rule 6: a float that follows a
+    /// zero-height block container (all children floated) must not be placed
+    /// above the preceding floats nested in that container.  Before the fix,
+    /// the blockquote's initial Y was based on the collapsed ul bottom, causing
+    /// it to overlap with ALL preceding li floats and get pushed to a third row
+    /// instead of sitting beside the last float (baz) on the second row.
+    /// </summary>
+    [Fact]
+    public void FloatRule6_FloatAfterZeroHeightBlock_SameRowAsLastPrecedingFloat()
+    {
+        // Container width 340px holds:
+        //   Row 1: li(80) + li(80) + li(80) = 240px  (3 floats)
+        //   Row 2: li#baz(120) + blockquote(100) + h1(120) = 340px (3 floats, exact fit)
+        // The blockquote and h1 follow the <ul> in the DOM, not the li elements directly.
+        // Without rule 6, blockquote starts at ul.bottom (=container top) and gets pushed
+        // below ALL floats instead of beside baz.
+        const string html = @"<html><head><style type='text/css'>
+            html { font: 10px/1 Verdana, sans-serif; }
+            body { margin: 0; padding: 0; }
+            div.c { width: 340px; height: 400px; padding: 0; margin: 0; border: 0; }
+            ul { margin: 0; border: 0; padding: 0; }
+            li { display: block; float: left; width: 60px; height: 80px;
+                 margin: 0; padding: 0; border: 10px solid black; background-color: red; }
+            .baz { border: 0; padding: 10px; width: 100px; height: 100px;
+                    margin: 0; background-color: black; color: white; }
+            blockquote { float: left; width: 50px; height: 80px;
+                         margin: 0 10px 0 20px; padding: 0;
+                         border-width: 10px 15px 10px 5px; border-style: solid; border-color: gray;
+                         background-color: #FC0; }
+            h1 { float: left; width: 100px; height: 100px;
+                 margin: 0; border: 0; padding: 10px;
+                 background-color: green; color: white;
+                 font-weight: normal; font-size: 10px; }
+        </style></head><body>
+        <div class='c'>
+          <ul>
+            <li>a</li><li>b</li><li>c</li>
+            <li class='baz'>baz</li>
+          </ul>
+          <blockquote>bar</blockquote>
+          <h1>sing</h1>
+        </div>
+        </body></html>";
+
+        using var bitmap = HtmlRender.RenderToImage(html, 400, 400);
+
+        var goldBounds = GetColorBounds(bitmap, IsGold);
+        var greenBounds = GetColorBounds(bitmap, IsGreen);
+
+        Assert.NotNull(goldBounds);
+        Assert.NotNull(greenBounds);
+
+        // blockquote (gold) must be on the same row as baz (row 2).
+        // Row 1 is approximately 100px tall (80px content + 2*10px border).
+        // If rule 6 fails, blockquote ends up at y >= 220 (row 3) instead of y ~ 100 (row 2).
+        Assert.True(goldBounds.Value.minY < 150,
+            $"Blockquote (gold top={goldBounds.Value.minY}) should be on row 2 (y < 150), " +
+            "not pushed to row 3. CSS2.1 §9.5.1 rule 6 must prevent the float " +
+            "from starting above preceding floats in the same BFC.");
+
+        // H1 (green) must be to the right of blockquote (gold + borders).
+        Assert.True(greenBounds.Value.minX > goldBounds.Value.maxX,
+            $"H1 (green minX={greenBounds.Value.minX}) must be to the right of " +
+            $"blockquote (gold maxX={goldBounds.Value.maxX}).");
+
+        // H1 must also be on the same row (row 2).
+        Assert.True(Math.Abs(goldBounds.Value.minY - greenBounds.Value.minY) < 20,
+            $"Blockquote (gold top={goldBounds.Value.minY}) and H1 (green top={greenBounds.Value.minY}) " +
+            "should be on the same row (row 2).");
+    }
+
     // -----------------------------------------------------------------
     // 5. Percentage widths
     // -----------------------------------------------------------------
