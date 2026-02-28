@@ -63,6 +63,9 @@ public sealed class DifferentialTestRunner
             : null;
         string? displayListJson = displayList?.ToJson();
 
+        // Classify only when there are actual pixel differences.  When
+        // DiffPixelCount == 0 the renders are identical and there is nothing
+        // to classify; leaving classification as null conveys this correctly.
         FailureClassification? classification = null;
         if (pixelDiff.DiffPixelCount > 0)
         {
