@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Core.IR;
@@ -92,6 +93,7 @@ public static class PixelDiffRunner
         int tolerance = config.ColorTolerance;
         int diffCount = 0;
         var diffBitmap = new SKBitmap(actual.Width, actual.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        var mismatches = new List<PixelMismatch>();
 
         for (int y = 0; y < actual.Height; y++)
         {
@@ -109,6 +111,14 @@ public static class PixelDiffRunner
                 {
                     diffCount++;
                     diffBitmap.SetPixel(x, y, new SKColor(255, 0, 255, 255)); // magenta
+
+                    if (mismatches.Count < PixelDiffResult.MaxMismatchEntries)
+                    {
+                        mismatches.Add(new PixelMismatch(
+                            x, y,
+                            p1.Red, p1.Green, p1.Blue, p1.Alpha,
+                            p2.Red, p2.Green, p2.Blue, p2.Alpha));
+                    }
                 }
                 else
                 {
@@ -133,7 +143,8 @@ public static class PixelDiffRunner
                 DiffRatio = ratio,
                 DiffPixelCount = diffCount,
                 TotalPixelCount = totalPixels,
-                IsMatch = true
+                IsMatch = true,
+                Mismatches = mismatches
             };
         }
 
@@ -143,7 +154,8 @@ public static class PixelDiffRunner
             DiffPixelCount = diffCount,
             TotalPixelCount = totalPixels,
             DiffImage = diffBitmap,
-            IsMatch = false
+            IsMatch = false,
+            Mismatches = mismatches
         };
     }
 
