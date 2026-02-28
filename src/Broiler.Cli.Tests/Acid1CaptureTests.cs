@@ -60,8 +60,29 @@ public class Acid1CaptureTests : IDisposable
     /// layout, blank output, or incorrect element positioning) while
     /// accommodating known CSS1 shortcomings in the HTML-Renderer engine.
     /// Raising this value is a sign of rendering improvement.
+    ///
+    /// Tightened from 0.43 to 0.48 to detect major visual differences
+    /// (e.g. mispositioned bottom yellow box or bottom-right black box)
+    /// that the previous threshold allowed through undetected.
     /// </summary>
-    private const double MinSimilarityThreshold = 0.43;
+    private const double MinSimilarityThreshold = 0.48;
+
+    /// <summary>
+    /// Minimum region-level similarity threshold for targeted area
+    /// comparisons (bottom half, right half).  A region scoring below
+    /// this value indicates that a specific visual element (e.g. the
+    /// gold blockquote box or the black h1 box) has moved, disappeared,
+    /// or changed dramatically.
+    /// </summary>
+    private const double RegionSimilarityFloor = 0.30;
+
+    /// <summary>
+    /// Maximum allowable pixel-difference ratio for the per-engine
+    /// golden baseline comparison (<c>acid1-engine-baseline.png</c>).
+    /// This is intentionally tight (0.1 %) because the comparison is
+    /// within the same rendering engine across commits.
+    /// </summary>
+    private const double EngineBaselinePixelThreshold = 0.001;
 
     private static readonly string TestDataDir =
         Path.Combine(AppContext.BaseDirectory, "TestData");
@@ -88,6 +109,7 @@ public class Acid1CaptureTests : IDisposable
     private static string Acid1HtmlPath    => Path.Combine(TestDataDir, "acid1.html");
     private static string Acid1PngPath     => Path.Combine(TestDataDir, "acid1.png");
     private static string Acid1FailPngPath => Path.Combine(TestDataDir, "acid1-fail.png");
+    private static string Acid1EngineBaselinePath => Path.Combine(TestDataDir, "acid1-engine-baseline.png");
 
     private static string ReadAcid1Html() => File.ReadAllText(Acid1HtmlPath);
 
@@ -326,6 +348,64 @@ public class Acid1CaptureTests : IDisposable
             $"Acid1 rendering similarity ({similarity:P1}) fell below the regression floor " +
             $"({MinSimilarityThreshold:P0}). Remaining differences are expected to shrink " +
             $"as the rendering engine improves.");
+    }
+
+    /// <summary>
+    /// Compares the current acid1 rendering against the engine's own
+    /// committed golden baseline (<c>acid1-engine-baseline.png</c>).
+    /// Unlike the reference-image tests above (which compare against
+    /// Chromium's rendering), this test detects <em>any</em> change in
+    /// the Broiler engine's output – including subtle position shifts of
+    /// the bottom gold blockquote box or the black h1 box that the
+    /// permissive full-image threshold would miss.
+    ///
+    /// To re-baseline after an intentional rendering improvement:
+    ///   1. Delete <c>acid/acid1/acid1-engine-baseline.png</c>.
+    ///   2. Run this test – a new baseline is written and the test fails.
+    ///   3. Re-run to validate against the new baseline.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_EngineBaseline_PixelMatch()
+    {
+        var html = ReadAcid1Html();
+
+        using var referenceData = SKData.Create(Acid1PngPath);
+        using var referenceCodec = SKCodec.Create(referenceData);
+        var refInfo = referenceCodec.Info;
+
+        using var rendered = HtmlRender.RenderToImage(html, refInfo.Width, refInfo.Height);
+
+        if (!File.Exists(Acid1EngineBaselinePath))
+        {
+            using var data = rendered.Encode(SKEncodedImageFormat.Png, 100);
+            using var stream = File.OpenWrite(Acid1EngineBaselinePath);
+            data.SaveTo(stream);
+            Assert.Fail(
+                $"New engine baseline created at {Acid1EngineBaselinePath}. " +
+                "Re-run the test to validate against it.");
+            return;
+        }
+
+        using var baseline = SKBitmap.Decode(Acid1EngineBaselinePath);
+        Assert.NotNull(baseline);
+
+        // Use the same-engine PixelDiffRunner with a tight threshold.
+        var config = new TheArtOfDev.HtmlRenderer.Core.IR.DeterministicRenderConfig
+        {
+            ViewportWidth = refInfo.Width,
+            ViewportHeight = refInfo.Height,
+            PixelDiffThreshold = EngineBaselinePixelThreshold,
+            ColorTolerance = 5
+        };
+
+        using var diff = PixelDiffRunner.Compare(rendered, baseline, config);
+
+        Assert.True(diff.IsMatch,
+            $"Engine-baseline pixel regression: {diff.DiffRatio:P2} of pixels differ " +
+            $"({diff.DiffPixelCount}/{diff.TotalPixelCount}). " +
+            $"Threshold: {config.PixelDiffThreshold:P2}. " +
+            "If this is an intentional rendering improvement, delete " +
+            "acid/acid1/acid1-engine-baseline.png and re-run to create a new baseline.");
     }
 
     // -------------------------------------------------------------------------
@@ -1035,5 +1115,106 @@ public class Acid1CaptureTests : IDisposable
         Assert.True(textPixels > 0,
             "No text-like pixels found in the bottom quarter of the image. " +
             "The clear:both paragraph may not be rendered below the floats.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Region-based visual regression tests
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that the bottom-half of the rendered acid1 image is
+    /// sufficiently similar to the reference's bottom half.  This region
+    /// contains the gold blockquote box (section 5), the black h1 box
+    /// (section 6), and the clear:both paragraph.  Previously these
+    /// differences were hidden by the permissive full-image threshold.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_BottomHalf_RegionSimilarityWithReference()
+    {
+        var html = ReadAcid1Html();
+
+        using var referenceData = SKData.Create(Acid1PngPath);
+        using var referenceCodec = SKCodec.Create(referenceData);
+        var refInfo = referenceCodec.Info;
+
+        using var rendered = HtmlRender.RenderToImage(html, refInfo.Width, refInfo.Height);
+        using var reference = SKBitmap.Decode(Acid1PngPath);
+
+        int halfY = refInfo.Height / 2;
+        int halfH = refInfo.Height - halfY;
+
+        double regionSimilarity = ImageComparer.CompareRegion(
+            rendered, reference,
+            0, halfY, refInfo.Width, halfH,
+            colorTolerance: 10);
+
+        // The bottom half must stay above a meaningful threshold so that
+        // positional shifts of the gold or black boxes are caught.
+        Assert.True(regionSimilarity >= RegionSimilarityFloor,
+            $"Bottom-half region similarity ({regionSimilarity:P1}) fell below the " +
+            $"regression floor ({RegionSimilarityFloor:P0}). The gold blockquote box, black h1 box, or " +
+            "clear:both paragraph may have moved or disappeared.");
+    }
+
+    /// <summary>
+    /// Verifies that the right-half of the rendered acid1 image is
+    /// sufficiently similar to the reference's right half.  This catches
+    /// mispositioned elements in the dd container (the float:right side),
+    /// including the black h1 box and li stacking.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_RightHalf_RegionSimilarityWithReference()
+    {
+        var html = ReadAcid1Html();
+
+        using var referenceData = SKData.Create(Acid1PngPath);
+        using var referenceCodec = SKCodec.Create(referenceData);
+        var refInfo = referenceCodec.Info;
+
+        using var rendered = HtmlRender.RenderToImage(html, refInfo.Width, refInfo.Height);
+        using var reference = SKBitmap.Decode(Acid1PngPath);
+
+        int halfX = refInfo.Width / 2;
+        int halfW = refInfo.Width - halfX;
+
+        double regionSimilarity = ImageComparer.CompareRegion(
+            rendered, reference,
+            halfX, 0, halfW, refInfo.Height,
+            colorTolerance: 10);
+
+        Assert.True(regionSimilarity >= RegionSimilarityFloor,
+            $"Right-half region similarity ({regionSimilarity:P1}) fell below the " +
+            $"regression floor ({RegionSimilarityFloor:P0}). Elements on the right side (dd float:right, " +
+            "black h1 box, li stacking) may have moved or disappeared.");
+    }
+
+    /// <summary>
+    /// Renders acid1.html twice and compares individual quadrants to ensure
+    /// that all four regions of the image match between successive renders.
+    /// This catches localised non-determinism that a full-image comparison
+    /// might average away.
+    /// </summary>
+    [Fact]
+    public void Acid1Html_QuadrantDeterminism_AllQuadrantsMatch()
+    {
+        var html = ReadAcid1Html();
+
+        using var bitmap1 = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
+        using var bitmap2 = HtmlRender.RenderToImage(html, RenderWidth, RenderHeight);
+
+        int halfW = RenderWidth / 2;
+        int halfH = RenderHeight / 2;
+        string[] names = { "top-left", "top-right", "bottom-left", "bottom-right" };
+        (int x, int y)[] origins = { (0, 0), (halfW, 0), (0, halfH), (halfW, halfH) };
+
+        for (int i = 0; i < 4; i++)
+        {
+            double sim = ImageComparer.CompareRegion(
+                bitmap1, bitmap2,
+                origins[i].x, origins[i].y, halfW, halfH);
+            Assert.True(sim >= 1.0,
+                $"Quadrant '{names[i]}' differs between two renders ({sim:P4}). " +
+                "Rendering must be deterministic in every quadrant.");
+        }
     }
 }
