@@ -44,6 +44,7 @@ public sealed class DifferentialTestReport : IDisposable
 
     /// <summary>
     /// Writes a side-by-side HTML comparison report to <paramref name="directory"/>.
+    /// Also writes a CSV mismatch log with per-pixel position and colour data.
     /// </summary>
     public void WriteReport(string directory)
     {
@@ -61,6 +62,9 @@ public sealed class DifferentialTestReport : IDisposable
             File.WriteAllText(Path.Combine(directory, $"{baseName}_fragment.json"), FragmentJson);
         if (DisplayListJson is not null)
             File.WriteAllText(Path.Combine(directory, $"{baseName}_displaylist.json"), DisplayListJson);
+
+        // Save per-pixel mismatch log (CSV)
+        WriteMismatchLog(Path.Combine(directory, $"{baseName}_mismatches.csv"));
 
         // Generate HTML report
         var sb = new StringBuilder();
@@ -80,11 +84,45 @@ public sealed class DifferentialTestReport : IDisposable
         sb.AppendLine($"<td><img src='{baseName}_chromium.png'/></td>");
         sb.AppendLine($"<td><img src='{baseName}_diff.png'/></td>");
         sb.AppendLine("</tr></table>");
+
+        // Mismatch summary in HTML report
+        if (PixelDiff.Mismatches.Count > 0)
+        {
+            sb.AppendLine("<h2>Pixel Mismatch Summary</h2>");
+            sb.AppendLine($"<p>Logged mismatches: {PixelDiff.Mismatches.Count}");
+            if (PixelDiff.DiffPixelCount > PixelDiff.Mismatches.Count)
+                sb.AppendLine($" (capped; total differing pixels: {PixelDiff.DiffPixelCount})");
+            sb.AppendLine($"</p>");
+            sb.AppendLine($"<p>Full mismatch log: <a href='{baseName}_mismatches.csv'>{baseName}_mismatches.csv</a></p>");
+        }
+
         sb.AppendLine("<h2>Source HTML</h2>");
         sb.AppendLine($"<pre>{System.Net.WebUtility.HtmlEncode(Html)}</pre>");
         sb.AppendLine("</body></html>");
 
         File.WriteAllText(Path.Combine(directory, $"{baseName}_report.html"), sb.ToString());
+    }
+
+    /// <summary>
+    /// Writes per-pixel mismatch data to a CSV file.
+    /// Each row contains the pixel position and RGBA values for both engines.
+    /// </summary>
+    private void WriteMismatchLog(string path)
+    {
+        var mismatches = PixelDiff.Mismatches;
+        if (mismatches.Count == 0) return;
+
+        using var writer = new StreamWriter(path, false, Encoding.UTF8);
+        writer.WriteLine("X,Y,ActualR,ActualG,ActualB,ActualA,BaselineR,BaselineG,BaselineB,BaselineA");
+        foreach (var m in mismatches)
+        {
+            writer.WriteLine($"{m.X},{m.Y},{m.ActualR},{m.ActualG},{m.ActualB},{m.ActualA},{m.BaselineR},{m.BaselineG},{m.BaselineB},{m.BaselineA}");
+        }
+
+        if (PixelDiff.DiffPixelCount > mismatches.Count)
+        {
+            writer.WriteLine($"# Total differing pixels: {PixelDiff.DiffPixelCount} (log capped at {PixelDiffResult.MaxMismatchEntries})");
+        }
     }
 
     public void Dispose()

@@ -1,4 +1,5 @@
 using SkiaSharp;
+using TheArtOfDev.HtmlRenderer.Core.IR;
 using TheArtOfDev.HtmlRenderer.Image;
 
 namespace HtmlRenderer.Image.Tests;
@@ -94,6 +95,54 @@ public class ImageComparerTests(RenderingFixture fixture)
         using var synthetic = CreateSolidBitmap(100, 100, SKColors.Blue);
         Assert.False(ImageComparer.AreIdentical(fixture.RenderedForComparison, synthetic));
         Assert.True(ImageComparer.AreIdentical(fixture.RenderedForComparison, fixture.RenderedForComparison));
+    }
+
+    [Fact]
+    public void PixelDiffCompare_DifferentImages_CollectsMismatches()
+    {
+        using var bitmap1 = CreateSolidBitmap(4, 4, SKColors.Red);
+        using var bitmap2 = CreateSolidBitmap(4, 4, SKColors.Blue);
+
+        // Set one pixel to match so not all pixels differ
+        bitmap2.SetPixel(0, 0, SKColors.Red);
+
+        var config = new DeterministicRenderConfig
+        {
+            ViewportWidth = 4,
+            ViewportHeight = 4,
+            PixelDiffThreshold = 0.0,
+            ColorTolerance = 0
+        };
+
+        using var result = PixelDiffRunner.Compare(bitmap1, bitmap2, config);
+
+        // 15 of 16 pixels differ (all except (0,0))
+        Assert.Equal(15, result.DiffPixelCount);
+        Assert.Equal(15, result.Mismatches.Count);
+
+        // Verify mismatch data contains positions and colours
+        var first = result.Mismatches[0];
+        Assert.True(first.X >= 0 && first.X < 4);
+        Assert.True(first.Y >= 0 && first.Y < 4);
+        // Actual = Red (255,0,0), Baseline = Blue (0,0,255)
+        Assert.Equal(255, first.ActualR);
+        Assert.Equal(0, first.ActualG);
+        Assert.Equal(0, first.ActualB);
+        Assert.Equal(0, first.BaselineR);
+        Assert.Equal(0, first.BaselineG);
+        Assert.Equal(255, first.BaselineB);
+    }
+
+    [Fact]
+    public void PixelDiffCompare_IdenticalImages_ReturnsEmptyMismatches()
+    {
+        using var bitmap1 = CreateSolidBitmap(4, 4, SKColors.Green);
+        using var bitmap2 = CreateSolidBitmap(4, 4, SKColors.Green);
+
+        using var result = PixelDiffRunner.Compare(bitmap1, bitmap2);
+
+        Assert.Equal(0, result.DiffPixelCount);
+        Assert.Empty(result.Mismatches);
     }
 
     private static SKBitmap CreateSolidBitmap(int width, int height, SKColor color)

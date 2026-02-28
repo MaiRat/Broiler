@@ -199,6 +199,24 @@ HTML-Renderer-1.5.2/Source/HtmlRenderer.Image.Tests/TestData/Acid1DifferentialRe
 Each report includes the Broiler PNG, Chromium PNG, pixel-diff overlay, and
 JSON diagnostics (fragment tree, display list).
 
+#### Per-Pixel Mismatch Log
+
+Each differential report also generates a CSV mismatch log
+(`<testname>_mismatches.csv`) containing the position and RGBA colour values
+for every differing pixel (capped at 10,000 entries).  The CSV format is:
+
+```csv
+X,Y,ActualR,ActualG,ActualB,ActualA,BaselineR,BaselineG,BaselineB,BaselineA
+12,34,255,0,0,255,0,0,255,255
+```
+
+- **X, Y** – pixel coordinates (0-based).
+- **Actual\*** – Broiler (html-renderer) colour channels.
+- **Baseline\*** – Chromium colour channels.
+
+The HTML report links to the CSV and includes a mismatch summary.  Use the log
+to identify colour/position patterns and prioritise renderer fixes.
+
 ### Current Diff Ratios
 
 | Section | CSS1 Feature | Pixel Diff |
