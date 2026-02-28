@@ -106,6 +106,7 @@ public sealed class DifferentialTestReport : IDisposable
     /// <summary>
     /// Writes per-pixel mismatch data to a CSV file.
     /// Each row contains the pixel position and RGBA values for both engines.
+    /// The file is only created when there are mismatches to report.
     /// </summary>
     private void WriteMismatchLog(string path)
     {
@@ -117,11 +118,6 @@ public sealed class DifferentialTestReport : IDisposable
         foreach (var m in mismatches)
         {
             writer.WriteLine($"{m.X},{m.Y},{m.ActualR},{m.ActualG},{m.ActualB},{m.ActualA},{m.BaselineR},{m.BaselineG},{m.BaselineB},{m.BaselineA}");
-        }
-
-        if (PixelDiff.DiffPixelCount > mismatches.Count)
-        {
-            writer.WriteLine($"# Total differing pixels: {PixelDiff.DiffPixelCount} (log capped at {PixelDiffResult.MaxMismatchEntries})");
         }
     }
 
