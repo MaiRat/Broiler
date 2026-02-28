@@ -36,6 +36,16 @@ auto-generated after closing issue
 | 9 | Percentage width | `10.638 %` and `41.17 %` widths | 1.14 % | Low | PositionError | ↓ from 84.64 % |
 | 10 | `dd` height/clearance | Content-box height, float clearance | 2.36 % | Low | PositionError | ↓ from < 50 % |
 
+> **Note on measurement variance:** The values above are from ADR-020
+> (CI environment, 2026-02-28).  Previous locally-measured values (roadmap
+> 2026-02-27) showed S2=0.89 %, S3=0.65 %, S5=0.57 %, S6=0.65 %,
+> S8=2.84 %, S9=10.67 %.  The differences are due to cross-environment
+> font rasterisation variance (font availability, hinting, anti-aliasing)
+> and are not rendering regressions — commit `ee61a77` changed only test
+> infrastructure.  ADR-020 CI measurements are used as the authoritative
+> baseline going forward.  See [ADR-021](../adr/021-acid1-rendering-bug-investigation.md)
+> for the full regression analysis.
+
 ### Summary of Progress
 
 All four ADR-009 priorities have been completed:
