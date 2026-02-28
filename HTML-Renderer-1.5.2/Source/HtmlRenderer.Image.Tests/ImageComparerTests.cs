@@ -145,6 +145,71 @@ public class ImageComparerTests(RenderingFixture fixture)
         Assert.Empty(result.Mismatches);
     }
 
+    [Fact]
+    public void CompareRegion_IdenticalRegion_ReturnsOne()
+    {
+        using var bitmap1 = CreateSolidBitmap(10, 10, SKColors.Red);
+        using var bitmap2 = CreateSolidBitmap(10, 10, SKColors.Red);
+
+        var similarity = ImageComparer.CompareRegion(bitmap1, bitmap2, 2, 2, 5, 5);
+        Assert.Equal(1.0, similarity);
+    }
+
+    [Fact]
+    public void CompareRegion_DifferentRegion_ReturnsLessThanOne()
+    {
+        using var bitmap1 = CreateSolidBitmap(10, 10, SKColors.Red);
+        using var bitmap2 = CreateSolidBitmap(10, 10, SKColors.Blue);
+
+        var similarity = ImageComparer.CompareRegion(bitmap1, bitmap2, 0, 0, 10, 10);
+        Assert.Equal(0.0, similarity);
+    }
+
+    [Fact]
+    public void CompareRegion_PartialMatch_ReturnsFractionalSimilarity()
+    {
+        using var bitmap1 = CreateSolidBitmap(10, 10, SKColors.Red);
+        using var bitmap2 = CreateSolidBitmap(10, 10, SKColors.Red);
+        // Make the bottom half different
+        for (int y = 5; y < 10; y++)
+            for (int x = 0; x < 10; x++)
+                bitmap2.SetPixel(x, y, SKColors.Blue);
+
+        // Top region should be identical
+        Assert.Equal(1.0, ImageComparer.CompareRegion(bitmap1, bitmap2, 0, 0, 10, 5));
+        // Bottom region should differ completely
+        Assert.Equal(0.0, ImageComparer.CompareRegion(bitmap1, bitmap2, 0, 5, 10, 5));
+    }
+
+    [Fact]
+    public void CompareRegion_NullImage_ReturnsZero()
+    {
+        using var bitmap = CreateSolidBitmap(10, 10, SKColors.Red);
+        Assert.Equal(0, ImageComparer.CompareRegion(null!, bitmap, 0, 0, 5, 5));
+        Assert.Equal(0, ImageComparer.CompareRegion(bitmap, null!, 0, 0, 5, 5));
+    }
+
+    [Fact]
+    public void CompareRegion_OutOfBounds_ClampsToIntersection()
+    {
+        using var bitmap1 = CreateSolidBitmap(10, 10, SKColors.Red);
+        using var bitmap2 = CreateSolidBitmap(10, 10, SKColors.Red);
+
+        // Region extends beyond image bounds – should clamp and still match
+        var similarity = ImageComparer.CompareRegion(bitmap1, bitmap2, 5, 5, 100, 100);
+        Assert.Equal(1.0, similarity);
+    }
+
+    [Fact]
+    public void CompareRegion_ZeroArea_ReturnsZero()
+    {
+        using var bitmap1 = CreateSolidBitmap(10, 10, SKColors.Red);
+        using var bitmap2 = CreateSolidBitmap(10, 10, SKColors.Red);
+
+        Assert.Equal(0, ImageComparer.CompareRegion(bitmap1, bitmap2, 0, 0, 0, 5));
+        Assert.Equal(0, ImageComparer.CompareRegion(bitmap1, bitmap2, 0, 0, 5, 0));
+    }
+
     private static SKBitmap CreateSolidBitmap(int width, int height, SKColor color)
     {
         var bitmap = new SKBitmap(width, height);

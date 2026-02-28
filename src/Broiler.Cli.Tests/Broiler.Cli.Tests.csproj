@@ -28,6 +28,7 @@
     <Content Include="..\..\acid\acid1\acid1.html" Link="TestData\acid1.html" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\acid1.png" Link="TestData\acid1.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\acid1-fail.png" Link="TestData\acid1-fail.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\acid\acid1\acid1-engine-baseline.png" Link="TestData\acid1-engine-baseline.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\split\section1-body-border.html" Link="TestData\split\section1-body-border.html" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\split\section2-dt-float-left.html" Link="TestData\split\section2-dt-float-left.html" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\acid\acid1\split\section3-dd-float-right.html" Link="TestData\split\section3-dd-float-right.html" CopyToOutputDirectory="PreserveNewest" />
