@@ -67,6 +67,23 @@ public class Acid1CaptureTests : IDisposable
     /// </summary>
     private const double MinSimilarityThreshold = 0.48;
 
+    /// <summary>
+    /// Minimum region-level similarity threshold for targeted area
+    /// comparisons (bottom half, right half).  A region scoring below
+    /// this value indicates that a specific visual element (e.g. the
+    /// gold blockquote box or the black h1 box) has moved, disappeared,
+    /// or changed dramatically.
+    /// </summary>
+    private const double RegionSimilarityFloor = 0.30;
+
+    /// <summary>
+    /// Maximum allowable pixel-difference ratio for the per-engine
+    /// golden baseline comparison (<c>acid1-engine-baseline.png</c>).
+    /// This is intentionally tight (0.1 %) because the comparison is
+    /// within the same rendering engine across commits.
+    /// </summary>
+    private const double EngineBaselinePixelThreshold = 0.001;
+
     private static readonly string TestDataDir =
         Path.Combine(AppContext.BaseDirectory, "TestData");
 
@@ -377,7 +394,7 @@ public class Acid1CaptureTests : IDisposable
         {
             ViewportWidth = refInfo.Width,
             ViewportHeight = refInfo.Height,
-            PixelDiffThreshold = 0.001,
+            PixelDiffThreshold = EngineBaselinePixelThreshold,
             ColorTolerance = 5
         };
 
@@ -1133,9 +1150,9 @@ public class Acid1CaptureTests : IDisposable
 
         // The bottom half must stay above a meaningful threshold so that
         // positional shifts of the gold or black boxes are caught.
-        Assert.True(regionSimilarity >= 0.30,
+        Assert.True(regionSimilarity >= RegionSimilarityFloor,
             $"Bottom-half region similarity ({regionSimilarity:P1}) fell below the " +
-            "regression floor (30 %). The gold blockquote box, black h1 box, or " +
+            $"regression floor ({RegionSimilarityFloor:P0}). The gold blockquote box, black h1 box, or " +
             "clear:both paragraph may have moved or disappeared.");
     }
 
@@ -1165,9 +1182,9 @@ public class Acid1CaptureTests : IDisposable
             halfX, 0, halfW, refInfo.Height,
             colorTolerance: 10);
 
-        Assert.True(regionSimilarity >= 0.30,
+        Assert.True(regionSimilarity >= RegionSimilarityFloor,
             $"Right-half region similarity ({regionSimilarity:P1}) fell below the " +
-            "regression floor (30 %). Elements on the right side (dd float:right, " +
+            $"regression floor ({RegionSimilarityFloor:P0}). Elements on the right side (dd float:right, " +
             "black h1 box, li stacking) may have moved or disappeared.");
     }
 
