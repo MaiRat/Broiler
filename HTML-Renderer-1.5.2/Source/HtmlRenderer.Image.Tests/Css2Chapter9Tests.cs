@@ -28,28 +28,29 @@ public class Css2Chapter9Tests
     private static readonly string GoldenDir = Path.Combine(
         GetSourceDirectory(), "TestData", "GoldenLayout");
 
+    /// <summary>Pixel colour channel thresholds for render verification.</summary>
+    private const int HighChannel = 200;
+    private const int LowChannel = 50;
+
     // ═══════════════════════════════════════════════════════════════
     // 9.1  Introduction to the Visual Formatting Model
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
     /// §9.1.1 – Viewport: initial containing block has viewport dimensions.
-    /// A block-level element with no explicit width should expand to fill the
-    /// available viewport width.
+    /// A block-level element with an explicit width smaller than the viewport
+    /// should be accommodated without overflow. The viewport (600px) is
+    /// intentionally larger than the element (400px) to verify this.
     /// </summary>
     [Fact]
     public void S9_1_1_Viewport_InitialContainingBlock()
     {
+        // Viewport is 600px wide; the div is only 400px. Render succeeds
+        // without error, demonstrating the viewport accommodates the block.
         const string html = "<div style='width:400px;height:50px;background-color:blue;'></div>";
         var fragment = BuildFragmentTree(html, 600, 400);
         Assert.NotNull(fragment);
-        // The explicit-width div should appear at 400px in the layout tree.
-        // This demonstrates the viewport (600px canvas) accommodates the block.
-        Assert.True(fragment.Children.Count > 0, "Expected at least one child in fragment tree");
-        var body = fragment.Children[0];
-        // Body wrapper should have the explicit child within it.
-        Assert.True(body.Children.Count > 0 || body.Size.Width >= 400,
-            $"Body fragment should contain the 400px child or have appropriate width");
+        LayoutInvariantChecker.AssertValid(fragment);
     }
 
     /// <summary>
@@ -831,7 +832,7 @@ public class Css2Chapter9Tests
         using var bitmap = HtmlRender.RenderToImage(html, 200, 100);
         // Top-left corner should be red (the float).
         var pixel = bitmap.GetPixel(5, 5);
-        Assert.True(pixel.Red > 200 && pixel.Green < 50 && pixel.Blue < 50,
+        Assert.True(pixel.Red > HighChannel && pixel.Green < LowChannel && pixel.Blue < LowChannel,
             $"Expected red at (5,5) for float:left, got ({pixel.Red},{pixel.Green},{pixel.Blue})");
     }
 
@@ -867,11 +868,11 @@ public class Css2Chapter9Tests
         using var bitmap = HtmlRender.RenderToImage(html, 200, 200);
         // First div: red at y=5
         var p1 = bitmap.GetPixel(10, 5);
-        Assert.True(p1.Red > 200 && p1.Green < 50 && p1.Blue < 50,
+        Assert.True(p1.Red > HighChannel && p1.Green < LowChannel && p1.Blue < LowChannel,
             $"Expected red at (10,5), got ({p1.Red},{p1.Green},{p1.Blue})");
         // Second div: blue at y=45
         var p2 = bitmap.GetPixel(10, 45);
-        Assert.True(p2.Red < 50 && p2.Green < 50 && p2.Blue > 200,
+        Assert.True(p2.Red < LowChannel && p2.Green < LowChannel && p2.Blue > HighChannel,
             $"Expected blue at (10,45), got ({p2.Red},{p2.Green},{p2.Blue})");
     }
 
@@ -887,10 +888,10 @@ public class Css2Chapter9Tests
                 <div style='clear:both;width:100px;height:50px;background-color:blue;'></div>
               </body>";
         using var bitmap = HtmlRender.RenderToImage(html, 200, 200);
-        // The cleared blue div should be below the float: at y >= 50.
+        // The cleared blue div should be below the float: check for blue at y >= 50.
         var p = bitmap.GetPixel(10, 55);
-        Assert.True(p.Blue > 200 || (p.Red < 50 && p.Green < 50),
-            $"Expected blue-ish at (10,55) after clear, got ({p.Red},{p.Green},{p.Blue})");
+        Assert.True(p.Blue > HighChannel && p.Red < LowChannel && p.Green < LowChannel,
+            $"Expected blue at (10,55) after clear, got ({p.Red},{p.Green},{p.Blue})");
     }
 
     // ═══════════════════════════════════════════════════════════════
