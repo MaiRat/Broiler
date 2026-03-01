@@ -1588,4 +1588,179 @@ public class IRTypesTests
         // Only DrawTextItem expected, no FillRectItem for selection
         Assert.DoesNotContain(displayList.Items, i => i is FillRectItem);
     }
+
+    // =================================================================
+    // CSS2.1 §14.2 — Canvas background propagation
+    // =================================================================
+
+    [Fact]
+    public void PaintWalker_CanvasBgPropagation_BodyBgFillsViewport()
+    {
+        // When html has transparent bg and body has a color, the body color
+        // should fill the viewport (canvas propagation).
+        var body = new Fragment
+        {
+            Location = new PointF(8, 8),
+            Size = new SizeF(784, 100),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.Red },
+        };
+        var html = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(800, 600),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0) },
+            Children = [body],
+        };
+        var root = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(800, 600),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0) },
+            Children = [html],
+        };
+
+        var viewport = new RectangleF(0, 0, 800, 600);
+        var displayList = PaintWalker.Paint(root, viewport);
+        var fills = displayList.Items.OfType<FillRectItem>().ToList();
+
+        // First fill should be the canvas background covering the full viewport
+        Assert.True(fills.Count >= 1);
+        Assert.Equal(Color.Red, fills[0].Color);
+        Assert.Equal(viewport, fills[0].Bounds);
+    }
+
+    [Fact]
+    public void PaintWalker_CanvasBgPropagation_BodyBgNotDoublePainted()
+    {
+        // CSS2.1 §14.2: When body bg is propagated to canvas, body must NOT
+        // paint its own background at its box position.
+        var body = new Fragment
+        {
+            Location = new PointF(8, 8),
+            Size = new SizeF(784, 100),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.Blue },
+        };
+        var html = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(800, 600),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0) },
+            Children = [body],
+        };
+        var root = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(800, 600),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0) },
+            Children = [html],
+        };
+
+        var viewport = new RectangleF(0, 0, 800, 600);
+        var displayList = PaintWalker.Paint(root, viewport);
+        var blueFills = displayList.Items.OfType<FillRectItem>()
+            .Where(f => f.Color == Color.Blue).ToList();
+
+        // Only one blue fill should exist (the canvas), NOT a second at the body's position
+        Assert.Single(blueFills);
+        Assert.Equal(viewport, blueFills[0].Bounds);
+    }
+
+    [Fact]
+    public void PaintWalker_CanvasBgPropagation_HtmlBgUsedDirectly()
+    {
+        // When the html element has a non-transparent background, it is used
+        // for the canvas and its own element background is suppressed.
+        var body = new Fragment
+        {
+            Location = new PointF(8, 8),
+            Size = new SizeF(784, 100),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.Green },
+        };
+        var html = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(800, 600),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.Red },
+            Children = [body],
+        };
+        var root = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(800, 600),
+            Style = new ComputedStyle { Display = "block", Visibility = "visible", ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0) },
+            Children = [html],
+        };
+
+        var viewport = new RectangleF(0, 0, 800, 600);
+        var displayList = PaintWalker.Paint(root, viewport);
+        var fills = displayList.Items.OfType<FillRectItem>().ToList();
+
+        // Canvas fill should be Red (from html), not Green (from body)
+        Assert.Equal(Color.Red, fills[0].Color);
+        Assert.Equal(viewport, fills[0].Bounds);
+        // Html's own background should NOT be painted again at its position
+        var htmlRedFills = fills.Where(f => f.Color == Color.Red).ToList();
+        Assert.Single(htmlRedFills);
+        // Body's green background should still be painted at body position
+        var bodyGreenFills = fills.Where(f => f.Color == Color.Green).ToList();
+        Assert.Single(bodyGreenFills);
+    }
+
+    // =================================================================
+    // CSS2.1 §17.5.1 — Table six-layer background painting
+    // =================================================================
+
+    [Fact]
+    public void PaintWalker_TableLayers_ColumnBgPaintedBeforeRowBg()
+    {
+        // CSS2.1 §17.5.1: Column backgrounds (layer 3) must be painted before
+        // row-group/row/cell backgrounds (layers 4–6).
+        var cell = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 30),
+            Style = new ComputedStyle { Display = "table-cell", Visibility = "visible", ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0) },
+        };
+        var row = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 30),
+            Style = new ComputedStyle { Display = "table-row", Visibility = "visible", ActualBackgroundColor = Color.Blue },
+            Children = [cell],
+        };
+        var rowGroup = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 30),
+            Style = new ComputedStyle { Display = "table-row-group", Visibility = "visible", ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0) },
+            Children = [row],
+        };
+        var col = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 30),
+            Style = new ComputedStyle { Display = "table-column", Visibility = "visible", ActualBackgroundColor = Color.Red },
+        };
+        var table = new Fragment
+        {
+            Location = new PointF(0, 0),
+            Size = new SizeF(100, 30),
+            Style = new ComputedStyle { Display = "table", Visibility = "visible", ActualBackgroundColor = Color.FromArgb(0, 0, 0, 0) },
+            Children = [col, rowGroup],
+        };
+
+        var displayList = PaintWalker.Paint(table);
+        var fills = displayList.Items.OfType<FillRectItem>().ToList();
+
+        // Column background (Red) should appear before row background (Blue)
+        int colIdx = fills.FindIndex(f => f.Color == Color.Red);
+        int rowIdx = fills.FindIndex(f => f.Color == Color.Blue);
+        Assert.True(colIdx >= 0, "Column background not found");
+        Assert.True(rowIdx >= 0, "Row background not found");
+        Assert.True(colIdx < rowIdx, "Column background must be painted before row background per CSS2.1 §17.5.1");
+
+        // Column background must NOT be painted twice (once in early layer, once in tree walk)
+        var redFills = fills.Where(f => f.Color == Color.Red).ToList();
+        Assert.Single(redFills);
+    }
 }
