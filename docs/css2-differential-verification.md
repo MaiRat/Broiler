@@ -13,7 +13,7 @@ outputs are compared pixel-by-pixel.
 - **Pixel Diff Threshold:** 5 %
 - **Colour Tolerance:** 15 per channel
 - **Layout Tolerance:** 2 px
-- **Date:** 2026-03-01 00:32:23 UTC
+- **Date:** 2026-03-01 10:38:35 UTC
 
 ## Summary
 
@@ -29,7 +29,7 @@ outputs are compared pixel-by-pixel.
 
 | Chapter | Total | Identical | Pass | Fail | Avg Diff | Max Diff |
 |---------|-------|-----------|------|------|----------|----------|
-| Chapter 9 | 50 | 3 | 14 | 36 | 67.73 % | 99.48 % |
+| Chapter 9 | 50 | 3 | 14 | 36 | 67.75 % | 99.48 % |
 | Chapter 10 | 135 | 3 | 53 | 82 | 58.67 % | 99.97 % |
 | Chapter 17 | 95 | 0 | 87 | 8 | 4.43 % | 100.00 % |
 
@@ -86,7 +86,7 @@ outputs are compared pixel-by-pixel.
 | S9_3_1_PositionStatic_DefaultNormalFlow | 93.06 % | 446672/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_3_1_PositionRelative_OffsetFromNormalFlow | 89.90 % | 431536/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_3_1_PositionAbsolute_RemovedFromFlow | 94.60 % | 454072/480000 | 0 | Critical | RasterDiff | FAIL |
-| S9_3_1_PositionFixed | 96.37 % | 462560/480000 | 0 | Critical | RasterDiff | FAIL |
+| S9_3_1_PositionFixed | 96.99 % | 465560/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_3_2_BoxOffsets_TopLeft | 97.92 % | 470000/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_4_1_BFC_VerticalLayout | 92.09 % | 442048/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_4_1_BFC_LeftEdgeTouchesContainingBlock | 98.12 % | 471000/480000 | 0 | Critical | RasterDiff | FAIL |
@@ -109,7 +109,7 @@ outputs are compared pixel-by-pixel.
 | S9_5_2_ClearBoth | 95.90 % | 460312/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_6_AbsolutePositioning_RemovedFromFlow | 93.79 % | 450200/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_6_AbsolutePositioning_ContainingBlockIsPositionedAncestor | 98.67 % | 473600/480000 | 0 | Critical | RasterDiff | FAIL |
-| S9_6_1_FixedPositioning | 92.42 % | 443615/480000 | 0 | Critical | RasterDiff | FAIL |
+| S9_6_1_FixedPositioning | 92.92 % | 446015/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_7_DisplayNone_IgnoresPositionAndFloat | 95.83 % | 460000/480000 | 0 | Critical | RasterDiff | FAIL |
 | S9_7_FloatAdjustsDisplay | 6.72 % | 32258/480000 | 0 | Medium | RasterDiff | FAIL |
 | S9_8_ComparisonExample_AllPositioningSchemes | 95.85 % | 460088/480000 | 2 | Critical | RasterDiff | FAIL |
@@ -444,6 +444,7 @@ and Chromium. They are ordered by severity (highest diff ratio first).
 - **Chapter 9 / S9_5_2_ClearRight:** 97.31 % (467112/480000 pixels). Classification: RasterDiff.
 - **Chapter 9 / S9_5_1_FloatRule7_WrapsWhenExceedingWidth:** 97.01 % (465636/480000 pixels). Classification: RasterDiff.
 - **Chapter 10 / S10_3_7_AbsoluteConstraintEquation:** 97.00 % (465600/480000 pixels). Classification: RasterDiff.
+- **Chapter 9 / S9_3_1_PositionFixed:** 96.99 % (465560/480000 pixels). Classification: RasterDiff.
 - **Chapter 10 / S10_6_7_BFCRoot_AutoHeightIncludesFloats:** 96.89 % (465096/480000 pixels). Classification: RasterDiff. **1 float overlap(s).**
 - **Chapter 10 / S10_6_3_BlockAutoHeight_MarginCollapse:** 96.88 % (465000/480000 pixels). Classification: RasterDiff.
 - **Chapter 9 / S9_4_1_MarginCollapsing_Siblings:** 96.79 % (464576/480000 pixels). Classification: RasterDiff.
@@ -453,7 +454,6 @@ and Chromium. They are ordered by severity (highest diff ratio first).
 - **Chapter 10 / S10_6_4_AbsoluteHeight_TopBottom:** 96.67 % (464000/480000 pixels). Classification: RasterDiff.
 - **Chapter 10 / S10_5_Height_Auto_DeterminedByContent:** 96.54 % (463392/480000 pixels). Classification: RasterDiff.
 - **Chapter 10 / S10_8_1_Golden_LineHeightVariations:** 96.45 % (462968/480000 pixels). Classification: RasterDiff.
-- **Chapter 9 / S9_3_1_PositionFixed:** 96.37 % (462560/480000 pixels). Classification: RasterDiff.
 - **Chapter 10 / S10_3_7_Golden_AbsolutePositioned:** 96.25 % (462000/480000 pixels). Classification: RasterDiff.
 - **Chapter 9 / S9_5_2_ClearBoth:** 95.90 % (460312/480000 pixels). Classification: RasterDiff.
 - **Chapter 10 / S10_8_2_VerticalAlign_AppliesOnlyToInline:** 95.89 % (460282/480000 pixels). Classification: RasterDiff.
@@ -481,8 +481,8 @@ and Chromium. They are ordered by severity (highest diff ratio first).
 - **Chapter 10 / S10_6_3_BlockAutoHeight_FromChildren:** 93.59 % (449232/480000 pixels). Classification: RasterDiff.
 - **Chapter 9 / S9_2_1_BlockBoxes_StackVertically:** 93.06 % (446672/480000 pixels). Classification: RasterDiff.
 - **Chapter 9 / S9_3_1_PositionStatic_DefaultNormalFlow:** 93.06 % (446672/480000 pixels). Classification: RasterDiff.
+- **Chapter 9 / S9_6_1_FixedPositioning:** 92.92 % (446015/480000 pixels). Classification: RasterDiff.
 - **Chapter 9 / S9_4_3_RelativePositioning_NoEffectOnSiblings:** 92.42 % (443616/480000 pixels). Classification: RasterDiff.
-- **Chapter 9 / S9_6_1_FixedPositioning:** 92.42 % (443615/480000 pixels). Classification: RasterDiff.
 - **Chapter 9 / S9_4_1_BFC_VerticalLayout:** 92.09 % (442048/480000 pixels). Classification: RasterDiff.
 - **Chapter 9 / S9_3_1_PositionRelative_OffsetFromNormalFlow:** 89.90 % (431536/480000 pixels). Classification: RasterDiff.
 - **Chapter 10 / S10_6_7_BFCRoot_ContentTallerThanFloat:** 89.15 % (427936/480000 pixels). Classification: RasterDiff. **1 float overlap(s).**
