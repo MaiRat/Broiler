@@ -253,7 +253,7 @@ public class PixelRegressionTests
                     if (IsBlack(bitmap.GetPixel(x, y - 1))) blackNeighbors++;
                     if (IsBlack(bitmap.GetPixel(x, y + 1))) blackNeighbors++;
 
-                    if (blackNeighbors >= 4)
+                    if (blackNeighbors == 4)
                         seamCount++;
                 }
             }
