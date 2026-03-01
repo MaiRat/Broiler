@@ -487,33 +487,45 @@ internal static class PaintWalker
 
     /// <summary>
     /// CSS2.1 §17.5.1: Paints table children in the six-layer order.
-    /// Layer 1 (table background) is already painted by the caller.
+    /// Layer 1 (table background) is already painted by <see cref="PaintFragment"/>
+    /// via <see cref="EmitBackground"/> before calling <see cref="PaintChildren"/>.
     /// Layers 2–3: column-group and column backgrounds.
     /// Layers 4–6: row-group, row, and cell backgrounds (tree order).
     /// </summary>
     private static void PaintTableChildren(Fragment table, List<DisplayItem> items, Fragment? propagatedFrom)
     {
+        // Collect column/column-group fragments whose backgrounds will be
+        // emitted early (layers 2–3) so PaintFragment can skip them later.
+        HashSet<Fragment>? earlyBgFragments = null;
+
         // Layer 2–3: Paint column-group and column backgrounds first
         foreach (var child in table.Children)
         {
             if (child.Style.Display == "table-column-group")
             {
                 EmitBackground(child, items);
+                earlyBgFragments ??= new HashSet<Fragment>(ReferenceEqualityComparer.Instance);
+                earlyBgFragments.Add(child);
                 foreach (var col in child.Children)
                 {
                     if (col.Style.Display == "table-column")
+                    {
                         EmitBackground(col, items);
+                        earlyBgFragments.Add(col);
+                    }
                 }
             }
             else if (child.Style.Display == "table-column")
             {
                 EmitBackground(child, items);
+                earlyBgFragments ??= new HashSet<Fragment>(ReferenceEqualityComparer.Instance);
+                earlyBgFragments.Add(child);
             }
         }
 
-        // Layers 4–6: Paint remaining children (row-groups, rows, cells) in tree order.
-        // Column/column-group fragments are painted normally for borders/text but
-        // their backgrounds were already emitted above.
+        // Layers 4–6: Paint all children in tree order.  Column/column-group
+        // fragments whose backgrounds were already emitted above are passed
+        // through so PaintFragment skips their EmitBackground call.
         List<Fragment>? positioned = null;
         foreach (var child in table.Children)
         {
@@ -524,7 +536,8 @@ internal static class PaintWalker
             }
             else
             {
-                PaintFragment(child, items, propagatedFrom);
+                var skipBg = propagatedFrom ?? (earlyBgFragments != null && earlyBgFragments.Contains(child) ? child : null);
+                PaintFragment(child, items, skipBg);
             }
         }
 
@@ -533,7 +546,8 @@ internal static class PaintWalker
             positioned.Sort((a, b) => a.StackLevel.CompareTo(b.StackLevel));
             foreach (var child in positioned)
             {
-                PaintFragment(child, items, propagatedFrom);
+                var skipBg = propagatedFrom ?? (earlyBgFragments != null && earlyBgFragments.Contains(child) ? child : null);
+                PaintFragment(child, items, skipBg);
             }
         }
     }

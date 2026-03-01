@@ -1758,5 +1758,9 @@ public class IRTypesTests
         Assert.True(colIdx >= 0, "Column background not found");
         Assert.True(rowIdx >= 0, "Row background not found");
         Assert.True(colIdx < rowIdx, "Column background must be painted before row background per CSS2.1 §17.5.1");
+
+        // Column background must NOT be painted twice (once in early layer, once in tree walk)
+        var redFills = fills.Where(f => f.Color == Color.Red).ToList();
+        Assert.Single(redFills);
     }
 }
