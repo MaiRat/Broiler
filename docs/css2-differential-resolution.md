@@ -106,12 +106,13 @@ between rendering engines.
 
 | ID | Target | Status |
 |----|--------|--------|
-| M1 | Critical issues ≤ 6, pass rate ≥ 90% | In Progress |
-| M2 | Table backgrounds all correct (Ch 17: 0 Critical) | Fixed |
-| M3 | Float overlaps resolved (0 overlap warnings) | Monitored |
-| M4 | Table heights correct (0 High-severity) | Pending |
-| M5 | Medium diffs resolved (0 Medium) | Pending |
-| M6 | CI regression gate on Low tests | Pending |
+| M1 | Critical issues ≤ 6, pass rate ≥ 90% | 🔄 In Progress |
+| M2 | Table backgrounds all correct (Ch 17: 0 Critical) | ✅ Code Complete |
+| M3 | Float overlaps resolved (0 overlap warnings) | 🔄 In Progress |
+| M4 | Table heights correct (0 High-severity) | ⬜ Pending |
+| M5 | Medium diffs resolved (0 Medium) | ⬜ Pending |
+| M6 | CI regression gate on Low tests | ⬜ Pending |
+| M7 | Differential coverage expanded to chapters 4, 5, 8 | ⬜ Pending |
 
 ## Test Commands
 
