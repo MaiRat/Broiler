@@ -59,7 +59,8 @@ based on manual inspection of the rendered outputs and the
 ### 1. User-Agent Stylesheet Differences (116 Critical tests)
 
 **Description:** Chromium applies default `body { margin: 8px }` and
-background propagation rules per the [HTML specification §15.3](https://html.spec.whatwg.org/multipage/rendering.html#the-page).
+background propagation rules per the
+[HTML specification §15 (Rendering)](https://html.spec.whatwg.org/multipage/rendering.html#the-page).
 html-renderer does not apply `body` margins by default, causing all
 block-level coloured boxes to fill different viewport regions.
 
