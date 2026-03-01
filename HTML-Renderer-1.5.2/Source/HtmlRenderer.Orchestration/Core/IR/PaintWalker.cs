@@ -39,23 +39,35 @@ internal static class PaintWalker
     {
         var items = new List<DisplayItem>();
 
+        // CSS2.1 §14.2: Propagate root/body background to the canvas.
+        // The element whose background was propagated must NOT paint its own
+        // background at its box position (the spec says "must not paint a
+        // background for that child element").
+        Fragment? propagatedFrom = null;
         if (viewport.Width > 0 && viewport.Height > 0)
-            EmitCanvasBackground(root, viewport, items);
+            propagatedFrom = EmitCanvasBackground(root, viewport, items);
 
-        PaintFragment(root, items);
+        PaintFragment(root, items, propagatedFrom);
         return new DisplayList { Items = items };
     }
 
     /// <summary>
     /// CSS2.1 §14.2: The background of the root element becomes the background of the canvas.
     /// If the root element has a transparent background, the body element's background is used.
+    /// Returns the fragment whose background was propagated (so it can be suppressed during
+    /// normal painting), or <c>null</c> if no propagation occurred.
     /// </summary>
-    private static void EmitCanvasBackground(Fragment root, RectangleF viewport, List<DisplayItem> items)
+    private static Fragment? EmitCanvasBackground(Fragment root, RectangleF viewport, List<DisplayItem> items)
     {
-        Color canvasBg = FindCanvasBackground(root);
+        var (canvasBg, source) = FindCanvasBackground(root);
 
         if (canvasBg.A > 0)
+        {
             items.Add(new FillRectItem { Bounds = viewport, Color = canvasBg });
+            return source;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -63,30 +75,31 @@ internal static class PaintWalker
     /// The root fragment is typically an anonymous wrapper created by the HTML parser.
     /// Its first block child is the <c>html</c> element, whose first visible block
     /// child is the <c>body</c> element (the <c>head</c> element is <c>display:none</c>).
+    /// Returns the resolved color and the fragment it was taken from.
     /// </summary>
-    private static Color FindCanvasBackground(Fragment root)
+    private static (Color Color, Fragment? Source) FindCanvasBackground(Fragment root)
     {
         // Check root itself (rare — the anonymous wrapper usually has no background)
         if (root.Style.ActualBackgroundColor.A > 0)
-            return root.Style.ActualBackgroundColor;
+            return (root.Style.ActualBackgroundColor, root);
 
         // CSS2.1 §14.2 step 1: Use the root element's (html) background.
         // The html element is the first block child of the anonymous wrapper.
         Fragment? htmlFragment = FindFirstBlockChild(root);
         if (htmlFragment == null)
-            return Color.Empty;
+            return (Color.Empty, null);
 
         if (htmlFragment.Style.ActualBackgroundColor.A > 0)
-            return htmlFragment.Style.ActualBackgroundColor;
+            return (htmlFragment.Style.ActualBackgroundColor, htmlFragment);
 
         // CSS2.1 §14.2 step 2: If the root element's background is transparent,
         // use the first visible block child of the root element (i.e. the body).
         // The head element is display:none, so we skip it.
         Fragment? bodyFragment = FindFirstBlockChild(htmlFragment);
         if (bodyFragment != null && bodyFragment.Style.ActualBackgroundColor.A > 0)
-            return bodyFragment.Style.ActualBackgroundColor;
+            return (bodyFragment.Style.ActualBackgroundColor, bodyFragment);
 
-        return Color.Empty;
+        return (Color.Empty, null);
     }
 
     /// <summary>
@@ -105,7 +118,7 @@ internal static class PaintWalker
         return null;
     }
 
-    private static void PaintFragment(Fragment fragment, List<DisplayItem> items)
+    private static void PaintFragment(Fragment fragment, List<DisplayItem> items, Fragment? propagatedFrom = null)
     {
         var style = fragment.Style;
 
@@ -115,7 +128,7 @@ internal static class PaintWalker
         if (style.Visibility != "visible")
         {
             // Even if not visible, children may be visible (CSS spec)
-            PaintChildren(fragment, items);
+            PaintChildren(fragment, items, propagatedFrom);
             return;
         }
 
@@ -137,8 +150,10 @@ internal static class PaintWalker
             clipped = true;
         }
 
-        // Background color
-        EmitBackground(fragment, items);
+        // Background color — CSS2.1 §14.2: skip if this fragment's background
+        // was propagated to the canvas (it is already painted as the canvas fill).
+        if (!ReferenceEquals(fragment, propagatedFrom))
+            EmitBackground(fragment, items);
 
         // Background image
         EmitBackgroundImage(fragment, items);
@@ -159,7 +174,7 @@ internal static class PaintWalker
         EmitTextDecoration(fragment, items);
 
         // Child fragments (stacking-context sorted)
-        PaintChildren(fragment, items);
+        PaintChildren(fragment, items, propagatedFrom);
 
         // Restore clip
         if (clipped)
@@ -427,10 +442,21 @@ internal static class PaintWalker
         }
     }
 
-    private static void PaintChildren(Fragment fragment, List<DisplayItem> items)
+    private static void PaintChildren(Fragment fragment, List<DisplayItem> items, Fragment? propagatedFrom = null)
     {
         if (fragment.Children.Count == 0)
             return;
+
+        // CSS2.1 §17.5.1: Table elements use a six-layer painting model.
+        // Backgrounds are painted in order: table → col-groups → cols →
+        // row-groups → rows → cells.  Column/column-group backgrounds must
+        // be painted before row-group/row/cell backgrounds so they show
+        // through transparent areas.
+        if (fragment.Style.Display is "table" or "inline-table")
+        {
+            PaintTableChildren(fragment, items, propagatedFrom);
+            return;
+        }
 
         // Separate children into non-positioned and positioned
         // Paint order: non-positioned (tree order), then positioned (sorted by StackLevel)
@@ -445,7 +471,7 @@ internal static class PaintWalker
             }
             else
             {
-                PaintFragment(child, items);
+                PaintFragment(child, items, propagatedFrom);
             }
         }
 
@@ -454,7 +480,60 @@ internal static class PaintWalker
             positioned.Sort((a, b) => a.StackLevel.CompareTo(b.StackLevel));
             foreach (var child in positioned)
             {
-                PaintFragment(child, items);
+                PaintFragment(child, items, propagatedFrom);
+            }
+        }
+    }
+
+    /// <summary>
+    /// CSS2.1 §17.5.1: Paints table children in the six-layer order.
+    /// Layer 1 (table background) is already painted by the caller.
+    /// Layers 2–3: column-group and column backgrounds.
+    /// Layers 4–6: row-group, row, and cell backgrounds (tree order).
+    /// </summary>
+    private static void PaintTableChildren(Fragment table, List<DisplayItem> items, Fragment? propagatedFrom)
+    {
+        // Layer 2–3: Paint column-group and column backgrounds first
+        foreach (var child in table.Children)
+        {
+            if (child.Style.Display == "table-column-group")
+            {
+                EmitBackground(child, items);
+                foreach (var col in child.Children)
+                {
+                    if (col.Style.Display == "table-column")
+                        EmitBackground(col, items);
+                }
+            }
+            else if (child.Style.Display == "table-column")
+            {
+                EmitBackground(child, items);
+            }
+        }
+
+        // Layers 4–6: Paint remaining children (row-groups, rows, cells) in tree order.
+        // Column/column-group fragments are painted normally for borders/text but
+        // their backgrounds were already emitted above.
+        List<Fragment>? positioned = null;
+        foreach (var child in table.Children)
+        {
+            if (child.CreatesStackingContext)
+            {
+                positioned ??= new List<Fragment>();
+                positioned.Add(child);
+            }
+            else
+            {
+                PaintFragment(child, items, propagatedFrom);
+            }
+        }
+
+        if (positioned != null)
+        {
+            positioned.Sort((a, b) => a.StackLevel.CompareTo(b.StackLevel));
+            foreach (var child in positioned)
+            {
+                PaintFragment(child, items, propagatedFrom);
             }
         }
     }
