@@ -74,6 +74,10 @@ internal sealed class RGraphicsRasterBackend : IRasterBackend
         if (bounds.Width <= 0 || bounds.Height <= 0)
             return;
 
+        // Fill corner rectangles to prevent anti-aliased seams along
+        // the diagonal edges where two same-color border trapezoids meet.
+        FillBorderCorners(g, item);
+
         // Top border
         if (widths.Top > 0 && item.TopColor.A > 0 && IsBorderStyleVisible(item.TopStyle))
         {
@@ -154,6 +158,42 @@ internal sealed class RGraphicsRasterBackend : IRasterBackend
                     bounds.Right - widths.Right / 2, Math.Floor(bounds.Bottom));
             }
         }
+    }
+
+    /// <summary>
+    /// Fills corner rectangles where two adjacent solid borders share the same color.
+    /// This prevents visible anti-aliased seams along the diagonal edge where the
+    /// two border trapezoids meet, which would otherwise let the background bleed through.
+    /// </summary>
+    private static void FillBorderCorners(RGraphics g, DrawBorderItem item)
+    {
+        var bounds = item.Bounds;
+        var widths = item.Widths;
+
+        bool hasTop = widths.Top > 0 && item.TopColor.A > 0 && item.TopStyle == "solid";
+        bool hasRight = widths.Right > 0 && item.RightColor.A > 0 && item.RightStyle == "solid";
+        bool hasBottom = widths.Bottom > 0 && item.BottomColor.A > 0 && item.BottomStyle == "solid";
+        bool hasLeft = widths.Left > 0 && item.LeftColor.A > 0 && item.LeftStyle == "solid";
+
+        // Top-left corner
+        if (hasTop && hasLeft && item.TopColor == item.LeftColor)
+            g.DrawRectangle(g.GetSolidBrush(item.TopColor),
+                bounds.Left, bounds.Top, widths.Left, widths.Top);
+
+        // Top-right corner
+        if (hasTop && hasRight && item.TopColor == item.RightColor)
+            g.DrawRectangle(g.GetSolidBrush(item.TopColor),
+                bounds.Right - widths.Right, bounds.Top, widths.Right, widths.Top);
+
+        // Bottom-left corner
+        if (hasBottom && hasLeft && item.BottomColor == item.LeftColor)
+            g.DrawRectangle(g.GetSolidBrush(item.BottomColor),
+                bounds.Left, bounds.Bottom - widths.Bottom, widths.Left, widths.Bottom);
+
+        // Bottom-right corner
+        if (hasBottom && hasRight && item.BottomColor == item.RightColor)
+            g.DrawRectangle(g.GetSolidBrush(item.BottomColor),
+                bounds.Right - widths.Right, bounds.Bottom - widths.Bottom, widths.Right, widths.Bottom);
     }
 
     private static void RenderDrawText(RGraphics g, DrawTextItem item)

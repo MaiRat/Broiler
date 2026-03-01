@@ -223,6 +223,50 @@ public class PixelRegressionTests
         Assert.Equal(FailureClassification.LayoutDiff, classification);
     }
 
+    /// <summary>
+    /// Verifies that solid border corners have no anti-aliased seam artifacts.
+    /// When adjacent borders share the same color, the corner must be a solid
+    /// rectangle with no diagonal bleed-through from the background.
+    /// </summary>
+    [Fact]
+    public void BorderCorners_NoSeamArtifacts()
+    {
+        // A box with thick black borders on a white background.
+        // The 10px border corners must be solid black with no seam pixels.
+        const string html =
+            @"<div style='margin:20px;width:100px;height:100px;border:10px solid black;background:white'></div>";
+
+        using var bitmap = PixelDiffRunner.RenderDeterministic(html, Config);
+
+        // Scan for non-black pixels surrounded by black on all 4 sides (seam artifacts)
+        int seamCount = 0;
+        for (int y = 1; y < bitmap.Height - 1; y++)
+        {
+            for (int x = 1; x < bitmap.Width - 1; x++)
+            {
+                var pixel = bitmap.GetPixel(x, y);
+                if (pixel.Alpha == 255 && !(pixel.Red == 0 && pixel.Green == 0 && pixel.Blue == 0))
+                {
+                    int blackNeighbors = 0;
+                    if (IsBlack(bitmap.GetPixel(x - 1, y))) blackNeighbors++;
+                    if (IsBlack(bitmap.GetPixel(x + 1, y))) blackNeighbors++;
+                    if (IsBlack(bitmap.GetPixel(x, y - 1))) blackNeighbors++;
+                    if (IsBlack(bitmap.GetPixel(x, y + 1))) blackNeighbors++;
+
+                    if (blackNeighbors >= 4)
+                        seamCount++;
+                }
+            }
+        }
+
+        Assert.True(seamCount == 0,
+            $"Found {seamCount} seam pixels inside solid black border corners. " +
+            "These are anti-aliased diagonal artifacts that should not exist " +
+            "when adjacent borders share the same color.");
+
+        static bool IsBlack(SKColor c) => c.Red == 0 && c.Green == 0 && c.Blue == 0 && c.Alpha == 255;
+    }
+
     // ── Infrastructure ─────────────────────────────────────────────
 
     private static void AssertPixelBaseline(string html, [CallerMemberName] string testName = "")
