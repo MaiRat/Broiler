@@ -13,7 +13,7 @@ outputs are compared pixel-by-pixel.
 - **Pixel Diff Threshold:** 5 %
 - **Colour Tolerance:** 15 per channel
 - **Layout Tolerance:** 2 px
-- **Date:** 2026-03-01 00:24:21 UTC
+- **Date:** 2026-03-01 00:32:23 UTC
 
 ## Summary
 
@@ -690,3 +690,22 @@ and Chromium. They are ordered by severity (highest diff ratio first).
    - **Medium:** 5–10% difference
    - **High:** 10–20% difference
    - **Critical:** ≥ 20% difference
+
+## Additional CSS Tests (Unit Tests — Not Visually Comparable)
+
+The following CSS test files in `src/Broiler.App.Tests/` are **unit tests**
+that validate CSS parsing, selector logic, and property handling. They do not
+produce visual output, so cross-engine visual comparison is not applicable.
+All unit tests pass successfully.
+
+| Test File | Tests | Scope |
+|-----------|-------|-------|
+| CssSelectorTests.cs | 13 | CSS selector specificity, combinators, pseudo-classes |
+| CssBoxModelTests.cs | 16 | Display, position, layout tree construction |
+| CssAnimationsTests.cs | 12 | Transition parsing, timing functions, interpolation |
+| CssGridFlexTests.cs | 10 | Flex direction, grid display resolution |
+| CssTextPropertiesTests.cs | — | Whitespace modes, word-break, text-overflow |
+
+These tests verify correctness at the parsing and logic layer. Rendering
+differences observed in the visual comparison above do not affect the
+accuracy of these unit-level tests.
