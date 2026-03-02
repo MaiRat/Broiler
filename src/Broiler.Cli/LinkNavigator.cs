@@ -84,7 +84,20 @@ public static class LinkNavigator
         var uri = new Uri(resolvedUrl);
 
         if (uri.IsFile)
+        {
+            // Validate the resolved file path is within the same directory
+            // tree as the base URL to prevent path traversal attacks.
+            var baseUri = new Uri(baseUrl);
+            if (baseUri.IsFile)
+            {
+                var baseDir = Path.GetDirectoryName(Path.GetFullPath(baseUri.LocalPath)) ?? string.Empty;
+                var targetPath = Path.GetFullPath(uri.LocalPath);
+                if (!targetPath.StartsWith(baseDir, StringComparison.Ordinal))
+                    return html;
+            }
+
             return await File.ReadAllTextAsync(uri.LocalPath);
+        }
 
         return await httpClient.GetStringAsync(uri);
     }

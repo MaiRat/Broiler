@@ -273,26 +273,23 @@ public class CaptureService
 
         string html;
         var uri = new Uri(options.Url);
+        using var httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
+        };
+
         if (uri.IsFile)
         {
             html = await File.ReadAllTextAsync(uri.LocalPath);
         }
         else
         {
-            using var httpClient = new HttpClient
-            {
-                Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
-            };
             html = await httpClient.GetStringAsync(uri);
         }
 
         // Follow the first link if requested (e.g. Acid2 landing page navigation).
         if (options.FollowFirstLink)
         {
-            using var httpClient = new HttpClient
-            {
-                Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
-            };
             html = await LinkNavigator.FollowFirstLinkAsync(html, options.Url, httpClient);
         }
 
