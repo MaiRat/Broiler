@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SkiaSharp;
 using TheArtOfDev.HtmlRenderer.Adapters;
 using TheArtOfDev.HtmlRenderer.Core;
@@ -95,6 +96,13 @@ public sealed class HtmlContainer : IDisposable
         using var g = new GraphicsAdapter(canvas, clip);
         HtmlContainerInt.PerformPaint(g);
     }
+
+    /// <summary>
+    /// Returns all links found in the parsed HTML document.
+    /// Requires <see cref="SetHtml"/> to have been called first.
+    /// Each link includes its <c>id</c>, <c>href</c>, and bounding rectangle.
+    /// </summary>
+    public List<LinkElementData<RectangleF>> GetLinks() => HtmlContainerInt.GetLinks();
 
     public void Dispose() => HtmlContainerInt.Dispose();
 }

@@ -69,6 +69,14 @@ public class ImageCaptureOptions
     public int TimeoutSeconds { get; init; } = 30;
 
     /// <summary>
+    /// When <c>true</c>, the renderer extracts the first link from the
+    /// initial HTML page and navigates to it before rendering. This
+    /// emulates the Chromium/Playwright behavior for test landing pages
+    /// (e.g.&nbsp;Acid2) that require a click to start.
+    /// </summary>
+    public bool FollowFirstLink { get; init; }
+
+    /// <summary>
     /// Determines the image format from the output file extension.
     /// Returns <see cref="ImageFormat.Jpeg"/> for .jpg/.jpeg files,
     /// otherwise <see cref="ImageFormat.Png"/>.
@@ -111,6 +119,14 @@ public class CaptureOptions
     /// Navigation timeout in seconds. Defaults to 30.
     /// </summary>
     public int TimeoutSeconds { get; init; } = 30;
+
+    /// <summary>
+    /// When <c>true</c>, the renderer extracts the first link from the
+    /// initial HTML page and navigates to it before capturing. This
+    /// emulates the Chromium/Playwright behavior for test landing pages
+    /// (e.g.&nbsp;Acid2) that require a click to start.
+    /// </summary>
+    public bool FollowFirstLink { get; init; }
 
     /// <summary>
     /// Determines the output format from the output file extension.
@@ -173,6 +189,12 @@ public class CaptureService
         };
 
         var html = await httpClient.GetStringAsync(new Uri(options.Url));
+
+        // Follow the first link if requested (e.g. Acid2 landing page navigation).
+        if (options.FollowFirstLink)
+        {
+            html = await LinkNavigator.FollowFirstLinkAsync(html, options.Url, httpClient);
+        }
 
         // Process CSS using HTML-Renderer
         ProcessCss(html);
@@ -262,6 +284,16 @@ public class CaptureService
                 Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
             };
             html = await httpClient.GetStringAsync(uri);
+        }
+
+        // Follow the first link if requested (e.g. Acid2 landing page navigation).
+        if (options.FollowFirstLink)
+        {
+            using var httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
+            };
+            html = await LinkNavigator.FollowFirstLinkAsync(html, options.Url, httpClient);
         }
 
         var format = options.ImageFormat == ImageFormat.Jpeg

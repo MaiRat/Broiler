@@ -14,6 +14,7 @@ public class Program
         bool fullPage = false;
         bool testEngines = false;
         bool fuzzLayout = false;
+        bool followFirstLink = false;
         int fuzzCount = 1000;
         int timeoutSeconds = 30;
         int width = 1024;
@@ -55,6 +56,9 @@ public class Program
                     break;
                 case "--full-page":
                     fullPage = true;
+                    break;
+                case "--follow-first-link":
+                    followFirstLink = true;
                     break;
                 case "--test-engines":
                     testEngines = true;
@@ -129,6 +133,7 @@ public class Program
                 Width = width,
                 Height = height,
                 FullPage = fullPage,
+                FollowFirstLink = followFirstLink,
                 TimeoutSeconds = timeoutSeconds,
             };
 
@@ -182,6 +187,7 @@ public class Program
             Url = url,
             OutputPath = output,
             FullPage = fullPage,
+            FollowFirstLink = followFirstLink,
             TimeoutSeconds = timeoutSeconds,
         };
 
@@ -224,6 +230,7 @@ public class Program
         Console.WriteLine("  --width <PIXELS>       Image width in pixels (default: 1024, used with --capture-image)");
         Console.WriteLine("  --height <PIXELS>      Image height in pixels (default: 768, used with --capture-image)");
         Console.WriteLine("  --full-page            Capture the full page content");
+        Console.WriteLine("  --follow-first-link    Follow the first link on the page before rendering");
         Console.WriteLine("  --timeout <SECS>       Navigation timeout in seconds (default: 30)");
         Console.WriteLine("  --test-engines         Run smoke tests for the embedded rendering engines");
         Console.WriteLine("  --fuzz-layout          Run layout fuzz testing with random HTML/CSS");
