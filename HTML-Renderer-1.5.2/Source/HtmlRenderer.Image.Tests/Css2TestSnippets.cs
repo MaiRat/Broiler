@@ -3,7 +3,8 @@ namespace HtmlRenderer.Image.Tests;
 /// <summary>
 /// Provides all CSS2 chapter test HTML snippets for differential verification.
 /// Each entry is a (chapter, testName, html) tuple extracted from
-/// Css2Chapter9Tests, Css2Chapter10Tests, and Css2Chapter17Tests.
+/// Css2Chapter9Tests, Css2Chapter10Tests, Css2Chapter12Tests,
+/// Css2Chapter15Tests, Css2Chapter16Tests, and Css2Chapter17Tests.
 /// </summary>
 internal static class Css2TestSnippets
 {
@@ -1243,6 +1244,87 @@ internal static class Css2TestSnippets
               </table>"),
     ];
 
+    /// <summary>CSS 2.1 Chapter 12 test snippets (20 tests).</summary>
+    internal static readonly (string Name, string Html)[] Chapter12 =
+    [
+        ("S12_1_ListStyleType_Disc", @"<ul style='list-style-type:disc;'><li>Item A</li><li>Item B</li></ul>"),
+        ("S12_2_ListStyleType_Circle", @"<ul style='list-style-type:circle;'><li>Item A</li><li>Item B</li></ul>"),
+        ("S12_3_ListStyleType_Square", @"<ul style='list-style-type:square;'><li>Item A</li><li>Item B</li></ul>"),
+        ("S12_4_ListStyleType_Decimal", @"<ol style='list-style-type:decimal;'><li>First</li><li>Second</li><li>Third</li></ol>"),
+        ("S12_5_ListStyleType_LowerRoman", @"<ol style='list-style-type:lower-roman;'><li>First</li><li>Second</li><li>Third</li></ol>"),
+        ("S12_6_ListStyleType_UpperRoman", @"<ol style='list-style-type:upper-roman;'><li>First</li><li>Second</li><li>Third</li></ol>"),
+        ("S12_7_ListStyleType_LowerAlpha", @"<ol style='list-style-type:lower-alpha;'><li>First</li><li>Second</li><li>Third</li></ol>"),
+        ("S12_8_ListStyleType_UpperAlpha", @"<ol style='list-style-type:upper-alpha;'><li>First</li><li>Second</li><li>Third</li></ol>"),
+        ("S12_9_ListStyleType_None", @"<ul style='list-style-type:none;'><li>No marker A</li><li>No marker B</li></ul>"),
+        ("S12_10_ListStylePosition_Inside", @"<ul style='list-style-position:inside;'><li>Inside marker</li><li>Second item</li></ul>"),
+        ("S12_11_ListStylePosition_Outside", @"<ul style='list-style-position:outside;'><li>Outside marker</li><li>Second item</li></ul>"),
+        ("S12_12_ListStyle_Shorthand_SquareInside", @"<ul style='list-style:square inside;'><li>Shorthand A</li><li>Shorthand B</li></ul>"),
+        ("S12_13_ListStyle_Shorthand_DecimalOutside", @"<ol style='list-style:decimal outside;'><li>One</li><li>Two</li></ol>"),
+        ("S12_14_OrderedList_StartAttribute", @"<ol start='5' style='list-style-type:decimal;'><li>Five</li><li>Six</li><li>Seven</li></ol>"),
+        ("S12_15_NestedLists_UlInUl", @"<ul style='list-style-type:disc;'><li>Outer A<ul style='list-style-type:circle;'><li>Inner 1</li><li>Inner 2</li></ul></li><li>Outer B</li></ul>"),
+        ("S12_16_NestedLists_OlInUl", @"<ul style='list-style-type:disc;'><li>Outer<ol style='list-style-type:decimal;'><li>Numbered 1</li><li>Numbered 2</li></ol></li></ul>"),
+        ("S12_17_ListItem_MarginPadding", @"<ul style='list-style-type:disc;margin-left:40px;'><li style='padding:5px;background-color:#eee;'>Padded item</li><li>Normal item</li></ul>"),
+        ("S12_18_ListStyleType_Mixed", @"<ol><li style='list-style-type:upper-roman;'>Roman</li><li style='list-style-type:lower-alpha;'>Alpha</li><li style='list-style-type:decimal;'>Decimal</li></ol>"),
+        ("S12_19_ListItem_Display", @"<div><span style='display:list-item;list-style-type:disc;margin-left:20px;'>Span as list item</span></div>"),
+        ("S12_20_ListStyle_Inherit", @"<ul style='list-style-type:square;'><li>Parent square<ul><li>Inherited marker</li></ul></li></ul>"),
+    ];
+
+    /// <summary>CSS 2.1 Chapter 15 test snippets (20 tests).</summary>
+    internal static readonly (string Name, string Html)[] Chapter15 =
+    [
+        ("S15_1_FontFamily_Serif", @"<p style='font-family:serif;'>Serif text sample</p>"),
+        ("S15_2_FontFamily_SansSerif", @"<p style='font-family:sans-serif;'>Sans-serif text sample</p>"),
+        ("S15_3_FontFamily_Monospace", @"<p style='font-family:monospace;'>Monospace text sample</p>"),
+        ("S15_4_FontFamily_Cursive", @"<p style='font-family:cursive;'>Cursive text sample</p>"),
+        ("S15_5_FontFamily_Fantasy", @"<p style='font-family:fantasy;'>Fantasy text sample</p>"),
+        ("S15_6_FontFamily_Fallback", @"<p style='font-family:""Nonexistent Font"", Arial, sans-serif;'>Fallback font text</p>"),
+        ("S15_7_FontStyle_Normal", @"<p style='font-style:normal;'>Normal style text</p>"),
+        ("S15_8_FontStyle_Italic", @"<p style='font-style:italic;'>Italic style text</p>"),
+        ("S15_9_FontStyle_Oblique", @"<p style='font-style:oblique;'>Oblique style text</p>"),
+        ("S15_10_FontVariant_Normal", @"<p style='font-variant:normal;'>Normal variant text</p>"),
+        ("S15_11_FontVariant_SmallCaps", @"<p style='font-variant:small-caps;'>Small Caps Variant Text</p>"),
+        ("S15_12_FontWeight_Normal", @"<p style='font-weight:normal;'>Normal weight text</p>"),
+        ("S15_13_FontWeight_Bold", @"<p style='font-weight:bold;'>Bold weight text</p>"),
+        ("S15_14_FontWeight_Numeric", @"<p style='font-weight:100;'>100</p><p style='font-weight:400;'>400</p><p style='font-weight:700;'>700</p><p style='font-weight:900;'>900</p>"),
+        ("S15_15_FontSize_AbsoluteKeywords", @"<p style='font-size:xx-small;'>xx-small</p><p style='font-size:small;'>small</p><p style='font-size:medium;'>medium</p><p style='font-size:large;'>large</p><p style='font-size:xx-large;'>xx-large</p>"),
+        ("S15_16_FontSize_RelativeKeywords", @"<p style='font-size:14px;'><span style='font-size:larger;'>Larger</span> and <span style='font-size:smaller;'>Smaller</span></p>"),
+        ("S15_17_FontSize_Px", @"<p style='font-size:12px;'>12px</p><p style='font-size:24px;'>24px</p><p style='font-size:36px;'>36px</p>"),
+        ("S15_18_FontSize_Em", @"<div style='font-size:16px;'><p style='font-size:2em;'>2em (32px)</p><p style='font-size:0.5em;'>0.5em (8px)</p></div>"),
+        ("S15_19_FontSize_Percentage", @"<div style='font-size:20px;'><p style='font-size:150%;'>150% of 20px</p><p style='font-size:50%;'>50% of 20px</p></div>"),
+        ("S15_20_Font_Shorthand", @"<p style='font:italic small-caps bold 16px/1.5 serif;'>Font shorthand text</p>"),
+    ];
+
+    /// <summary>CSS 2.1 Chapter 16 test snippets (23 tests).</summary>
+    internal static readonly (string Name, string Html)[] Chapter16 =
+    [
+        ("S16_1_TextIndent_Length", @"<p style='text-indent:40px;'>This paragraph has a 40px text indent applied to the first line.</p>"),
+        ("S16_2_TextIndent_Percentage", @"<div style='width:200px;'><p style='text-indent:25%;'>25% indent of 200px container width.</p></div>"),
+        ("S16_3_TextAlign_Left", @"<p style='text-align:left;width:300px;background-color:#eee;'>Left aligned text</p>"),
+        ("S16_4_TextAlign_Right", @"<p style='text-align:right;width:300px;background-color:#eee;'>Right aligned text</p>"),
+        ("S16_5_TextAlign_Center", @"<p style='text-align:center;width:300px;background-color:#eee;'>Center aligned text</p>"),
+        ("S16_6_TextAlign_Justify", @"<p style='text-align:justify;width:200px;background-color:#eee;'>This is a justified paragraph with enough text to demonstrate word spacing adjustments across multiple lines.</p>"),
+        ("S16_7_TextDecoration_Underline", @"<p style='text-decoration:underline;'>Underlined text</p>"),
+        ("S16_8_TextDecoration_Overline", @"<p style='text-decoration:overline;'>Overlined text</p>"),
+        ("S16_9_TextDecoration_LineThrough", @"<p style='text-decoration:line-through;'>Strikethrough text</p>"),
+        ("S16_10_TextDecoration_None", @"<a href='#' style='text-decoration:none;'>Link with no underline</a>"),
+        ("S16_11_TextDecoration_Multiple", @"<p style='text-decoration:underline overline;'>Underline and overline</p>"),
+        ("S16_12_LetterSpacing_Normal", @"<p style='letter-spacing:normal;'>Normal letter spacing</p>"),
+        ("S16_13_LetterSpacing_Px", @"<p style='letter-spacing:5px;'>Wide letter spacing</p><p style='letter-spacing:-1px;'>Tight letter spacing</p>"),
+        ("S16_14_WordSpacing_Normal", @"<p style='word-spacing:normal;'>Normal word spacing between words</p>"),
+        ("S16_15_WordSpacing_Px", @"<p style='word-spacing:20px;'>Wide word spacing here</p><p style='word-spacing:-2px;'>Tight word spacing here</p>"),
+        ("S16_16_TextTransform_Capitalize", @"<p style='text-transform:capitalize;'>capitalize each word</p>"),
+        ("S16_17_TextTransform_Uppercase", @"<p style='text-transform:uppercase;'>make everything uppercase</p>"),
+        ("S16_18_TextTransform_Lowercase", @"<p style='text-transform:lowercase;'>MAKE EVERYTHING LOWERCASE</p>"),
+        ("S16_19_WhiteSpace_Normal", @"<p style='white-space:normal;'>  Multiple   spaces   and
+newlines   collapse  </p>"),
+        ("S16_20_WhiteSpace_Pre", @"<p style='white-space:pre;'>  Preserved   spaces   and
+newlines   kept  </p>"),
+        ("S16_21_WhiteSpace_Nowrap", @"<div style='width:100px;border:1px solid black;'><p style='white-space:nowrap;'>This text will not wrap to the next line</p></div>"),
+        ("S16_22_WhiteSpace_PreWrap", @"<div style='width:150px;border:1px solid black;'><p style='white-space:pre-wrap;'>  Preserved   spaces   that   also   wrap  </p></div>"),
+        ("S16_23_WhiteSpace_PreLine", @"<p style='white-space:pre-line;'>  Spaces collapse but
+newlines are preserved  </p>"),
+    ];
+
     /// <summary>All CSS2 test snippets across all chapters.</summary>
     internal static IEnumerable<(string Chapter, string Name, string Html)> All()
     {
@@ -1250,6 +1332,12 @@ internal static class Css2TestSnippets
             yield return ("Chapter 9", name, html);
         foreach (var (name, html) in Chapter10)
             yield return ("Chapter 10", name, html);
+        foreach (var (name, html) in Chapter12)
+            yield return ("Chapter 12", name, html);
+        foreach (var (name, html) in Chapter15)
+            yield return ("Chapter 15", name, html);
+        foreach (var (name, html) in Chapter16)
+            yield return ("Chapter 16", name, html);
         foreach (var (name, html) in Chapter17)
             yield return ("Chapter 17", name, html);
     }
